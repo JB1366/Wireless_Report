@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cp /jffs/.ssh/id_dropbear /tmp/home/root/.ssh/id_dropbear # sshpairs
+cp /jffs/.ssh/known_hosts /tmp/home/root/.ssh/known_hosts # sshpairs persistance
+sh /jffs/addons/wireless_report/install_menu.sh # Inject Wifi Report
