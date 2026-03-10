@@ -52,9 +52,11 @@ else
 fi
 . "$INSTALL_DIR/webui.conf"
 
-# Modify MenuTree
-umount -l "$SYSTEM_MENU" 2>/dev/null
-cp "$SYSTEM_MENU" "$TEMP_MENU"
+# Copy menuTree (if no other script has done it yet) so we can modify it
+if [ ! -f "$TEMP_MENU" ]; then
+    cp "$SYSTEM_MENU" /tmp/
+    mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
+fi
 
 if [ "$MENU_TYPE" = "1" ]; then
     # Choice 1: Addons Menu
@@ -73,8 +75,8 @@ else
     fi
 fi
 
-# Remount logic
-mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
+# Remount modified menu
+umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 umount "/www/user/$am_webui_page" 2>/dev/null
 mount -o bind "$RAM_PAGE" "/www/user/$am_webui_page"
-"$INSTALL_DIR/gen_report.sh" >/dev/null 2>&1 &
+"$INSTALL_DIR/gen_report.sh" &
