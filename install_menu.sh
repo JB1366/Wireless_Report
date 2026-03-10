@@ -58,7 +58,7 @@ cp "$SYSTEM_MENU" "$TEMP_MENU"
 
 if [ "$MENU_TYPE" = "1" ]; then
     # Choice 1: Addons Menu
-    sed -i '/menuName: "Addons"/,/tab: \[/ s/tab: \[/tab: \[{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"\}, /' "$TEMP_MENU"
+   	sed -i '/menuName: "Addons"/s/tab: \[/tab: \[{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"\}, /' "$TEMP_MENU"
     echo "Added to Addons Menu."
 else
     # Choice 2: Wireless Menu
