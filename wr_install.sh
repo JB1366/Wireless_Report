@@ -34,7 +34,7 @@ check_storage() {
     mkdir -p "$DATA_DIR"
 }
 
-# --- (3) Check/Update Logic ---
+# --- Check/Update Logic ---
 check_version() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     if [ -f "$REPORT_SCRIPT" ]; then
@@ -115,7 +115,7 @@ do_install() {
     if [ -f "$MENU_SCRIPT" ]; then
         sh "$MENU_SCRIPT"
         
-        # Cleanup: Remove the .asp placeholder from the install folder (it is now in /tmp)
+        # Cleanup: Remove the .asp placeholder from the install folder
         rm -f "$INSTALL_DIR/wireless.asp"
 
         # 1. Update services-start (Safe Append)
@@ -132,10 +132,14 @@ do_install() {
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
 
-        # Initial run to generate page
+        # --- Cache Buster: Reload Web UI ---
+        echo -e "${CYAN}[*] Refreshing Web UI Menu...${NC}"
+        killall -HUP httpd 2>/dev/null
+
+        # Initial run to generate data
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
 
-        echo -e "\n${GREEN}SUCCESS: Wireless Report is installed and cleaned up!${NC}"
+        echo -e "\n${GREEN}SUCCESS: Installed! The tab should appear on your next page load.${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -152,8 +156,7 @@ do_uninstall() {
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         
-        # Kill any stray loops from old versions
-        kill $(ps | grep "gen_report.sh" | grep -v grep | awk '{print $1}') 2>/dev/null
+        killall -HUP httpd 2>/dev/null
         
         umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
         umount /www/require/modules/menuTree.js 2>/dev/null
