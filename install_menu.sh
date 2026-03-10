@@ -63,7 +63,8 @@ fi
 
 # ### Default Addons Menu-Tab Insertion ###
 # Insert Wireless Report at the end of the Tools menu.  Match partial string, since tabname can change between builds (if using an AS tag)
-sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
+# sed -i "/url: \"Tools_OtherSettings.asp\", tabName:/a {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
+sed -i '/menuName: "Addons"/,/tab: \[/ s/tab: \[/tab: \[{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"\}, /' "$TEMP_MENU"
 
 # ### Wireless Menu-Tab Insertion ###
 # Inject Wireless Report at the end of Advanced_Wireless_Content menu at Perfect End Offset
