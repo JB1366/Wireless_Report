@@ -1,6 +1,6 @@
 #!/bin/sh
 #============================================================================#
-#  Wireless Report                                                           #
+#  Wireless Report Installer                                                 #
 #  Version: 1.0.1                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
@@ -18,15 +18,43 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# --- (3) Check/Update Logic ---
+check_version() {
+    local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
+    
+    # 1. Detect Local Version from gen_report.sh (Scanning for your Auto-Discovery block)
+    if [ -f "$REPORT_SCRIPT" ]; then
+        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2)
+    else
+        LOCAL_VER="NOT INSTALLED"
+    fi
+
+    # 2. Detect Remote Version from GitHub
+    REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
+
+    # 3. Print Header and Status
+    echo -e "${CYAN}==================================================${NC}"
+    echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
+    if [ -z "$REMOTE_VER" ]; then
+        echo -e " STATUS: [Offline] Could not reach GitHub"
+    elif [ "$LOCAL_VER" = "NOT INSTALLED" ]; then
+        echo -e " STATUS: [Ready] Latest available is v$REMOTE_VER"
+    elif [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
+        echo -e " STATUS: ${RED}[UPDATE AVAILABLE] v$REMOTE_VER${NC} (Current: v$LOCAL_VER)"
+    else
+        echo -e " STATUS: [Up to date] v$LOCAL_VER"
+    fi
+    echo -e "${CYAN}==================================================${NC}"
+}
+
 show_menu() {
     clear
-    echo -e "${CYAN}==================================================${NC}"
-    echo -e "${CYAN}         WIRELESS REPORT v1.0.1                   ${NC}"
-    echo -e "${CYAN}==================================================${NC}"
+    check_version
     echo -e ""
     echo -e "  (1)  Install Wireless Report"
     echo -e "  (2)  Uninstall Wireless Report"
-    echo -e "  (e)  Exit Installer"
+    echo -e "  (3)  Check/Update Latest Script"
+    echo -e "  (e)  Exit"
     echo -e ""
     echo -e "${CYAN}==================================================${NC}"
     printf " Selection: "
@@ -64,7 +92,7 @@ check_ssh_environment() {
 
 do_install() {
     check_ssh_environment
-    echo -e "\n${CYAN}[*] Initializing Installation...${NC}"
+    echo -e "\n${CYAN}[*] Initializing Installation/Update...${NC}"
     [ ! -d "$INSTALL_DIR" ] && mkdir -p "$INSTALL_DIR"
 
     curl -s -L "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -85,7 +113,7 @@ do_install() {
 
         sh "$MENU_SCRIPT"
         sh "$REPORT_SCRIPT"
-        echo -e "\n${GREEN}SUCCESS: Wireless Report v1.0.1 is installed!${NC}"
+        echo -e "\n${GREEN}SUCCESS: Wireless Report is up to date!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -99,13 +127,18 @@ do_uninstall() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
+        
+        # Cleanup any current menu bindings
+        umount /www/require/modules/menuTree.js 2>/dev/null
+        rm -f /tmp/menuTree.js
+
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp
         echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
     else
         echo -e "[*] Uninstall cancelled."
     fi
-    pause # Moved outside the if-block
+    pause
 }
 
 pause() { printf "\nPress [Enter] to return to menu..."; read discard; }
@@ -114,7 +147,7 @@ while true; do
     show_menu
     read choice
     case "$choice" in
-        1) do_install ;;
+        1|3) do_install ;;
         2) do_uninstall ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;

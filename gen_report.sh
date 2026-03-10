@@ -16,9 +16,11 @@
 #              | |                                 #
 #              |_|                                 #
 # v1.0.1                                           #
+# JB_1366
 #--------------------------------------------------#
 
 # --- Auto-Discovery ---
+SCRIPT_VERSION="1.0.1"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -28,7 +30,14 @@ NODE_USER=$(nvram get http_username)
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
 USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1); [ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
 CONF_FILE="/jffs/addons/wireless_report/webui.conf"
-{ [ -f "$CONF_FILE" ] && . "$CONF_FILE" || exit 1; } && [ -n "$INSTALLED_PAGE" ] || exit 1
+
+# --- Guard Clause for Config ---
+if [ -f "$CONF_FILE" ]; then
+    . "$CONF_FILE"
+else
+    exit 1
+fi
+[ -n "$INSTALLED_PAGE" ] || exit 1
 
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"
@@ -42,7 +51,10 @@ YAZ_CACHE="/tmp/yaz_cache.tmp"
 NEW_HISTORY="/tmp/rssi_new.db"
 Q_RELAY="/tmp/q_relay.tmp" 
 MAIN_ROWS="/tmp/main_rows.tmp"; NODE_ROWS="/tmp/node_rows.tmp"; ALL_ROWS="/tmp/all_rows.tmp"
+
+# Initialize files to prevent "No such file" errors
 > $SEEN_MACS; > $MAIN_ROWS; > $NODE_ROWS; > $ALL_ROWS; > $NEW_HISTORY; > $Q_RELAY
+touch $Q_RELAY
 
 # --- Helper Functions ---
 get_rssi_style() {
@@ -184,6 +196,7 @@ for line in $NODE_DATA; do
         echo \"LOAD|\$(cat /proc/loadavg | awk '{print \$1}')\"
         echo \"UPTIME_VAL|\$F_UP\"; echo \"UPTIME_RAW|\$UP_SEC\"; echo \"COUNT|\$NODE_COUNT\"
     " 2>/dev/null)
+    
     if [ -n "$NODE_OUT" ]; then
         ACTIVE_NODES=$((ACTIVE_NODES + 1)); COLOR_IDX=$((COLOR_IDX + 1))
         CUR_COLOR=$(echo $NODE_COLORS | cut -d' ' -f$((COLOR_IDX)))
@@ -198,9 +211,10 @@ for line in $NODE_DATA; do
         cur_c=$(echo "$NODE_OUT" | grep "COUNT|" | cut -d'|' -f2); [ -z "$cur_c" ] && cur_c=0
         cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
         cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2); N_TOTAL=$((N_TOTAL + cur_c))
+        
+        # Safely calculate boot time
         boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
         
-        # Color-Synced Footers for ALL DEVICES
         CONSOLIDATED_T="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}°F</span>"
         CONSOLIDATED_L="$CONSOLIDATED_L | <span style='color:$CUR_COLOR;'>${cur_l}</span>"
         CONSOLIDATED_U="$CONSOLIDATED_U | <span style='color:$CUR_COLOR;'>${cur_up_v}</span>"
@@ -208,8 +222,6 @@ for line in $NODE_DATA; do
         
         [ -z "$N_TEMPS" ] && N_TEMPS="${cur_t}°F" || N_TEMPS="$N_TEMPS$PIPE${cur_t}°F"
         [ -z "$N_LOADS" ] && N_LOADS="$cur_l" || N_LOADS="$N_LOADS$PIPE$cur_l"
-        
-        # Color-Synced Footers for NODES view
         [ -z "$N_UPTIMES" ] && N_UPTIMES="<span style='color:$CUR_COLOR;'>$cur_up_v</span>" || N_UPTIMES="$N_UPTIMES$PIPE<span style='color:$CUR_COLOR;'>$cur_up_v</span>"
         [ -z "$N_BOOTS" ] && N_BOOTS="<span style='color:$CUR_COLOR;'>$boot_d</span>" || N_BOOTS="$N_BOOTS$PIPE<span style='color:$CUR_COLOR;'>$boot_d</span>"
         
@@ -223,10 +235,12 @@ for line in $NODE_DATA; do
             m_up=$(echo "$dline" | cut -d'|' -f2 | tr '[:lower:]' '[:upper:]')
             [ "$m_up" = "C8:7F:54:4F:C8:01" ] || grep -qi "$m_up" "$SEEN_MACS" && continue
             echo "$m_up" >> "$SEEN_MACS"; r_raw=$(echo "$dline" | cut -d'|' -f3)
+            
             if [ "$r_raw" -ge -50 ]; then echo "EXC" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
             else echo "POOR" >> "$Q_RELAY"; fi
+            
             yaz_data_n=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | head -n 1)
             n_name=$(echo "$yaz_data_n" | awk -F'|' '{print $3}'); [ -z "$n_name" ] && n_name="Unknown"
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
@@ -235,16 +249,28 @@ for line in $NODE_DATA; do
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9)
             is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$r_raw"); bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
             ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw")
+            
             N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
             echo "$N_ROW" >> $NODE_ROWS; echo "$N_ROW" >> $ALL_ROWS
         done
     fi
 done
 
-T_EXC=$((T_EXC + $(grep -c "EXC" "$Q_RELAY"))); T_GOOD=$((T_GOOD + $(grep -c "GOOD" "$Q_RELAY")))
-T_FAIR=$((T_FAIR + $(grep -c "FAIR" "$Q_RELAY"))); T_POOR=$((T_POOR + $(grep -c "POOR" "$Q_RELAY")))
-mv "$NEW_HISTORY" "$HISTORY_DB"; GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
+# --- Final Safe Math Block ---
+if [ -f "$Q_RELAY" ]; then
+    NODE_EXC=$(grep -c "EXC" "$Q_RELAY" || echo 0)
+    NODE_GOOD=$(grep -c "GOOD" "$Q_RELAY" || echo 0)
+    NODE_FAIR=$(grep -c "FAIR" "$Q_RELAY" || echo 0)
+    NODE_POOR=$(grep -c "POOR" "$Q_RELAY" || echo 0)
+    
+    T_EXC=$((T_EXC + NODE_EXC))
+    T_GOOD=$((T_GOOD + NODE_GOOD))
+    T_FAIR=$((T_FAIR + NODE_FAIR))
+    T_POOR=$((T_POOR + NODE_POOR))
+fi
 
+mv "$NEW_HISTORY" "$HISTORY_DB"
+GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 
 if [ "$ACTIVE_NODES" -ge 1 ]; then 
@@ -524,4 +550,6 @@ function closePopout() { document.getElementById('popoutModal').style.display = 
 </body>
 </html>
 HTML
+
+# Final Cleanup
 rm -f $SEEN_MACS $ARP_CACHE $YAZ_CACHE $MAIN_ROWS $NODE_ROWS $ALL_ROWS $Q_RELAY
