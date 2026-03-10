@@ -6,7 +6,7 @@
 #============================================================================#
 
 # --- Configuration (Update these for your Repo) ---
-GITHUB_ROOT="https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main"
+GITHUB_ROOT="https://raw.githubusercontent.com/JB1366/Wireless_Report/blob/main"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/gen_report.sh"
 MENU_SCRIPT="$INSTALL_DIR/install_menu.sh"
