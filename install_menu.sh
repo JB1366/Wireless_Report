@@ -58,8 +58,8 @@ cp "$SYSTEM_MENU" "$TEMP_MENU"
 
 if [ "$MENU_TYPE" = "1" ]; then
     # Choice 1: Addons Menu
-   	sed -i '/menuName: "Addons"/s/tab: \[/tab: \[{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"\}, /' "$TEMP_MENU"
-    echo "Added to Addons Menu."
+   	sed -i '/menuName: "Addons"/,/tab: \[/ s/tab: \[/tab: \[{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"\}, /' "$TEMP_MENU"
+	echo "Added to Addons Menu."
 else
     # Choice 2: Wireless Menu
     START_LINE=$(grep -ni 'url: "Advanced_Wireless_Content.asp"' "$TEMP_MENU" | head -n 1 | cut -d: -f1)
