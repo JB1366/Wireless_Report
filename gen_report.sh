@@ -16,7 +16,7 @@
 #              | |                                 #
 #              |_|                                 #
 # v1.0.1                                           #
-# JB_1366
+# JB_1366                                          #
 #--------------------------------------------------#
 
 # --- Auto-Discovery ---
@@ -28,7 +28,13 @@ NODE_DATA=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9
 NODE_COUNT_TOTAL=$(echo "$NODE_DATA" | grep -c "|"); [ "$NODE_COUNT_TOTAL" -gt 1 ] && N_SUFFIX="(NODES)" || N_SUFFIX="(NODE)"
 NODE_USER=$(nvram get http_username)
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
-USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1); [ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
+
+# --- File Paths & Initialization ---
+USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1)
+[ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
+HISTORY_DB="$USB_PATH/rssi_history.db"
+touch "$HISTORY_DB" # FIX: Initialize file immediately to prevent grep errors
+
 CONF_FILE="/jffs/addons/wireless_report/webui.conf"
 
 # --- Guard Clause for Config ---
@@ -42,17 +48,16 @@ fi
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"
 KNOWN_DB="$USB_PATH/known_macs.db"
-HISTORY_DB="$USB_PATH/rssi_history.db"
 OUT_FILE="/tmp/wireless.asp"
 YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"
 SEEN_MACS="/tmp/seen_macs.txt"
 ARP_CACHE="/tmp/arp_cache.tmp"
 YAZ_CACHE="/tmp/yaz_cache.tmp"
 NEW_HISTORY="/tmp/rssi_new.db"
-Q_RELAY="/tmp/q_relay.tmp" 
+Q_RELAY="/tmp/q_relay.tmp"
 MAIN_ROWS="/tmp/main_rows.tmp"; NODE_ROWS="/tmp/node_rows.tmp"; ALL_ROWS="/tmp/all_rows.tmp"
 
-# Initialize files to prevent "No such file" errors
+# Initialize files
 > $SEEN_MACS; > $MAIN_ROWS; > $NODE_ROWS; > $ALL_ROWS; > $NEW_HISTORY; > $Q_RELAY
 touch $Q_RELAY
 
@@ -75,8 +80,17 @@ get_bars() {
 
 get_trend() {
     local mac=$(echo "$1" | tr '[:lower:]' '[:upper:]'); local current=$2
-    local old=$(grep "$mac" "$HISTORY_DB" | cut -d'|' -f2)
+    
+    # 1. Update history staging
     echo "$mac|$current" >> "$NEW_HISTORY"
+    
+    # 2. Guard: Skip math if database is empty/missing to avoid syntax errors
+    if [ ! -s "$HISTORY_DB" ]; then
+        echo "<span class='trend-box'>•</span>"
+        return
+    fi
+
+    local old=$(grep "$mac" "$HISTORY_DB" | cut -d'|' -f2)
     if [ -z "$old" ] || [ "$old" -eq 0 ]; then echo "<span class='trend-box'>•</span>"; return; fi
     if [ "$current" -gt "$old" ]; then echo "<span class='trend-box trend-up sig-exc'>↑</span>"
     elif [ "$current" -lt "$old" ]; then echo "<span class='trend-box trend-down sig-poor'>↓</span>"
@@ -390,17 +404,17 @@ function toggleCols(tId, cls, header, labelA, labelB) {
 function sortTable(n, tId, keepDir, forceDesc) {
     var table = document.getElementById(tId); if(!table) return;
     var tbody = table.tBodies[0]; var rows = Array.prototype.slice.call(tbody.rows); if(!rows.length) return;
-    var dir = table.getAttribute("data-dir-" + n) || "asc";
-    if (forceDesc) { dir = "desc"; } else if (!keepDir) { dir = (dir === "asc") ? "desc" : "asc"; }
-    table.setAttribute("data-dir-" + n, dir);
+    var dir = table.getAttribute(\"data-dir-\" + n) || \"asc\";
+    if (forceDesc) { dir = \"desc\"; } else if (!keepDir) { dir = (dir === \"asc\") ? \"desc\" : \"asc\"; }
+    table.setAttribute(\"data-dir-\" + n, dir);
     var headers = table.querySelectorAll('th');
     headers.forEach(function(h, idx) {
-        var baseText = h.innerText.replace(/[▼▲⇅]/g, "").trim();
-        var toggleIcon = (idx === 1 || idx === 4) ? " ⇅" : "";
-        if (idx === n) h.innerHTML = baseText + (dir === "asc" ? " ▲" : " ▼");
+        var baseText = h.innerText.replace(/[▼▲⇅]/g, \"\").trim();
+        var toggleIcon = (idx === 1 || idx === 4) ? \" ⇅\" : \"\";
+        if (idx === n) h.innerHTML = baseText + (dir === \"asc\" ? \" ▲\" : \" ▼\");
         else {
-            if(idx === 1) h.innerHTML = (table.classList.contains('show-ip') ? "IP ADDRESS" : "MAC ADDRESS") + toggleIcon;
-            else if(idx === 4) h.innerHTML = (table.classList.contains('show-iface') ? "IFACE" : "SSID") + toggleIcon;
+            if(idx === 1) h.innerHTML = (table.classList.contains('show-ip') ? \"IP ADDRESS\" : \"MAC ADDRESS\") + toggleIcon;
+            else if(idx === 4) h.innerHTML = (table.classList.contains('show-iface') ? \"IFACE\" : \"SSID\") + toggleIcon;
             else h.innerHTML = baseText + toggleIcon;
         }
     });
@@ -415,15 +429,15 @@ function sortTable(n, tId, keepDir, forceDesc) {
         } else if (cellA.hasAttribute('data-sort')) { valA = cellA.getAttribute('data-sort'); valB = cellB.getAttribute('data-sort');
         } else { valA = cellA.innerText.trim(); valB = cellB.innerText.trim(); }
         var numA = parseFloat(valA); var numB = parseFloat(valB);
-        if(!isNaN(numA) && !isNaN(numB)) { return dir === "asc" ? numA - numB : numB - numA; }
-        return dir === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        if(!isNaN(numA) && !isNaN(numB)) { return dir === \"asc\" ? numA - numB : numB - numA; }
+        return dir === \"asc\" ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
     rows.forEach(function(r) { tbody.appendChild(r); });
 }
 function openPopout() {
-    var body = document.getElementById('popoutBody'); body.innerHTML = "";
+    var body = document.getElementById('popoutBody'); body.innerHTML = \"\";
     var mCol = document.getElementById('mainCol').cloneNode(true); var nCol = document.getElementById('nodeCol').cloneNode(true);
-    mCol.querySelector('table').id = "popMainTable"; nCol.querySelector('table').id = "popNodeTable";
+    mCol.querySelector('table').id = \"popMainTable\"; nCol.querySelector('table').id = \"popNodeTable\";
     mCol.querySelectorAll('th').forEach(function(th, i) {
         if(i===1) th.onclick = function() { toggleCols('popMainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS'); };
         else if(i===4) th.onclick = function() { toggleCols('popMainTable', 'show-iface', this, 'SSID', 'IFACE'); };
@@ -439,99 +453,99 @@ function openPopout() {
 function closePopout() { document.getElementById('popoutModal').style.display = 'none'; }
 </script>
 </head>
-<body onload="initial();">
-<div id="TopBanner"></div>
-<div id="Loading" class="popup_bg"></div>
-<table class="content" align="center" cellpadding="0" cellspacing="0">
+<body onload=\"initial();\">
+<div id=\"TopBanner\"></div>
+<div id=\"Loading\" class=\"popup_bg\"></div>
+<table class=\"content\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\">
   <tr>
-    <td width="17">&nbsp;</td>
-    <td valign="top" width="202"><div id="mainMenu"></div><div id="subMenu"></div></td>
-    <td valign="top">
-      <div id="tabMenu" class="submenuBlock"></div>
-      <div id="wifiReportContainer" style="padding:10px;">
-        <h1 class="report-header-main">WIRELESS REPORT</h1>
-        <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL</span></div>
-        <div class="quality-bar">
-          <div class="q-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-          <div class="q-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-          <div class="q-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-          <div class="q-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
-          <div class="row-break"></div>
-          <div class="q-box" style="padding:0 5px; display:inline-flex; align-items:center;">
-            <button class="btn-manual btn-black-blue" style="border:none; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">Refresh</button>
-            <span style="font-size:10px; margin-left:5px;">Auto: </span>
-            <select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="background:#000; color:#0096ff; border:1px solid #444; margin-left:2px; font-size:10px; height:20px;">
-                <option value="0">Off</option><option value="30">30s</option><option value="60">1m</option>
-            </select><span id="countdown"></span>
+    <td width=\"17\">&nbsp;</td>
+    <td valign=\"top\" width=\"202\"><div id=\"mainMenu\"></div><div id=\"subMenu\"></div></td>
+    <td valign=\"top\">
+      <div id=\"tabMenu\" class=\"submenuBlock\"></div>
+      <div id=\"wifiReportContainer\" style=\"padding:10px;\">
+        <h1 class=\"report-header-main\">WIRELESS REPORT</h1>
+        <div class=\"total-count\">Total Wireless Devices: <span class=\"count-highlight\">$GRAND_TOTAL</span></div>
+        <div class=\"quality-bar\">
+          <div class=\"q-box sig-exc\">Excellent: <span style=\"background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;\">$T_EXC</span></div>
+          <div class=\"q-box sig-good\">Good: <span style=\"background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;\">$T_GOOD</span></div>
+          <div class=\"q-box sig-fair\" style=\"color:#ffd60a;\">Fair: <span style=\"background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;\">$T_FAIR</span></div>
+          <div class=\"q-box sig-poor\" style=\"color:#ff453a;\">Poor: <span style=\"background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;\">$T_POOR</span></div>
+          <div class=\"row-break\"></div>
+          <div class=\"q-box\" style=\"padding:0 5px; display:inline-flex; align-items:center;\">
+            <button class=\"btn-manual btn-black-blue\" style=\"border:none; height:100%; line-height:inherit; padding:0 8px;\" onclick=\"triggerRefresh()\">Refresh</button>
+            <span style=\"font-size:10px; margin-left:5px;\">Auto: </span>
+            <select id=\"refreshRate\" onchange=\"localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));\" style=\"background:#000; color:#0096ff; border:1px solid #444; margin-left:2px; font-size:10px; height:20px;\">
+                <option value=\"0\">Off</option><option value=\"30\">30s</option><option value=\"60\">1m</option>
+            </select><span id=\"countdown\"></span>
           </div>
-          <button id="btnMain" class="btn-black-blue active" onclick="switchTab('split')">Main View</button>
-          <button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
-          <button class="btn-black-blue" onclick="openPopout()">Comparison View ⇗</button>
+          <button id=\"btnMain\" class=\"btn-black-blue active\" onclick=\"switchTab('split')\">Main View</button>
+          <button id=\"btnAll\" class=\"btn-black-blue\" onclick=\"switchTab('all')\">All Devices</button>
+          <button class=\"btn-black-blue\" onclick=\"openPopout()\">Comparison View ⇗</button>
         </div>
-        <div class="grid-container">
-          <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
-              <div id="mainCol" class="report-column">
-                <div class="section-header">
+        <div class=\"grid-container\">
+          <div id=\"splitView\" style=\"display:flex; flex-direction:column; gap:15px; width:100%;\">
+              <div id=\"mainCol\" class=\"report-column\">
+                <div class=\"section-header\">
                   $MAIN_LABEL<br>
-                  <span style="font-size:11px; font-weight:normal;">Updated: $CUR_TIME</span>
-                  <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="$MC_T">$M_TEMP°F</span> • Load: <span class="$MC_L">$M_LOAD</span> • Devices: <span class="val-blue">$M_TOTAL</span></div>
+                  <span style=\"font-size:11px; font-weight:normal;\">Updated: $CUR_TIME</span>
+                  <hr class=\"sep-line\">
+                  <div class=\"header-stats-row\">Temp: <span class=\"$MC_T\">$M_TEMP°F</span> • Load: <span class=\"$MC_L\">$M_LOAD</span> • Devices: <span class=\"val-blue\">$M_TOTAL</span></div>
                 </div>
-                <table id="mainTable" class="report_table show-ip">
+                <table id=\"mainTable\" class=\"report_table show-ip\">
                   <thead><tr>
-                    <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
-                    <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS ⇅</th>
-                    <th onclick="sortTable(2, 'mainTable')">RSSI</th>
-                    <th onclick="sortTable(3, 'mainTable')">RX / TX</th>
-                    <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID ⇅</th>
-                    <th onclick="sortTable(5, 'mainTable')">BAND</th>
-                    <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
+                    <th onclick=\"sortTable(0, 'mainTable')\">HOSTNAME</th>
+                    <th onclick=\"toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')\">IP ADDRESS ⇅</th>
+                    <th onclick=\"sortTable(2, 'mainTable')\">RSSI</th>
+                    <th onclick=\"sortTable(3, 'mainTable')\">RX / TX</th>
+                    <th onclick=\"toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')\">SSID ⇅</th>
+                    <th onclick=\"sortTable(5, 'mainTable')\">BAND</th>
+                    <th onclick=\"sortTable(6, 'mainTable')\">UPTIME</th>
                   </tr></thead>
                   <tbody>$(cat $MAIN_ROWS)</tbody>
-                  <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME_STR</span> • Reboot: <span class="f-res">$M_BOOT_TIME</span></td></tr></tfoot>
+                  <tfoot><tr><td colspan=\"7\" style=\"text-align: center !important;\">Uptime: <span class=\"f-res\">$M_UPTIME_STR</span> • Reboot: <span class=\"f-res\">$M_BOOT_TIME</span></td></tr></tfoot>
                 </table>
               </div>
-              <div id="nodeCol" class="report-column">
-                <div class="section-header">
-                  $N_NAMES <span class="router-branding">$N_SUFFIX</span><br>
-                  <span style="font-size:11px; font-weight:normal;">Updated: $CUR_TIME</span>
-                  <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="val-blue">${N_TEMPS:-0}</span> • Load: <span class="val-blue">${N_LOADS:-0}</span> • Devices: <span class="val-blue">$N_TOTAL</span> <span class="dash-sep">—›</span> $N_SPLIT_COUNTS</div>
+              <div id=\"nodeCol\" class=\"report-column\">
+                <div class=\"section-header\">
+                  $N_NAMES <span class=\"router-branding\">$N_SUFFIX</span><br>
+                  <span style=\"font-size:11px; font-weight:normal;\">Updated: $CUR_TIME</span>
+                  <hr class=\"sep-line\">
+                  <div class=\"header-stats-row\">Temp: <span class=\"val-blue\">${N_TEMPS:-0}</span> • Load: <span class=\"val-blue\">${N_LOADS:-0}</span> • Devices: <span class=\"val-blue\">$N_TOTAL</span> <span class=\"dash-sep\">—›</span> $N_SPLIT_COUNTS</div>
                 </div>
-                <table id="nodeTable" class="report_table show-ip">
+                <table id=\"nodeTable\" class=\"report_table show-ip\">
                   <thead><tr>
-                    <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
-                    <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS ⇅</th>
-                    <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
-                    <th onclick="sortTable(3, 'nodeTable')">RX / TX</th>
-                    <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID ⇅</th>
-                    <th onclick="sortTable(5, 'nodeTable')">BAND</th>
-                    <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
+                    <th onclick=\"sortTable(0, 'nodeTable')\">HOSTNAME</th>
+                    <th onclick=\"toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')\">IP ADDRESS ⇅</th>
+                    <th onclick=\"sortTable(2, 'nodeTable')\">RSSI</th>
+                    <th onclick=\"sortTable(3, 'nodeTable')\">RX / TX</th>
+                    <th onclick=\"toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')\">SSID ⇅</th>
+                    <th onclick=\"sortTable(5, 'nodeTable')\">BAND</th>
+                    <th onclick=\"sortTable(6, 'nodeTable')\">UPTIME</th>
                   </tr></thead>
                   <tbody>$(cat $NODE_ROWS)</tbody>
-                  <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES • Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
+                  <tfoot><tr><td colspan=\"7\" style=\"text-align: center !important;\">$( [ -n \"$N_UPTIMES\" ] && echo \"Uptime: $N_UPTIMES • Reboot: $N_BOOTS\" || echo \"Offline\" )</td></tr></tfoot>
                 </table>
               </div>
           </div>
-          <div id="allCol" class="report-column">
-            <div class="section-header">
+          <div id=\"allCol\" class=\"report-column\">
+            <div class=\"section-header\">
               $BRAND_LINE_ALL<br>
-              <span style="font-size:11px; font-weight:normal;">Updated: $CUR_TIME</span>
-              <hr class="sep-line">
-              <div class="header-stats-row">Temp: $CONSOLIDATED_T • Load: $CONSOLIDATED_L • $FULL_DEVICE_BREAKDOWN</div>
+              <span style=\"font-size:11px; font-weight:normal;\">Updated: $CUR_TIME</span>
+              <hr class=\"sep-line\">
+              <div class=\"header-stats-row\">Temp: $CONSOLIDATED_T • Load: $CONSOLIDATED_L • $FULL_DEVICE_BREAKDOWN</div>
             </div>
-            <table id="allTable" class="report_table show-ip">
+            <table id=\"allTable\" class=\"report_table show-ip\">
               <thead><tr>
-                <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
-                <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS ⇅</th>
-                <th onclick="sortTable(2, 'allTable')">RSSI</th>
-                <th onclick="sortTable(3, 'allTable')">RX / TX</th>
-                <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID ⇅</th>
-                <th onclick="sortTable(5, 'allTable')">BAND</th>
-                <th onclick="sortTable(6, 'allTable')">UPTIME</th>
+                <th onclick=\"sortTable(0, 'allTable')\">HOSTNAME</th>
+                <th onclick=\"toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')\">IP ADDRESS ⇅</th>
+                <th onclick=\"sortTable(2, 'allTable')\">RSSI</th>
+                <th onclick=\"sortTable(3, 'allTable')\">RX / TX</th>
+                <th onclick=\"toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')\">SSID ⇅</th>
+                <th onclick=\"sortTable(5, 'allTable')\">BAND</th>
+                <th onclick=\"sortTable(6, 'allTable')\">UPTIME</th>
               </tr></thead>
               <tbody>$(cat $ALL_ROWS)</tbody>
-              <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: $CONSOLIDATED_U • Reboot: $CONSOLIDATED_B</td></tr></tfoot>
+              <tfoot><tr><td colspan=\"7\" style=\"text-align: center !important;\">Uptime: $CONSOLIDATED_U • Reboot: $CONSOLIDATED_B</td></tr></tfoot>
             </table>
           </div>
         </div>
@@ -539,12 +553,12 @@ function closePopout() { document.getElementById('popoutModal').style.display = 
     </td>
   </tr>
 </table>
-<div id="footer"></div>
-<div id="popoutModal" class="modal-overlay" onclick="closePopout()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <span class="close-x" onclick="closePopout()">&times;</span>
-    <h2 style="color:#0096ff; margin:0 0 10px 0; text-align:center; text-shadow: 0 0 15px rgba(0,150,255,0.7);">Network Comparison View</h2>
-    <div id="popoutBody" class="modal-grid"></div>
+<div id=\"footer\"></div>
+<div id=\"popoutModal\" class=\"modal-overlay\" onclick=\"closePopout()\">
+  <div class=\"modal-content\" onclick=\"event.stopPropagation()\">
+    <span class=\"close-x\" onclick=\"closePopout()\">&times;</span>
+    <h2 style=\"color:#0096ff; margin:0 0 10px 0; text-align:center; text-shadow: 0 0 15px rgba(0,150,255,0.7);\">Network Comparison View</h2>
+    <div id=\"popoutBody\" class=\"modal-grid\"></div>
   </div>
 </div>
 </body>

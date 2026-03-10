@@ -18,6 +18,10 @@ if [ $? != 0 ]; then
     exit 5
 fi
 
+# Add this to ensure the path is ready
+mkdir -p "/tmp/gen_report"
+touch "/tmp/gen_report/rssi_history.db"
+
 # Create the directory if it doesn't exist
 mkdir -p "$INSTALL_DIR"
 
