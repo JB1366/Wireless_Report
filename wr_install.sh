@@ -22,24 +22,20 @@ NC='\033[0m'
 # --- Version Fetcher ---
 check_version() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
-    
     if [ -f "$REPORT_SCRIPT" ]; then
         LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2)
     else
         LOCAL_VER="NOT INSTALLED"
     fi
-
     REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_URL")
     if [ $? -ne 0 ] || [ -z "$REMOTE_DATA" ]; then
         REMOTE_VER="" 
     else
         REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
     fi
-
     echo -e "${CYAN}==================================================${NC}"
     echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
     echo -e "${CYAN}==================================================${NC}"
-    
     if [ -z "$REMOTE_VER" ]; then
         echo -e " STATUS: ${RED}[Offline]${NC} Could not reach GitHub"
     elif [ "$LOCAL_VER" = "NOT INSTALLED" ]; then
@@ -49,14 +45,12 @@ check_version() {
     else
         echo -e " STATUS: [Up to date] v$LOCAL_VER"
     fi
-    
     echo -e "${CYAN}==================================================${NC}"
 }
 
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
-
     if [ -n "$USB_PATH" ]; then
         DATA_DIR="$USB_PATH/gen_report"
         echo -e "${GREEN}[+] USB Found: Using $DATA_DIR for history.${NC}"
@@ -107,7 +101,6 @@ do_install() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
     REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
-
     if [ -n "$LOCAL_VER" ] && [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
         echo -e "${GREEN}[+] You already have the latest version (v$LOCAL_VER) installed.${NC}"
         printf " Do you want to reinstall/repair it anyway? (y/n): "
@@ -116,22 +109,19 @@ do_install() {
             return 0
         fi
     fi
-
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled in settings.${NC}"
         exit 1
     fi
-
     check_storage
     check_ssh_environment
-
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
 
-    # NEW: Menu Location Selection
-    echo -e "\n Where should the TAB link appear?"
-    echo "  (1)  Addons Menu"
-    echo "  (2)  Wireless Menu"
+    # --- Menu Location Selection ---
+    echo -e "\n Where should the menu link appear?"
+    echo "  (1)  Addons Menu (Nested)"
+    echo "  (2)  Wireless Menu (Dedicated Tab)"
     printf " Choice [1]: "
     read menu_choice
     [ -z "$menu_choice" ] && menu_choice=1
@@ -159,7 +149,6 @@ do_install() {
 
         killall -HUP httpd 2>/dev/null
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
-
         echo -e "\n${GREEN}SUCCESS: Installation/Update complete!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
@@ -176,14 +165,14 @@ do_uninstall() {
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         
-        killall -HUP httpd 2>/dev/null
-        killall gen_report.sh 2>/dev/null
-
+        # Safe Unmount Sequence
         umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
         umount /www/require/modules/menuTree.js 2>/dev/null
         
+        killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
+        killall -HUP httpd 2>/dev/null
         echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
     fi
     pause
