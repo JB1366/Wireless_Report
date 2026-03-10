@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.1                                                            #
+#  Version: 1.1.5 (Zero-Kill Edition)                                        #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -136,7 +136,8 @@ do_install() {
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
-        killall -HUP httpd 2>/dev/null
+        
+        service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
         echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
     else
@@ -152,25 +153,30 @@ do_uninstall() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 1. STOP TRIGGERS
-        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        sed -i "/wireless_report/d" /jffs/scripts/service-event
-
+        # 1. OVERWRITE INSURANCE
+        # Before unmounting, replace the custom menu with the firmware default
+        # to ensure the web server always sees a valid file.
+        [ -f "/tmp/menuTree.js" ] && cp -f /www/require/modules/menuTree.js /tmp/menuTree.js 2>/dev/null
+        
         # 2. FORCE UNMOUNT
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
 
-        # 3. RESTART WEB SERVER (The Hammer)
-        # We restart the service entirely while files still exist to force a cleanup
+        # 3. RESTART WEB SERVER
+        # Restart while files still exist to allow a clean transition in memory
         service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
-        sleep 3
+        sleep 4
         
-        # 4. FINAL CLEANUP
+        # 4. CLEANUP TRIGGERS
+        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
+        sed -i "/wireless_report/d" /jffs/scripts/service-event
+
+        # 5. FINAL CLEANUP
         killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         
-        echo -e "${GREEN}[+] Uninstalled. Addons menu should be restored.${NC}"
+        echo -e "${GREEN}[+] Uninstalled. Factory menus restored.${NC}"
     fi
     pause
 }
