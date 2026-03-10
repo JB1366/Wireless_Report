@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.0 (Clean UI Edition)                                         #
+#  Version: 1.1.1 (Double-Gate Edition)                                      #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -106,20 +106,21 @@ check_ssh_environment() {
 }
 
 do_install() {
-    local force_install=$1
-    
-    if [ "$force_install" = "false" ]; then
-        local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
-        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
-        REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
+    # 1. Version Gate: Check before doing ANY work
+    local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
+    LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
+    REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
 
-        if [ "$LOCAL_VER" = "$REMOTE_VER" ] && [ -n "$LOCAL_VER" ]; then
-            echo -e "${GREEN}[+] Already on latest version (v$LOCAL_VER). No update needed.${NC}"
-            pause
+    if [ -n "$LOCAL_VER" ] && [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
+        echo -e "${GREEN}[+] You already have the latest version (v$LOCAL_VER) installed.${NC}"
+        printf " Do you want to reinstall/repair it anyway? (y/n): "
+        read confirm
+        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
             return 0
         fi
     fi
 
+    # 2. Check Prerequisites
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled in settings.${NC}"
         exit 1
@@ -139,12 +140,14 @@ do_install() {
         sh "$MENU_SCRIPT"
         rm -f "$INSTALL_DIR/wireless.asp"
 
+        # Update services-start (Safe Append)
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
+        # Update service-event (Safe Append)
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
@@ -190,13 +193,12 @@ pause() {
 
 # --- Main Entry Point ---
 while true; do
-    clear           # Wipes the old menu iteration
-    check_version   # Redraws the version header at the very top
-    show_menu       # Displays choices
+    clear           # Keep UI from scrolling
+    check_version   # Pinned to top
+    show_menu
     read choice
     case "$choice" in
-        1) do_install "true" ;;   
-        3) do_install "false" ;;  
+        1|3) do_install ;;   # Both options now use the intelligent gate
         2) do_uninstall ;;
         e|E) clear; exit 0 ;;
         *) 
