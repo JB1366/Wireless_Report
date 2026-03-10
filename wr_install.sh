@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.1                                                           #
+#  Version: 1.0.1                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -98,10 +98,7 @@ check_ssh_environment() {
 }
 
 do_install() {
-    # Public choice defaults to 1 (Addons)
     local menu_choice=1
-
-    # Check if the secret backdoor was passed as an argument
     if [ "$1" = "secret" ]; then
         echo -e "\n${CYAN}[BACKDOOR] Select Menu Location:${NC}"
         echo "  (1)  Addons Menu"
@@ -120,8 +117,6 @@ do_install() {
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
-
-    # Save the choice to config
     echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -131,21 +126,16 @@ do_install() {
     if [ -f "$MENU_SCRIPT" ]; then
         sh "$MENU_SCRIPT"
         rm -f "$INSTALL_DIR/wireless.asp"
-
-        # services-start trigger
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
-
-        # service-event trigger
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
-
         killall -HUP httpd 2>/dev/null
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
         echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
@@ -162,26 +152,25 @@ do_uninstall() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 1. Surgical Unmount (Must happen BEFORE deleting files)
-        if [ -n "$INSTALLED_PAGE" ]; then
-            umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
-        fi
-        
-        # This restores the factory Addons menu
-        umount -l /www/require/modules/menuTree.js 2>/dev/null
-        
-        # 2. Cleanup Triggers
+        # 1. STOP TRIGGERS
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
+
+        # 2. FORCE UNMOUNT
+        umount -l /www/require/modules/menuTree.js 2>/dev/null
+        [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
+
+        # 3. RESTART WEB SERVER (The Hammer)
+        # We restart the service entirely while files still exist to force a cleanup
+        service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
+        sleep 3
         
-        # 3. Stop processes and delete files
+        # 4. FINAL CLEANUP
         killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         
-        # 4. Final UI Refresh
-        killall -HUP httpd 2>/dev/null
-        echo -e "${GREEN}[+] Uninstalled successfully. Addons menu restored.${NC}"
+        echo -e "${GREEN}[+] Uninstalled. Addons menu should be restored.${NC}"
     fi
     pause
 }
@@ -193,7 +182,7 @@ while true; do
     case "$choice" in
         1|3) do_install ;;   
         2) do_uninstall ;;
-        wireless) do_install "secret" ;; # THE BACKDOOR
+        wireless) do_install "secret" ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
