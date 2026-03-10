@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.2 (Boxed UI Edition)                                         #
+#  Version: 1.1.3 (Surgical Uninstall Edition)                               #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -161,19 +161,29 @@ do_uninstall() {
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        # Load config to find specific mount point
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+        
+        # 1. Surgical Unmount (Only touch the user page assigned to us)
+        if [ -n "$INSTALLED_PAGE" ]; then
+            umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
+        fi
+        
+        # 2. Unmount Menu (Restores original firmware menuTree.js)
+        umount -l /www/require/modules/menuTree.js 2>/dev/null
+        
+        # 3. Cleanup Triggers
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         
-        # Safe Unmount Sequence
-        umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
-        umount /www/require/modules/menuTree.js 2>/dev/null
-        
+        # 4. Stop process and delete files
         killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
+        
+        # 5. Restart UI (Triggers redraw of factory menus)
         killall -HUP httpd 2>/dev/null
-        echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
+        echo -e "${GREEN}[+] Uninstalled successfully. UI Reset.${NC}"
     fi
     pause
 }
