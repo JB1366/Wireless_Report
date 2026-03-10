@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.1 (Double-Gate Edition)                                      #
+#  Version: 1.1.2 (Boxed UI Edition)                                         #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -38,9 +38,10 @@ check_version() {
         REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
     fi
 
-    # 3. Display Status Header
+    # 3. Display Boxed Status Header
     echo -e "${CYAN}==================================================${NC}"
     echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
+    echo -e "${CYAN}==================================================${NC}"
     
     if [ -z "$REMOTE_VER" ]; then
         echo -e " STATUS: ${RED}[Offline]${NC} Could not reach GitHub"
@@ -51,6 +52,7 @@ check_version() {
     else
         echo -e " STATUS: [Up to date] v$LOCAL_VER"
     fi
+    
     echo -e "${CYAN}==================================================${NC}"
 }
 
@@ -106,7 +108,7 @@ check_ssh_environment() {
 }
 
 do_install() {
-    # 1. Version Gate: Check before doing ANY work
+    # 1. Version Gate: Check before doing any work
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
     REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
@@ -193,12 +195,12 @@ pause() {
 
 # --- Main Entry Point ---
 while true; do
-    clear           # Keep UI from scrolling
-    check_version   # Pinned to top
+    clear           # Keep UI static and clean
+    check_version   # Boxed status at the top
     show_menu
     read choice
     case "$choice" in
-        1|3) do_install ;;   # Both options now use the intelligent gate
+        1|3) do_install ;;   
         2) do_uninstall ;;
         e|E) clear; exit 0 ;;
         *) 
