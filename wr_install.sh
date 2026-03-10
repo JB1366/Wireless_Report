@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.4 (Backdoor Edition)                                         #
+#  Version: 1.0.1                                                           #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -104,8 +104,8 @@ do_install() {
     # Check if the secret backdoor was passed as an argument
     if [ "$1" = "secret" ]; then
         echo -e "\n${CYAN}[BACKDOOR] Select Menu Location:${NC}"
-        echo "  (1)  Addons Menu (Standard)"
-        echo "  (2)  Wireless Menu (Secret Tab)"
+        echo "  (1)  Addons Menu"
+        echo "  (2)  Wireless Menu"
         printf " Choice [1]: "
         read menu_choice
         [ -z "$menu_choice" ] && menu_choice=1
@@ -162,21 +162,26 @@ do_uninstall() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # Surgical Unmount
+        # 1. Surgical Unmount (Must happen BEFORE deleting files)
         if [ -n "$INSTALLED_PAGE" ]; then
             umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
         fi
+        
+        # This restores the factory Addons menu
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         
+        # 2. Cleanup Triggers
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         
+        # 3. Stop processes and delete files
         killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         
+        # 4. Final UI Refresh
         killall -HUP httpd 2>/dev/null
-        echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
+        echo -e "${GREEN}[+] Uninstalled successfully. Addons menu restored.${NC}"
     fi
     pause
 }
