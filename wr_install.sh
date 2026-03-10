@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.1                                                            #
+#  Version: 1.0.8 (Version-Gate Edition)                                     #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -19,7 +19,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# --- (New) USB Check Logic ---
+# --- USB Check Logic ---
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
@@ -34,7 +34,7 @@ check_storage() {
     mkdir -p "$DATA_DIR"
 }
 
-# --- Check/Update Logic ---
+# --- Version Fetcher ---
 check_version() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     if [ -f "$REPORT_SCRIPT" ]; then
@@ -97,6 +97,21 @@ check_ssh_environment() {
 }
 
 do_install() {
+    local force_install=$1
+    
+    # Version Gate for Option (3)
+    if [ "$force_install" = "false" ]; then
+        local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
+        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
+        REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
+
+        if [ "$LOCAL_VER" = "$REMOTE_VER" ] && [ -n "$LOCAL_VER" ]; then
+            echo -e "${GREEN}[+] Already on latest version (v$LOCAL_VER). No update needed.${NC}"
+            pause
+            return 0
+        fi
+    fi
+
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled in settings.${NC}"
         exit 1
@@ -105,7 +120,7 @@ do_install() {
     check_storage
     check_ssh_environment
 
-    echo -e "${CYAN}[*] Installing Wireless Report...${NC}"
+    echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -114,8 +129,6 @@ do_install() {
 
     if [ -f "$MENU_SCRIPT" ]; then
         sh "$MENU_SCRIPT"
-        
-        # Cleanup: Remove the .asp placeholder from the install folder
         rm -f "$INSTALL_DIR/wireless.asp"
 
         # 1. Update services-start (Safe Append)
@@ -132,14 +145,10 @@ do_install() {
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
 
-        # --- Cache Buster: Reload Web UI ---
-        echo -e "${CYAN}[*] Refreshing Web UI Menu...${NC}"
         killall -HUP httpd 2>/dev/null
-
-        # Initial run to generate data
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
 
-        echo -e "\n${GREEN}SUCCESS: Installed! The tab should appear on your next page load.${NC}"
+        echo -e "\n${GREEN}SUCCESS: Installation/Update complete!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -152,15 +161,11 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-        
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
-        
         killall -HUP httpd 2>/dev/null
-        
         umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
         umount /www/require/modules/menuTree.js 2>/dev/null
-        
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
@@ -173,11 +178,13 @@ pause() {
     read discard
 }
 
+# --- Main Loop ---
 while true; do
     show_menu
     read choice
     case "$choice" in
-        1|3) do_install ;;
+        1) do_install "true" ;;   # Force install
+        3) do_install "false" ;;  # Intelligent update
         2) do_uninstall ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
