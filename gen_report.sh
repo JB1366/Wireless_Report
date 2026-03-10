@@ -64,6 +64,8 @@ touch $Q_RELAY
 # --- Helper Functions ---
 get_rssi_style() {
     local r=$1
+    # FIX: Ensure r is a number before comparing
+    [ -z "$r" ] || ! echo "$r" | grep -qE '^-?[0-9]+$' && echo "color: #f2f2f7;" && return
     if [ "$r" -ge -50 ]; then echo "color: #30d158; font-weight: bold;"
     elif [ "$r" -ge -60 ]; then echo "color: #64d2ff; font-weight: bold;"
     elif [ "$r" -ge -70 ]; then echo "color: #ffd60a; font-weight: bold;"
@@ -72,6 +74,8 @@ get_rssi_style() {
 
 get_bars() {
     local r=$1
+    # FIX: Ensure r is a number before comparing
+    [ -z "$r" ] || ! echo "$r" | grep -qE '^-?[0-9]+$' && echo "" && return
     if [ "$r" -ge -50 ]; then echo "<span class='bar-box sig-exc'>||||</span>"
     elif [ "$r" -ge -60 ]; then echo "<span class='bar-box sig-good'>|||</span>"
     elif [ "$r" -ge -70 ]; then echo "<span class='bar-box sig-fair'>||</span>"
@@ -90,8 +94,13 @@ get_trend() {
         return
     fi
 
-    local old=$(grep "$mac" "$HISTORY_DB" | cut -d'|' -f2)
-    if [ -z "$old" ] || [ "$old" -eq 0 ]; then echo "<span class='trend-box'>•</span>"; return; fi
+    local old=$(grep "$mac" "$HISTORY_DB" | cut -d'|' -f2 | head -n 1)
+    
+    # FIX: Ensure current and old are valid numbers for comparison
+    [ -z "$current" ] || ! echo "$current" | grep -qE '^-?[0-9]+$' && echo "<span class='trend-box'>•</span>" && return
+    [ -z "$old" ] || ! echo "$old" | grep -qE '^-?[0-9]+$' && echo "<span class='trend-box'>•</span>" && return
+
+    if [ "$old" -eq 0 ]; then echo "<span class='trend-box'>•</span>"; return; fi
     if [ "$current" -gt "$old" ]; then echo "<span class='trend-box trend-up sig-exc'>↑</span>"
     elif [ "$current" -lt "$old" ]; then echo "<span class='trend-box trend-down sig-poor'>↓</span>"
     else echo "<span class='trend-box'>•</span>"; fi
@@ -142,6 +151,10 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
         m_up=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
         [ "$m_up" = "C8:7F:54:4F:C8:01" ] && continue
         rssi=$(wl -i "$iface" rssi "$mac" 2>/dev/null | awk '{print $1}')
+        
+        # FIX: Validate rssi before comparison
+        [ -z "$rssi" ] || ! echo "$rssi" | grep -qE '^-?[0-9]+$' && continue
+        
         [ "$rssi" -le -100 ] || [ "$rssi" -eq 0 ] || grep -qi "$m_up" "$SEEN_MACS" && continue
         echo "$m_up" >> "$SEEN_MACS"
         raw_info=$(wl -i "$iface" sta_info "$mac" 2>/dev/null)
@@ -164,7 +177,10 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
         [ -z "$ip" ] && ip=$(echo "$yaz_data" | awk -F'|' '{print $2}')
         [ -z "$ip" ] && ip="---"
         ip_s=$(ip_to_num "$ip"); band_td=$(get_band_html "$iface" "$mhz_width")
+        
+        # Guarded counter logic
         if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1)); elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1)); elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1)); else T_POOR=$((T_POOR+1)); fi
+        
         ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$SNAME</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_time "$uptime")</td></tr>"
         echo "$ROW_STR" >> $MAIN_ROWS; echo "$ROW_STR" >> $ALL_ROWS
         M_TOTAL=$((M_TOTAL + 1))
@@ -250,6 +266,9 @@ for line in $NODE_DATA; do
             [ "$m_up" = "C8:7F:54:4F:C8:01" ] || grep -qi "$m_up" "$SEEN_MACS" && continue
             echo "$m_up" >> "$SEEN_MACS"; r_raw=$(echo "$dline" | cut -d'|' -f3)
             
+            # FIX: Validate r_raw for node data
+            [ -z "$r_raw" ] || ! echo "$r_raw" | grep -qE '^-?[0-9]+$' && continue
+
             if [ "$r_raw" -ge -50 ]; then echo "EXC" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
