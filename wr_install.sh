@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.5 (Zero-Kill Edition)                                        #
+#  Version: 1.1.6 (Zero-Kill Edition)                                        #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -101,9 +101,9 @@ do_install() {
     local menu_choice=1
     if [ "$1" = "secret" ]; then
         echo -e "\n${CYAN}[BACKDOOR] Select Menu Location:${NC}"
-        echo "  (1)  Addons Menu"
-        echo "  (2)  Wireless Menu"
-        printf " Choice [1]: "
+        echo "  (1)  Addons Menu (Normal User)"
+        echo "  (2)  Wireless Menu (Sneaky)"
+        printf " Choice: "
         read menu_choice
         [ -z "$menu_choice" ] && menu_choice=1
     fi
@@ -117,6 +117,8 @@ do_install() {
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
+    
+    # Save the menu choice to config file
     echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -151,27 +153,20 @@ do_uninstall() {
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        # Load config to know what page was installed
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 1. OVERWRITE INSURANCE
-        # Before unmounting, replace the custom menu with the firmware default
-        # to ensure the web server always sees a valid file.
-        [ -f "/tmp/menuTree.js" ] && cp -f /www/require/modules/menuTree.js /tmp/menuTree.js 2>/dev/null
-        
-        # 2. FORCE UNMOUNT
+        # Force unmount with lazy flag to avoid "Busy" errors
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
 
-        # 3. RESTART WEB SERVER
-        # Restart while files still exist to allow a clean transition in memory
+        # Restart web server to restore native menuTree.js
         service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
-        sleep 4
+        sleep 2
         
-        # 4. CLEANUP TRIGGERS
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
 
-        # 5. FINAL CLEANUP
         killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
@@ -188,7 +183,7 @@ while true; do
     case "$choice" in
         1|3) do_install ;;   
         2) do_uninstall ;;
-        wireless) do_install "secret" ;;
+        wireless) do_install "secret" ;; # The backdoor trigger
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
