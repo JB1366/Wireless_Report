@@ -23,22 +23,19 @@ NC='\033[0m'
 check_version() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     
-    # 1. Get Local Version
     if [ -f "$REPORT_SCRIPT" ]; then
         LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2)
     else
         LOCAL_VER="NOT INSTALLED"
     fi
 
-    # 2. Get Remote Version with Error Handling
     REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_URL")
     if [ $? -ne 0 ] || [ -z "$REMOTE_DATA" ]; then
-        REMOTE_VER="" # Offline
+        REMOTE_VER="" 
     else
         REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
     fi
 
-    # 3. Display Boxed Status Header
     echo -e "${CYAN}==================================================${NC}"
     echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
     echo -e "${CYAN}==================================================${NC}"
@@ -56,7 +53,6 @@ check_version() {
     echo -e "${CYAN}==================================================${NC}"
 }
 
-# --- USB Check Logic ---
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
@@ -108,7 +104,6 @@ check_ssh_environment() {
 }
 
 do_install() {
-    # 1. Version Gate: Check before doing any work
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
     REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
@@ -122,7 +117,6 @@ do_install() {
         fi
     fi
 
-    # 2. Check Prerequisites
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled in settings.${NC}"
         exit 1
@@ -134,6 +128,15 @@ do_install() {
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
 
+    # NEW: Menu Location Selection
+    echo -e "\n Where should the TAB link appear?"
+    echo "  (1)  Addons Menu"
+    echo "  (2)  Wireless Menu"
+    printf " Choice [1]: "
+    read menu_choice
+    [ -z "$menu_choice" ] && menu_choice=1
+    echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
+
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT"
@@ -142,14 +145,12 @@ do_install() {
         sh "$MENU_SCRIPT"
         rm -f "$INSTALL_DIR/wireless.asp"
 
-        # Update services-start (Safe Append)
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
-        # Update service-event (Safe Append)
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
@@ -193,10 +194,9 @@ pause() {
     read discard
 }
 
-# --- Main Entry Point ---
 while true; do
-    clear           # Keep UI static and clean
-    check_version   # Boxed status at the top
+    clear           
+    check_version   
     show_menu
     read choice
     case "$choice" in
