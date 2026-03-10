@@ -164,12 +164,12 @@ do_uninstall() {
         # Load config to find specific mount point
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 1. Surgical Unmount (Only touch the user page assigned to us)
+        # 1. Surgical Unmount (Only our page!)
         if [ -n "$INSTALLED_PAGE" ]; then
             umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
         fi
         
-        # 2. Unmount Menu (Restores original firmware menuTree.js)
+        # 2. Unmount Menu
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         
         # 3. Cleanup Triggers
@@ -181,9 +181,9 @@ do_uninstall() {
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         
-        # 5. Restart UI (Triggers redraw of factory menus)
+        # 5. Restart UI
         killall -HUP httpd 2>/dev/null
-        echo -e "${GREEN}[+] Uninstalled successfully. UI Reset.${NC}"
+        echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
     fi
     pause
 }
