@@ -77,7 +77,7 @@ if [ -n "$START_LINE" ]; then
 	sed -i "/tabName: \"$TAB_LABEL\"/d" "$TEMP_MENU"
     
     sed -i "${INSERT_LINE}i \ \ \ \ \ \ \ \ \ \ \ \ {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
-    echo "Wireless Report tab successfully restored."
+    echo "Wireless Report tab successfully added."
 else
     echo "ERROR: Wireless anchor not found."
     exit 1

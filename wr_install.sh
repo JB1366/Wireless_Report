@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.4 (No-Cron Loop Edition)                                     #
+#  Version: 1.0.1                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -22,7 +22,6 @@ NC='\033[0m'
 # --- (New) USB Check Logic ---
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
-    # Look for a mounted USB drive (excluding the JFFS partition)
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
 
     if [ -n "$USB_PATH" ]; then
@@ -31,7 +30,6 @@ check_storage() {
     else
         DATA_DIR="$INSTALL_DIR/data"
         echo -e "${RED}[!] No USB detected: Using JFFS at $DATA_DIR.${NC}"
-        echo -e "${RED}[!] (Note: High frequency writes can wear flash memory).${NC}"
     fi
     mkdir -p "$DATA_DIR"
 }
@@ -93,7 +91,6 @@ check_ssh_environment() {
             echo -e "${GREEN}AUTHENTICATED${NC}"
         else
             echo -e "${RED}FAILED${NC}"
-            echo -e "    -> Ensure SSH Key is shared with node: 'ssh-copy-id -i $SSH_KEY ${NODE_USER}@${IP}'"
             exit 1
         fi
     done
@@ -111,36 +108,34 @@ do_install() {
     echo -e "${CYAN}[*] Installing Wireless Report...${NC}"
     mkdir -p "$INSTALL_DIR"
 
-    # Download components
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT"
 
     if [ -f "$MENU_SCRIPT" ]; then
-        # Run menu setup
         sh "$MENU_SCRIPT"
         
-        # --- Automatic Persistence Updates ---
-        
-        # 1. Update services-start (Re-mounts UI and starts Background Loop)
+        # Cleanup: Remove the .asp placeholder from the install folder (it is now in /tmp)
+        rm -f "$INSTALL_DIR/wireless.asp"
+
+        # 1. Update services-start (Safe Append)
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        sed -i "\|while true; do sh $REPORT_SCRIPT|d" /jffs/scripts/services-start
-        
+        [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
-        echo "(while true; do sh $REPORT_SCRIPT; sleep 120; done) & # Wireless Report Data Loop" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
-        # 2. Update service-event (Adds manual 'service restart wireless_report' trigger)
+        # 2. Update service-event (Safe Append)
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
+        [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
 
-        # Trigger first run in background now
-        sh "$REPORT_SCRIPT" &
+        # Initial run to generate page
+        sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
 
-        echo -e "\n${GREEN}SUCCESS: Wireless Report is installed and integrated into JFFS scripts!${NC}"
+        echo -e "\n${GREEN}SUCCESS: Wireless Report is installed and cleaned up!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -154,15 +149,12 @@ do_uninstall() {
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # Automatically clean up persistent script files
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        sed -i "\|while true; do sh $REPORT_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         
-        # Kill any running background loops
+        # Kill any stray loops from old versions
         kill $(ps | grep "gen_report.sh" | grep -v grep | awk '{print $1}') 2>/dev/null
         
-        # Cleanup mounts
         umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
         umount /www/require/modules/menuTree.js 2>/dev/null
         
@@ -178,7 +170,6 @@ pause() {
     read discard
 }
 
-# --- Main Loop ---
 while true; do
     show_menu
     read choice
