@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.3 (Surgical Uninstall Edition)                               #
+#  Version: 1.1.4 (Backdoor Edition)                                         #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -98,33 +98,30 @@ check_ssh_environment() {
 }
 
 do_install() {
-    local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
-    LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
-    REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
-    if [ -n "$LOCAL_VER" ] && [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
-        echo -e "${GREEN}[+] You already have the latest version (v$LOCAL_VER) installed.${NC}"
-        printf " Do you want to reinstall/repair it anyway? (y/n): "
-        read confirm
-        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-            return 0
-        fi
+    # Public choice defaults to 1 (Addons)
+    local menu_choice=1
+
+    # Check if the secret backdoor was passed as an argument
+    if [ "$1" = "secret" ]; then
+        echo -e "\n${CYAN}[BACKDOOR] Select Menu Location:${NC}"
+        echo "  (1)  Addons Menu (Standard)"
+        echo "  (2)  Wireless Menu (Secret Tab)"
+        printf " Choice [1]: "
+        read menu_choice
+        [ -z "$menu_choice" ] && menu_choice=1
     fi
+
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
-        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled in settings.${NC}"
+        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
         exit 1
     fi
+
     check_storage
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
 
-    # --- Menu Location Selection ---
-    echo -e "\n Where should the menu link appear?"
-    echo "  (1)  Addons Menu (Nested)"
-    echo "  (2)  Wireless Menu (Dedicated Tab)"
-    printf " Choice [1]: "
-    read menu_choice
-    [ -z "$menu_choice" ] && menu_choice=1
+    # Save the choice to config
     echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -135,12 +132,14 @@ do_install() {
         sh "$MENU_SCRIPT"
         rm -f "$INSTALL_DIR/wireless.asp"
 
+        # services-start trigger
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
+        # service-event trigger
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
@@ -149,7 +148,7 @@ do_install() {
 
         killall -HUP httpd 2>/dev/null
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
-        echo -e "\n${GREEN}SUCCESS: Installation/Update complete!${NC}"
+        echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -157,54 +156,40 @@ do_install() {
 }
 
 do_uninstall() {
-    echo -e "\n${RED}[!] WARNING: This will remove all Wireless Report files.${NC}"
+    echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        # Load config to find specific mount point
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 1. Surgical Unmount (Only our page!)
+        # Surgical Unmount
         if [ -n "$INSTALLED_PAGE" ]; then
             umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
         fi
-        
-        # 2. Unmount Menu
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         
-        # 3. Cleanup Triggers
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         
-        # 4. Stop process and delete files
         killall gen_report.sh 2>/dev/null
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         
-        # 5. Restart UI
         killall -HUP httpd 2>/dev/null
         echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
     fi
     pause
 }
 
-pause() {
-    printf "\nPress [Enter] to return to menu..."
-    read discard
-}
+pause() { printf "\nPress [Enter] to return..."; read discard; }
 
 while true; do
-    clear           
-    check_version   
-    show_menu
-    read choice
+    clear; check_version; show_menu; read choice
     case "$choice" in
         1|3) do_install ;;   
         2) do_uninstall ;;
+        wireless) do_install "secret" ;; # THE BACKDOOR
         e|E) clear; exit 0 ;;
-        *) 
-            echo -e "${RED}Invalid selection.${NC}"
-            sleep 1
-            ;;
+        *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
 done
