@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.8 (Version-Gate Edition)                                     #
+#  Version: 1.0.9 (Pre-Flight Edition)                                       #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -19,6 +19,42 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# --- Version Fetcher ---
+check_version() {
+    local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
+    
+    # 1. Get Local Version
+    if [ -f "$REPORT_SCRIPT" ]; then
+        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2)
+    else
+        LOCAL_VER="NOT INSTALLED"
+    fi
+
+    # 2. Get Remote Version with Error Handling
+    # We fetch once and store to avoid multiple hits to GitHub
+    REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_URL")
+    if [ $? -ne 0 ] || [ -z "$REMOTE_DATA" ]; then
+        REMOTE_VER="" # Treat as offline
+    else
+        REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
+    fi
+
+    # 3. Display Status Header
+    echo -e "${CYAN}==================================================${NC}"
+    echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
+    
+    if [ -z "$REMOTE_VER" ]; then
+        echo -e " STATUS: ${RED}[Offline]${NC} Could not reach GitHub"
+    elif [ "$LOCAL_VER" = "NOT INSTALLED" ]; then
+        echo -e " STATUS: [Ready] Latest available is v$REMOTE_VER"
+    elif [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
+        echo -e " STATUS: ${RED}[UPDATE AVAILABLE] v$REMOTE_VER${NC} (Current: v$LOCAL_VER)"
+    else
+        echo -e " STATUS: [Up to date] v$LOCAL_VER"
+    fi
+    echo -e "${CYAN}==================================================${NC}"
+}
+
 # --- USB Check Logic ---
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
@@ -34,33 +70,7 @@ check_storage() {
     mkdir -p "$DATA_DIR"
 }
 
-# --- Version Fetcher ---
-check_version() {
-    local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
-    if [ -f "$REPORT_SCRIPT" ]; then
-        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2)
-    else
-        LOCAL_VER="NOT INSTALLED"
-    fi
-    REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
-
-    echo -e "${CYAN}==================================================${NC}"
-    echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
-    if [ -z "$REMOTE_VER" ]; then
-        echo -e " STATUS: [Offline] Could not reach GitHub"
-    elif [ "$LOCAL_VER" = "NOT INSTALLED" ]; then
-        echo -e " STATUS: [Ready] Latest available is v$REMOTE_VER"
-    elif [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
-        echo -e " STATUS: ${RED}[UPDATE AVAILABLE] v$REMOTE_VER${NC} (Current: v$LOCAL_VER)"
-    else
-        echo -e " STATUS: [Up to date] v$LOCAL_VER"
-    fi
-    echo -e "${CYAN}==================================================${NC}"
-}
-
 show_menu() {
-    clear
-    check_version
     echo -e ""
     echo -e "  (1)  Install Wireless Report"
     echo -e "  (2)  Uninstall Wireless Report"
@@ -101,6 +111,7 @@ do_install() {
     
     # Version Gate for Option (3)
     if [ "$force_install" = "false" ]; then
+        # Check current state again before proceeding
         local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
         LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
         REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
@@ -163,9 +174,13 @@ do_uninstall() {
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
+        
         killall -HUP httpd 2>/dev/null
+        killall gen_report.sh 2>/dev/null
+
         umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
         umount /www/require/modules/menuTree.js 2>/dev/null
+        
         rm -rf "$INSTALL_DIR"
         rm -f /tmp/wireless.asp /tmp/menuTree.js
         echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
@@ -178,7 +193,10 @@ pause() {
     read discard
 }
 
-# --- Main Loop ---
+# --- Main Entry Point ---
+clear
+check_version # Initial check on load
+
 while true; do
     show_menu
     read choice
@@ -187,6 +205,11 @@ while true; do
         3) do_install "false" ;;  # Intelligent update
         2) do_uninstall ;;
         e|E) clear; exit 0 ;;
-        *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
+        *) 
+            echo -e "${RED}Invalid selection.${NC}"
+            sleep 1
+            clear
+            check_version # Redraw status on error
+            ;;
     esac
 done
