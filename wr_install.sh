@@ -11,6 +11,7 @@ INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/gen_report.sh"
 MENU_SCRIPT="$INSTALL_DIR/install_menu.sh"
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
+CONF_FILE="$INSTALL_DIR/webui.conf"
 
 # Colors
 CYAN='\033[0;36m'
@@ -55,7 +56,6 @@ show_menu() {
     printf " Selection: "
 }
 
-# --- Restored: SSH Environment Check ---
 check_ssh_environment() {
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     if [ ! -f "$SSH_KEY" ]; then
@@ -86,28 +86,19 @@ do_install() {
         exit 1
     fi
 
-    # Run your custom SSH check
     check_ssh_environment
 
     echo -e "${CYAN}[*] Installing Wireless Report v1.0.1...${NC}"
     mkdir -p "$INSTALL_DIR"
 
-    if curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"; then
-        chmod +x "$REPORT_SCRIPT"
-        
-        # --- THE FIX: WEB PAGE MOUNTING ---
-        # We must 'touch' the file in /tmp and bind mount it to /www/wireless.asp 
-        # This solves the "Read-only file system" error. 
-        touch /tmp/wireless.asp
-        mount --bind /tmp/wireless.asp /www/wireless.asp 2>/dev/null
+    # Download latest components
+    curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
+    curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
+    chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT"
 
-        # --- Restored: Robust Menu Injection ---
-        if [ ! -f /tmp/menuTree.js ]; then
-            cp /www/require/modules/menuTree.js /tmp/menuTree.js
-            mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
-        fi
-        sed -i "/wireless.asp/d" /tmp/menuTree.js
-        sed -i '/url: "Advanced_System_Info.asp"/a {url: "wireless.asp", tabName: "Wireless Report"},' /tmp/menuTree.js
+    if [ -f "$MENU_SCRIPT" ]; then
+        # --- THE FIX: Let the menu script handle the web mounting logic ---
+        sh "$MENU_SCRIPT"
         
         # Persistence
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
@@ -115,13 +106,11 @@ do_install() {
         echo "sh $MENU_SCRIPT" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
-        # Generate data
-        sh "$REPORT_SCRIPT"
-
         echo -e "\n${GREEN}SUCCESS: Wireless Report is installed and integrated!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
+    pause 
 }
 
 do_uninstall() {
@@ -129,15 +118,17 @@ do_uninstall() {
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        # Load config to find which user page to unmount
+        [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+        
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         
-        # Cleanup mounts including your menuTree
-        umount /www/wireless.asp 2>/dev/null
+        # Cleanup mounts
+        umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
         umount /www/require/modules/menuTree.js 2>/dev/null
-        rm -f /tmp/menuTree.js
-
+        
         rm -rf "$INSTALL_DIR"
-        rm -f /tmp/wireless.asp
+        rm -f /tmp/wireless.asp /tmp/menuTree.js
         echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
     fi
     pause
