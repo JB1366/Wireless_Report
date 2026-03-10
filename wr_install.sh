@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.1                                                            #
+#  Version: 1.0.4 (No-Cron Loop Edition)                                     #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -18,6 +18,23 @@ CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+# --- (New) USB Check Logic ---
+check_storage() {
+    echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
+    # Look for a mounted USB drive (excluding the JFFS partition)
+    USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
+
+    if [ -n "$USB_PATH" ]; then
+        DATA_DIR="$USB_PATH/gen_report"
+        echo -e "${GREEN}[+] USB Found: Using $DATA_DIR for history.${NC}"
+    else
+        DATA_DIR="$INSTALL_DIR/data"
+        echo -e "${RED}[!] No USB detected: Using JFFS at $DATA_DIR.${NC}"
+        echo -e "${RED}[!] (Note: High frequency writes can wear flash memory).${NC}"
+    fi
+    mkdir -p "$DATA_DIR"
+}
 
 # --- (3) Check/Update Logic ---
 check_version() {
@@ -75,38 +92,55 @@ check_ssh_environment() {
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
         else
-            echo -e "${RED}FAILED${NC}"; exit 1
+            echo -e "${RED}FAILED${NC}"
+            echo -e "    -> Ensure SSH Key is shared with node: 'ssh-copy-id -i $SSH_KEY ${NODE_USER}@${IP}'"
+            exit 1
         fi
     done
 }
 
 do_install() {
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
-        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
+        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled in settings.${NC}"
         exit 1
     fi
 
+    check_storage
     check_ssh_environment
 
-    echo -e "${CYAN}[*] Installing Wireless Report v1.0.1...${NC}"
+    echo -e "${CYAN}[*] Installing Wireless Report...${NC}"
     mkdir -p "$INSTALL_DIR"
 
-    # Download latest components
+    # Download components
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT"
 
     if [ -f "$MENU_SCRIPT" ]; then
-        # --- THE FIX: Let the menu script handle the web mounting logic ---
+        # Run menu setup
         sh "$MENU_SCRIPT"
         
-        # Persistence
+        # --- Automatic Persistence Updates ---
+        
+        # 1. Update services-start (Re-mounts UI and starts Background Loop)
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        echo "sh $MENU_SCRIPT" >> /jffs/scripts/services-start
+        sed -i "\|while true; do sh $REPORT_SCRIPT|d" /jffs/scripts/services-start
+        
+        echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
+        echo "(while true; do sh $REPORT_SCRIPT; sleep 120; done) & # Wireless Report Data Loop" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
-        echo -e "\n${GREEN}SUCCESS: Wireless Report is installed and integrated!${NC}"
+        # 2. Update service-event (Adds manual 'service restart wireless_report' trigger)
+        [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
+        sed -i "/wireless_report/d" /jffs/scripts/service-event
+        echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
+        chmod +x /jffs/scripts/service-event
+
+        # Trigger first run in background now
+        sh "$REPORT_SCRIPT" &
+
+        echo -e "\n${GREEN}SUCCESS: Wireless Report is installed and integrated into JFFS scripts!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -118,10 +152,15 @@ do_uninstall() {
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        # Load config to find which user page to unmount
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
+        # Automatically clean up persistent script files
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
+        sed -i "\|while true; do sh $REPORT_SCRIPT|d" /jffs/scripts/services-start
+        sed -i "/wireless_report/d" /jffs/scripts/service-event
+        
+        # Kill any running background loops
+        kill $(ps | grep "gen_report.sh" | grep -v grep | awk '{print $1}') 2>/dev/null
         
         # Cleanup mounts
         umount "/www/user/$INSTALLED_PAGE" 2>/dev/null
@@ -134,8 +173,12 @@ do_uninstall() {
     pause
 }
 
-pause() { printf "\nPress [Enter] to return to menu..."; read discard; }
+pause() {
+    printf "\nPress [Enter] to return to menu..."
+    read discard
+}
 
+# --- Main Loop ---
 while true; do
     show_menu
     read choice
