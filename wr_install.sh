@@ -198,7 +198,8 @@ clear
 check_version # Initial check on load
 
 while true; do
-    show_menu
+    clear
+	show_menu
     read choice
     case "$choice" in
         1) do_install "true" ;;   # Force install
