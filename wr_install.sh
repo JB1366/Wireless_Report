@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.9 (Pre-Flight Edition)                                       #
+#  Version: 1.1.0 (Clean UI Edition)                                         #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -31,10 +31,9 @@ check_version() {
     fi
 
     # 2. Get Remote Version with Error Handling
-    # We fetch once and store to avoid multiple hits to GitHub
     REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_URL")
     if [ $? -ne 0 ] || [ -z "$REMOTE_DATA" ]; then
-        REMOTE_VER="" # Treat as offline
+        REMOTE_VER="" # Offline
     else
         REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
     fi
@@ -109,9 +108,7 @@ check_ssh_environment() {
 do_install() {
     local force_install=$1
     
-    # Version Gate for Option (3)
     if [ "$force_install" = "false" ]; then
-        # Check current state again before proceeding
         local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
         LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" 2>/dev/null | head -n 1 | cut -d'"' -f2)
         REMOTE_VER=$(curl -s --connect-timeout 2 "$GITHUB_URL" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
@@ -142,14 +139,12 @@ do_install() {
         sh "$MENU_SCRIPT"
         rm -f "$INSTALL_DIR/wireless.asp"
 
-        # 1. Update services-start (Safe Append)
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
 
-        # 2. Update service-event (Safe Append)
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
@@ -194,23 +189,19 @@ pause() {
 }
 
 # --- Main Entry Point ---
-clear
-check_version # Initial check on load
-
 while true; do
-    clear
-	show_menu
+    clear           # Wipes the old menu iteration
+    check_version   # Redraws the version header at the very top
+    show_menu       # Displays choices
     read choice
     case "$choice" in
-        1) do_install "true" ;;   # Force install
-        3) do_install "false" ;;  # Intelligent update
+        1) do_install "true" ;;   
+        3) do_install "false" ;;  
         2) do_uninstall ;;
         e|E) clear; exit 0 ;;
         *) 
             echo -e "${RED}Invalid selection.${NC}"
             sleep 1
-            clear
-            check_version # Redraw status on error
             ;;
     esac
 done
