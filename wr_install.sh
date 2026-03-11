@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.3                                                            #
+#  Version: 1.0.4                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -80,10 +80,8 @@ check_ssh_environment() {
         exit 1
     fi
 
-    # NEW: Ask for custom SSH port
-    printf " Enter SSH Port (default 22): "
-    read SSH_PORT
-    [ -z "$SSH_PORT" ] && SSH_PORT=22
+    SSH_PORT=$(nvram get sshd_port)
+    [ -z "$SSH_PORT" ] && SSH_PORT=22  # Fallback to 22 if the variable is empty
 
     ROUTER_IP=$(nvram get lan_ipaddr)
     NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
