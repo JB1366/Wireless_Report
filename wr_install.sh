@@ -19,7 +19,6 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# --- Version Fetcher ---
 check_version() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     if [ -f "$REPORT_SCRIPT" ]; then
@@ -118,7 +117,7 @@ do_install() {
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
     
-    # Save the menu choice to config file
+    # Save choice immediately so install_menu.sh can read it
     echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -127,12 +126,15 @@ do_install() {
 
     if [ -f "$MENU_SCRIPT" ]; then
         sh "$MENU_SCRIPT"
-        rm -f "$INSTALL_DIR/wireless.asp"
+        
+        # Setup services-start triggers
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
+        
+        # Setup service-event triggers
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
@@ -153,14 +155,12 @@ do_uninstall() {
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        # Load config to know what page was installed
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
         # Force unmount with lazy flag to avoid "Busy" errors
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
 
-        # Restart web server to restore native menuTree.js
         service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
         sleep 2
         
@@ -183,7 +183,7 @@ while true; do
     case "$choice" in
         1|3) do_install ;;   
         2) do_uninstall ;;
-        wireless) do_install "secret" ;; # The backdoor trigger
+        wireless) do_install "secret" ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac

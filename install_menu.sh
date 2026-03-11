@@ -16,39 +16,42 @@ CONF_FILE="$INSTALL_DIR/webui.conf"
 WEB_PAGE="$INSTALL_DIR/wireless.asp"
 RAM_PAGE="/tmp/wireless.asp"
 
-# Load the secret menu choice (1=Addons, 2=Wireless)
+# 1. Load Choice
 if [ -f "$CONF_FILE" ]; then
     . "$CONF_FILE"
 else
-    MENU_TYPE=1 # Default for normal users
+    MENU_TYPE=1
 fi
 
-# Ensure placeholder exists
+# 2. Safety: Create placeholders to avoid "No such file" mount errors
+if [ ! -f "$WEB_PAGE" ]; then
+    echo "<html><body>Generating Report... Please refresh.</body></html>" > "$WEB_PAGE"
+fi
 if [ ! -f "$RAM_PAGE" ]; then
-    echo "<html><body>Generating Report... Please refresh.</body></html>" > "$RAM_PAGE"
+    cp "$WEB_PAGE" "$RAM_PAGE"
 fi
 
-# Obtain available mount point
-am_get_webui_page "$INSTALL_DIR/wireless.asp"
+# 3. Find mount point
+am_get_webui_page "$WEB_PAGE"
 if [ "$am_webui_page" = "none" ]; then
     exit 1
 fi
 
-# Save the used page for uninstaller use
+# 4. Save assigned page for uninstaller
 echo "INSTALLED_PAGE=$am_webui_page" >> "$CONF_FILE"
-cp "$INSTALL_DIR/wireless.asp" "/www/user/$am_webui_page"
+cp "$WEB_PAGE" "/www/user/$am_webui_page"
 
-# Prepare the shared menu buffer
+# 5. Prepare shared menu buffer
 if [ ! -f "$TEMP_MENU" ]; then
     cp "$SYSTEM_MENU" "$TEMP_MENU"
     mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 fi
 
-# 1. Clean up existing entries to prevent duplicates
+# 6. Clean existing entries to prevent duplicates
 sed -i "/url: \"$am_webui_page\"/d" "$TEMP_MENU"
 sed -i "/tabName: \"$TAB_LABEL\"/d" "$TEMP_MENU"
 
-# 2. THE CHOICE ENGINE
+# 7. THE LOGIC ENGINE
 if [ "$MENU_TYPE" = "2" ]; then
     # --- OPTION 2: SNEAKY WIRELESS MENU ---
     START_LINE=$(grep -ni 'url: "Advanced_Wireless_Content.asp"' "$TEMP_MENU" | head -n 1 | cut -d: -f1)
@@ -59,18 +62,17 @@ if [ "$MENU_TYPE" = "2" ]; then
 else
     # --- OPTION 1: UNIVERSAL ADDONS MENU ---
     if grep -q "menu_addons" "$TEMP_MENU"; then
-        # Join existing Addons (like Unbound)
-        sed -i '/index: "menu_addons"/,/tab: \[/ s/tab: \[/tab: \[{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"\}, /' "$TEMP_MENU"
+        # Join existing Addons array (like Unbound)
+        sed -i "/index: \"menu_addons\"/,/tab: \[/ s/tab: \[/tab: \[{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}, /" "$TEMP_MENU"
     else
-        # Create Addons section from scratch
-        sed -i '/index: "menu_Wireless"/ { :a; n; /}/! ba; a ,{menuName: "Addons", index: "menu_addons", tab: [{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"}]}' "$TEMP_MENU"
+        # Create Addons section from scratch after Wireless block
+        sed -i '/index: "menu_Wireless"/!b;n;n;n;n;n;n;n;n;n;a ,{menuName: "Addons", index: "menu_addons", tab: [{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"}]}' "$TEMP_MENU"
     fi
 fi
 
-# 3. Finalize Mounts with Lazy flag to prevent "Busy" errors
+# 8. Finalize Mounts with Lazy unmount to prevent 'Busy' errors
 umount -l "$SYSTEM_MENU" 2>/dev/null
 mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 
 umount "/www/user/$am_webui_page" 2>/dev/null
 mount -o bind "$RAM_PAGE" "/www/user/$am_webui_page"
-"$INSTALL_DIR/gen_report.sh" &
