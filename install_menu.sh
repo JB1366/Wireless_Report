@@ -56,6 +56,11 @@ if [ ! -f "$TEMP_MENU" ]; then
     mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 fi
 
+# --- ANTI-DUPLICATE CLEANUP ---
+# Remove any existing lines containing the label or the mount URL to prevent double tabs
+sed -i "/tabName: \"$TAB_LABEL\"/d" "$TEMP_MENU"
+sed -i "/url: \"$am_webui_page\"/d" "$TEMP_MENU"
+
 # Addons Menu-Tab Insertion
 # Insert Wireless Report before HELP menu
 # sed -i "/url: \"javascript:var helpwindow=window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
