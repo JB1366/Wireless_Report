@@ -78,7 +78,7 @@ check_ssh_environment() {
         exit 1
     fi
     ROUTER_IP=$(nvram get lan_ipaddr)
-    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $4 == 0 && $2 != "'"$ROUTER_IP"'") print $2 }')
+    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $4 == 0 && $2 != "'"$ROUTER_IP"'") print $ IP }')
     NODE_USER=$(nvram get http_username)
     if [ -z "$NODE_IPS" ]; then
         echo -e "${GREEN}[+] No Mesh Nodes detected. Proceeding...${NC}"
@@ -117,7 +117,7 @@ do_install() {
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
     
-    # Save choice immediately so install_menu.sh can read it
+    # Write config FIRST so install_menu.sh can read it
     echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
@@ -127,14 +127,12 @@ do_install() {
     if [ -f "$MENU_SCRIPT" ]; then
         sh "$MENU_SCRIPT"
         
-        # Setup services-start triggers
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
         
-        # Setup service-event triggers
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
@@ -156,13 +154,13 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+        [ -f "/tmp/menuTree.js" ] && cp -f /www/require/modules/menuTree.js /tmp/menuTree.js 2>/dev/null
         
-        # Force unmount with lazy flag to avoid "Busy" errors
         umount -l /www/require/modules/menuTree.js 2>/dev/null
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
 
         service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
-        sleep 2
+        sleep 4
         
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
@@ -183,7 +181,7 @@ while true; do
     case "$choice" in
         1|3) do_install ;;   
         2) do_uninstall ;;
-        wireless) do_install "secret" ;;
+        wireless) do_install "secret" ;; # Backdoor
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
