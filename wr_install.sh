@@ -205,7 +205,6 @@ do_uninstall() {
             # If the file still has addon markers (like Unbound), re-mount it.
             if grep -q "tabName" /tmp/menuTree.js; then
                 mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
-                echo -e "${GREEN}[+] Other addons detected (like Unbound): Restoring menu mount.${NC}"
             else
                 echo -e "${CYAN}[*] No other addons found: Leaving menu at factory default.${NC}"
             fi
