@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.2.4 (Strict Wireless Menu)                                     #
+#  Version: 1.2.5 (Silent Execution)                                         #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -49,6 +49,7 @@ check_version() {
 
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
+    # Silently check for USB path
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
     if [ -n "$USB_PATH" ]; then
         DATA_DIR="$USB_PATH/gen_report"
@@ -57,7 +58,7 @@ check_storage() {
         DATA_DIR="$INSTALL_DIR/data"
         echo -e "${RED}[!] No USB detected: Using JFFS at $DATA_DIR.${NC}"
     fi
-    mkdir -p "$DATA_DIR"
+    mkdir -p "$DATA_DIR" 2>/dev/null
 }
 
 show_menu() {
@@ -86,7 +87,8 @@ check_ssh_environment() {
     fi
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing Passwordless SSH to Node ($IP)... "
-        /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" 2>/dev/null
+        # Silence SSH test errors
+        /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
         else
@@ -105,14 +107,15 @@ do_install() {
     check_storage
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
-    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR" 2>/dev/null
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT"
 
     if [ -f "$MENU_SCRIPT" ]; then
-        sh "$MENU_SCRIPT"
+        # Silence the menu injection script output
+        sh "$MENU_SCRIPT" >/dev/null 2>&1
         
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
@@ -127,10 +130,12 @@ do_install() {
         chmod +x /jffs/scripts/service-event
         
         # Cleanup: Delete wireless.asp from the installation directory
-        [ -f "$INSTALL_DIR/wireless.asp" ] && rm "$INSTALL_DIR/wireless.asp"
+        [ -f "$INSTALL_DIR/wireless.asp" ] && rm "$INSTALL_DIR/wireless.asp" 2>/dev/null
         
-        service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
-        sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
+        # Silence web server restart and background report generation
+        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
+        sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
+        
         echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
@@ -144,20 +149,20 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-        [ -f "/tmp/menuTree.js" ] && cp -f /www/require/modules/menuTree.js /tmp/menuTree.js 2>/dev/null
+        [ -f "/tmp/menuTree.js" ] && cp -f /www/require/modules/menuTree.js /tmp/menuTree.js >/dev/null 2>&1
         
-        umount -l /www/require/modules/menuTree.js 2>/dev/null
-        [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
+        umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
+        [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 
-        service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
+        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         sleep 4
         
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
 
-        killall gen_report.sh 2>/dev/null
-        rm -rf "$INSTALL_DIR"
-        rm -f /tmp/wireless.asp /tmp/menuTree.js
+        killall gen_report.sh >/dev/null 2>&1
+        rm -rf "$INSTALL_DIR" 2>/dev/null
+        rm -f /tmp/wireless.asp /tmp/menuTree.js 2>/dev/null
         
         echo -e "${GREEN}[+] Uninstalled. Factory menus restored.${NC}"
     fi
