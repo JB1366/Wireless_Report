@@ -1,2 +1,2 @@
 # Wireless-Report
-Wireless Report for Merlins UI
+Wireless Report for Asus-Merlins Web Interface
