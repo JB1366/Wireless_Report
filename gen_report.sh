@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.1"
+SCRIPT_VERSION="1.0.2"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -161,7 +161,8 @@ CONSOLIDATED_B="<span class='val-blue'>${M_BOOT_TIME}</span>"
 for line in $NODE_DATA; do
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue
-    NODE_OUT=$(/usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 "${NODE_USER}@${IP}" "
+    # UPDATED: Added -p "${SSH_PORT:-22}" to the ssh call
+    NODE_OUT=$(/usr/bin/ssh -p "${SSH_PORT:-22}" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 "${NODE_USER}@${IP}" "
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         F_UP=\$(awk -v s=\"\$UP_SEC\" 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf \"%dd %dh\", d, h; else if(h>0) printf \"%dh %dm\", h, m; else printf \"0h %dm\", m}')
         NODE_COUNT=0
