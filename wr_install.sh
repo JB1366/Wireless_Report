@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.2.5 (Silent Execution)                                         #
+#  Version: 1.2.7 (Full Features + Silent Execution)                         #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -22,7 +22,7 @@ NC='\033[0m'
 check_version() {
     local GITHUB_URL="$GITHUB_ROOT/gen_report.sh"
     if [ -f "$REPORT_SCRIPT" ]; then
-        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2)
+        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
     else
         LOCAL_VER="NOT INSTALLED"
     fi
@@ -30,7 +30,7 @@ check_version() {
     if [ $? -ne 0 ] || [ -z "$REMOTE_DATA" ]; then
         REMOTE_VER="" 
     else
-        REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2)
+        REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
     fi
     echo -e "${CYAN}==================================================${NC}"
     echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
@@ -49,7 +49,6 @@ check_version() {
 
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
-    # Silently check for USB path
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
     if [ -n "$USB_PATH" ]; then
         DATA_DIR="$USB_PATH/gen_report"
@@ -87,7 +86,6 @@ check_ssh_environment() {
     fi
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing Passwordless SSH to Node ($IP)... "
-        # Silence SSH test errors
         /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
@@ -111,17 +109,17 @@ do_install() {
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
-    chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT"
+    chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
 
     if [ -f "$MENU_SCRIPT" ]; then
-        # Silence the menu injection script output
+        # Silent menu injection
         sh "$MENU_SCRIPT" >/dev/null 2>&1
         
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
         echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
-        chmod +x /jffs/scripts/services-start
+        chmod +x /jffs/scripts/services-start 2>/dev/null
         
         [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
@@ -129,10 +127,10 @@ do_install() {
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
         
-        # Cleanup: Delete wireless.asp from the installation directory
-        [ -f "$INSTALL_DIR/wireless.asp" ] && rm "$INSTALL_DIR/wireless.asp" 2>/dev/null
+        # Mandatory Cleanup as requested
+        [ -f "$INSTALL_DIR/wireless.asp" ] && rm -f "$INSTALL_DIR/wireless.asp" 2>/dev/null
         
-        # Silence web server restart and background report generation
+        # Silent restart and silent report generation backgrounding
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
         
@@ -149,7 +147,6 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-        [ -f "/tmp/menuTree.js" ] && cp -f /www/require/modules/menuTree.js /tmp/menuTree.js >/dev/null 2>&1
         
         umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
