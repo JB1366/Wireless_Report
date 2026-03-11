@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.2.7 (Full Features + Silent Execution)                         #
+#  Version: 1.2.8 (Strict Node & SSH Enforcement)                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -73,24 +73,33 @@ show_menu() {
 
 check_ssh_environment() {
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
+    
     if [ ! -f "$SSH_KEY" ]; then
         echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
+        echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
         exit 1
     fi
+
     ROUTER_IP=$(nvram get lan_ipaddr)
     NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
     NODE_USER=$(nvram get http_username)
+    
     if [ -z "$NODE_IPS" ]; then
-        echo -e "${GREEN}[+] No Mesh Nodes detected. Proceeding...${NC}"
-        return 0
+        echo -e "${RED}[!] No Mesh Nodes detected. This script requires a Mesh environment.${NC}"
+        echo -e "${RED}[!] Installation aborted.${NC}"
+        exit 1
     fi
+
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing Passwordless SSH to Node ($IP)... "
+        # BatchMode ensures we fail immediately instead of hanging on a password prompt
         /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
+        
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
         else
             echo -e "${RED}FAILED${NC}"
+            echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
             exit 1
         fi
     done
@@ -107,12 +116,14 @@ do_install() {
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR" 2>/dev/null
 
+    # Pre-cleanup to prevent double tabs if installing over the top
+    [ -f "/tmp/menuTree.js" ] && sed -i "/$TAB_LABEL/d" /tmp/menuTree.js 2>/dev/null
+
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
 
     if [ -f "$MENU_SCRIPT" ]; then
-        # Silent menu injection
         sh "$MENU_SCRIPT" >/dev/null 2>&1
         
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
@@ -127,10 +138,8 @@ do_install() {
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
         
-        # Mandatory Cleanup as requested
         [ -f "$INSTALL_DIR/wireless.asp" ] && rm -f "$INSTALL_DIR/wireless.asp" 2>/dev/null
         
-        # Silent restart and silent report generation backgrounding
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
         
@@ -147,20 +156,15 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-        
         umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
-
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         sleep 4
-        
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
-
         killall gen_report.sh >/dev/null 2>&1
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp /tmp/menuTree.js 2>/dev/null
-        
         echo -e "${GREEN}[+] Uninstalled. Factory menus restored.${NC}"
     fi
     pause
