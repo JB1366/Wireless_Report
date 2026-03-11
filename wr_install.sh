@@ -100,28 +100,43 @@ do_uninstall_silent() {
 }
 
 do_install() {
+    # 1. THE CHECK: Does the directory exist?
     if [ -d "$INSTALL_DIR" ]; then
         echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
         printf " Do you want to reinstall/overwrite? (y/n): "
         read -r confirm
-        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+        
+        # If user says anything other than y/Y, stop and go back to menu
+        if [[ ! "$confirm" =~ ^[yY]$ ]]; then
             echo -e "${CYAN}[*] Returning to menu...${NC}"
-            pause; return
+            pause
+            return
         fi
+
+        # If they say yes, we wipe the old one to ensure a clean slate
+        echo -e "${CYAN}[*] Cleaning existing installation...${NC}"
         do_uninstall_silent
     fi
 
-    if [ ! -f "./gen_report.sh" ] || [ ! -f "./wireless_report.asp" ]; then
-        echo -e "\n${RED}[!] ERROR: Installation files not found in current directory.${NC}"
-        pause; return
+    # 2. PROCEED WITH INSTALL (either fresh or after the wipe above)
+    echo -e "\n${CYAN}[*] Downloading latest files from GitHub...${NC}"
+    mkdir -p "$INSTALL_DIR"
+
+    # Pull directly from GitHub to the target folder
+    curl -sL "$GITHUB_ROOT/gen_report.sh" -o "$INSTALL_DIR/gen_report.sh"
+    curl -sL "$GITHUB_ROOT/wireless_report.asp" -o "$INSTALL_DIR/wireless_report.asp"
+    
+    # Verify the download actually happened
+    if [ ! -s "$INSTALL_DIR/gen_report.sh" ]; then
+        echo -e "${RED}[!] ERROR: Download failed. Check your internet connection.${NC}"
+        rm -rf "$INSTALL_DIR"
+        pause
+        return
     fi
 
-    echo -e "\n${CYAN}[*] Starting Installation...${NC}"
-    mkdir -p "$INSTALL_DIR"
-    cp "./gen_report.sh" "$INSTALL_DIR/"
-    cp "./wireless_report.asp" "$INSTALL_DIR/"
     chmod +x "$REPORT_SCRIPT"
 
+    # 3. CONFIGURE STARTUP
     if [ -f "/jffs/scripts/services-start" ]; then
         grep -q "$REPORT_SCRIPT" /jffs/scripts/services-start || echo "sh $REPORT_SCRIPT &" >> /jffs/scripts/services-start
     else
@@ -129,8 +144,12 @@ do_install() {
         chmod +x /jffs/scripts/services-start
     fi
 
-    [ -f "./install_menu.sh" ] && sh ./install_menu.sh
-    
+    # 4. INJECT MENU TAB
+    echo -e "${CYAN}[*] Injecting menu tab...${NC}"
+    # Pulling the menu installer directly from GitHub and running it
+    curl -sL "$GITHUB_ROOT/install_menu.sh" | sh
+
+    # 5. REFRESH & START
     sh "$REPORT_SCRIPT" &
     service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
 
