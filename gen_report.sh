@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.3"
+SCRIPT_VERSION="1.0.4"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -28,10 +28,11 @@ NODE_DATA=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9
 NODE_COUNT_TOTAL=$(echo "$NODE_DATA" | grep -c "|"); [ "$NODE_COUNT_TOTAL" -gt 1 ] && N_SUFFIX="(NODES)" || N_SUFFIX="(NODE)"
 NODE_USER=$(nvram get http_username)
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
+SSH_PORT=$(nvram get sshd_port)
+SSH_PORT=${SSH_PORT:-22}
 USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1); [ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
 CONF_FILE="/jffs/addons/wireless_report/webui.conf"
 [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-SSH_PORT=${SSH_PORT:-22}
 
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"

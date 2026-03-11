@@ -125,14 +125,6 @@ do_install() {
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
 	
-	# Safe Update: Add or Update SSH_PORT without wiping the file
-    if [ -f "$CONF_FILE" ]; then
-        sed -i '/SSH_PORT=/d' "$CONF_FILE"
-        echo "SSH_PORT=$SSH_PORT" >> "$CONF_FILE"
-    else
-        echo "SSH_PORT=$SSH_PORT" > "$CONF_FILE"
-    fi
-
     if [ -f "$MENU_SCRIPT" ]; then
         # NEW: Visual confirmation of menu injection
         echo -e "${CYAN}[*] Mounting Wireless Report TAB to Wireless menu...${NC}"
