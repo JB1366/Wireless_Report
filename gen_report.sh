@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.2"
+SCRIPT_VERSION="1.0.3"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -30,7 +30,8 @@ NODE_USER=$(nvram get http_username)
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
 USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1); [ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
 CONF_FILE="/jffs/addons/wireless_report/webui.conf"
-{ [ -f "$CONF_FILE" ] && . "$CONF_FILE" || exit 1; } && [ -n "$INSTALLED_PAGE" ] || exit 1
+[ -f "$CONF_FILE" ] && . "$CONF_FILE"
+SSH_PORT=${SSH_PORT:-22}
 
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"
@@ -161,8 +162,9 @@ CONSOLIDATED_B="<span class='val-blue'>${M_BOOT_TIME}</span>"
 for line in $NODE_DATA; do
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue
-    # UPDATED: Added -p "${SSH_PORT:-22}" to the ssh call
-    NODE_OUT=$(/usr/bin/ssh -p "${SSH_PORT:-22}" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 "${NODE_USER}@${IP}" "
+    # UPDATED: Use the loaded $SSH_PORT
+    NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 "${NODE_USER}@${IP}" "
+        UP_SEC=\$(cut -d. -f1 /proc/uptime)
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         F_UP=\$(awk -v s=\"\$UP_SEC\" 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf \"%dd %dh\", d, h; else if(h>0) printf \"%dh %dm\", h, m; else printf \"0h %dm\", m}')
         NODE_COUNT=0

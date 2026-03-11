@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.2                                                            #
+#  Version: 1.0.3                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -126,6 +126,9 @@ do_install() {
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
+	
+	# ADDED: Save port to config file
+    echo "SSH_PORT=$SSH_PORT" > "$CONF_FILE"
 
     if [ -f "$MENU_SCRIPT" ]; then
         # NEW: Visual confirmation of menu injection
