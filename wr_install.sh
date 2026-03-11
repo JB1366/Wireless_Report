@@ -107,7 +107,7 @@ check_ssh_environment() {
 do_install() {
     # 1. GATEKEEPER: Check for existing installation
     # Using absolute path to bypass any variable scope issues
-    if [ -d "INSTALL_DIR" ]; then
+    if [ -d "/jffs/addons/wireless_report" ]; then
         echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
         printf " Do you want to reinstall/overwrite? (y/n): "
         read -r confirm
