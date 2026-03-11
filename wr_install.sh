@@ -184,16 +184,28 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-        umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
+
+        # 1. Surgical Strike: Remove only our tab from the temp menu
+        if [ -f "/tmp/menuTree.js" ]; then
+            echo -e "${CYAN}[*] Removing tab from menu system...${NC}"
+            sed -i '/tabName: "Wireless Report"/d' /tmp/menuTree.js
+        fi
+
+        # 2. Unmount only the specific ASP page, NOT the whole menu
         [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+
+        # 3. Standard Cleanup
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
-        sleep 4
+        
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
+
         killall gen_report.sh >/dev/null 2>&1
         rm -rf "$INSTALL_DIR" 2>/dev/null
-        rm -f /tmp/wireless.asp /tmp/menuTree.js 2>/dev/null
-        echo -e "${GREEN}[+] Uninstalled. Factory menus restored.${NC}"
+        rm -f /tmp/wireless.asp 2>/dev/null
+        # Note: We leave /tmp/menuTree.js mounted so other addons stay visible
+        
+        echo -e "${GREEN}[+] Uninstalled. Wireless Report removed, other addons preserved.${NC}"
     fi
     pause
 }
