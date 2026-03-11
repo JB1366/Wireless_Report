@@ -179,37 +179,44 @@ do_update() {
 }
 
 do_uninstall() {
+    # 1. Check if the script is actually installed first
+    if [ ! -d "$INSTALL_DIR" ] && [ ! -f "/tmp/menuTree.js" ]; then
+        echo -e "\n${RED}[!] Wireless Report is not detected on this system.${NC}"
+        pause
+        return
+    fi
+
     echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 1. Surgical Removal: Delete any line containing our tab name
+        # 2. Surgical Removal: Target the specific tabName regardless of the URL/userX.asp
         if [ -f "/tmp/menuTree.js" ]; then
             echo -e "${CYAN}[*] Removing Wireless Report tab from active menu...${NC}"
-            # This deletes the line even if the userX.asp number has changed
+            # This regex targets the entire object line to ensure no leftovers remain
             sed -i '/tabName: "Wireless Report"/d' /tmp/menuTree.js
         fi
 
-        # 2. Unmount only the custom ASP page
+        # 3. Unmount only the custom ASP page
         if [ -n "$INSTALLED_PAGE" ]; then
             umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
         fi
 
-        # 3. Standard Cleanup (Cron/Services)
+        # 4. Standard Cleanup (Cron/Services/Processes)
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         killall gen_report.sh >/dev/null 2>&1
         
-        # 4. Restart Web UI to reflect changes immediately
+        # 5. Restart Web UI to apply menu changes
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         
-        # 5. File Cleanup
+        # 6. File Cleanup
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp 2>/dev/null
         
-        echo -e "${GREEN}[+] Uninstalled. Refresh your browser to see the changes.${NC}"
+        echo -e "${GREEN}[+] Uninstalled. Please refresh your browser (Ctrl+F5) to clear cache.${NC}"
     fi
     pause
 }
