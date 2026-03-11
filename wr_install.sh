@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.2.8 (Strict Node & SSH Enforcement)                            #
+#  Version: 1.2.9 (Smart Update Logic)                                       #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -92,7 +92,6 @@ check_ssh_environment() {
 
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing Passwordless SSH to Node ($IP)... "
-        # BatchMode ensures we fail immediately instead of hanging on a password prompt
         /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
         
         if [ $? -eq 0 ]; then
@@ -116,8 +115,8 @@ do_install() {
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR" 2>/dev/null
 
-    # Pre-cleanup to prevent double tabs if installing over the top
-    [ -f "/tmp/menuTree.js" ] && sed -i "/$TAB_LABEL/d" /tmp/menuTree.js 2>/dev/null
+    # Pre-cleanup to prevent double tabs
+    [ -f "/tmp/menuTree.js" ] && sed -i '/Wireless Report/d' /tmp/menuTree.js 2>/dev/null
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
@@ -150,6 +149,34 @@ do_install() {
     pause 
 }
 
+do_update() {
+    if [ ! -f "$REPORT_SCRIPT" ]; then
+        echo -e "${RED}[!] Wireless Report is not installed.${NC}"
+        printf " Would you like to install it now? (y/n): "
+        read choice
+        if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+            do_install
+        fi
+    else
+        # Compare versions
+        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+        REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_ROOT/gen_report.sh")
+        REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+        
+        if [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
+            echo -e "${GREEN}[+] You are already on the latest version (v$LOCAL_VER).${NC}"
+            printf " Force a re-install anyway? (y/n): "
+            read choice
+            if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+                do_install
+            fi
+        else
+            echo -e "${CYAN}[*] Update found: v$LOCAL_VER -> v$REMOTE_VER${NC}"
+            do_install
+        fi
+    fi
+}
+
 do_uninstall() {
     echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
     printf " Are you sure? (y/n): "
@@ -175,8 +202,9 @@ pause() { printf "\nPress [Enter] to return..."; read discard; }
 while true; do
     clear; check_version; show_menu; read choice
     case "$choice" in
-        1|3) do_install ;;   
+        1) do_install ;;   
         2) do_uninstall ;;
+        3) do_update ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
