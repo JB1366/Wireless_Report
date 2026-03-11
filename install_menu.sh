@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Menu-TAB Insertion                                        #
-#  Version: 1.0.1                                                            #
+#  Version: 1.0.2                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -48,7 +48,13 @@ logger "Wireless Report:" "Mounting Wireless\Wireless Report as $am_webui_page"
 cp "$WEB_PAGE" "/www/user/$am_webui_page"
 
 # Copy mounted user page to installed directory config
-echo "INSTALLED_PAGE=$am_webui_page" > "$INSTALL_DIR/webui.conf"
+# Update INSTALLED_PAGE without wiping the SSH_PORT
+    if [ -f "$CONF_FILE" ]; then
+        sed -i '/INSTALLED_PAGE=/d' "$CONF_FILE"
+        echo "INSTALLED_PAGE=$am_webui_page" >> "$CONF_FILE"
+    else
+        echo "INSTALLED_PAGE=$am_webui_page" > "$CONF_FILE"
+    fi
 
 # Copy menuTree (if no other script has done it yet) so we can modify it
 if [ ! -f "$TEMP_MENU" ]; then
