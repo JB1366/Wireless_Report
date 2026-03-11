@@ -179,9 +179,9 @@ do_update() {
 }
 
 do_uninstall() {
-    # Gatekeeper: Check if the folder exists before trying to uninstall
+    # 1. THE GATEKEEPER: Don't run if folder is missing
     if [ ! -d "$INSTALL_DIR" ]; then
-        echo -e "\n${RED}[!] Wireless Report is not detected at $INSTALL_DIR.${NC}"
+        echo -e "\n${RED}[!] Wireless Report is not installed.${NC}"
         pause
         return
     fi
@@ -191,32 +191,44 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-        
-        # 1. Reverse Insertion: Delete the specific tab line from the menu
-        if [ -f "/tmp/menuTree.js" ]; then
-            echo -e "${CYAN}[*] Reversing menu injection...${NC}"
-            # This deletes the specific line containing our tab label
-            sed -i '/tabName: "Wireless Report"/d' /tmp/menuTree.js
+
+        # 2. REVERSE THE MOUNT (The "Un-insert" step)
+        if mount | grep -q "menuTree.js"; then
+            echo -e "${CYAN}[*] Detaching menu for cleaning...${NC}"
+            # Force unmount so the WebUI stops looking at our modified file
+            umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
+            
+            # Remove the Wireless Report line from the source file
+            sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
+            
+            # 3. COEXISTENCE CHECK: Did we leave other addons behind?
+            # If the file still has addon markers (like Unbound), re-mount it.
+            if grep -q "tabName" /tmp/menuTree.js; then
+                mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
+                echo -e "${GREEN}[+] Other addons detected (like Unbound): Restoring menu mount.${NC}"
+            else
+                echo -e "${CYAN}[*] No other addons found: Leaving menu at factory default.${NC}"
+            fi
         fi
 
-        # 2. Unmount only the custom ASP page
+        # 4. UNMOUNT THE PAGE: Stop the specific ASP redirect
         if [ -n "$INSTALLED_PAGE" ]; then
             umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
         fi
 
-        # 3. Standard Cleanup (Startup scripts and events)
+        # 5. SYSTEM CLEANUP
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         killall gen_report.sh >/dev/null 2>&1
-        
-        # 4. Restart Web UI to apply changes immediately
+
+        # 6. RESTART WEB SERVER
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
-        
-        # 5. Final File Deletion
+
+        # 7. DELETE FILES
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp 2>/dev/null
-        
-        echo -e "${GREEN}[+] Uninstalled successfully. Factory menus restored.${NC}"
+
+        echo -e "${GREEN}[+] Uninstalled. Wireless Report tab is gone.${NC}"
     fi
     pause
 }
