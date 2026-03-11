@@ -1,6 +1,6 @@
 #!/bin/sh
 #============================================================================#
-#  Wireless Report Installer - Version 1.0.5 (TOTAL FORCE MODE)              #
+#  Wireless Report Installer - Version 1.0.6 (THE FINAL BALANCED VERSION)     #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -49,7 +49,7 @@ check_version() {
 check_ssh_environment() {
     echo -e "${CYAN}[*] Verifying SSH Environment...${NC}"
     if [ ! -f "$SSH_KEY" ]; then
-        echo -e "${YELLOW}[!] SSH Key missing. Skipping check...${NC}"
+        echo -e "${YELLOW}[!] SSH Key missing. Continuing anyway...${NC}"
         return 0
     fi
     ROUTER_IP=$(nvram get lan_ipaddr)
@@ -58,11 +58,9 @@ check_ssh_environment() {
     
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing SSH to Node ($IP)... "
-        # Force a "pass" visually even if it fails
         /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1 || true
         echo -e "${GREEN}OK${NC}"
     done
-    return 0
 }
 
 check_storage() {
@@ -79,7 +77,6 @@ check_storage() {
 }
 
 do_uninstall_silent() {
-    # Silence all unmounting and file removal errors
     umount -l /www/require/modules/menuTree.js >/dev/null 2>&1 || true
     umount -l /www/user/wireless_report.asp >/dev/null 2>&1 || true
     [ -f "$CONF_FILE" ] && . "$CONF_FILE"
@@ -93,25 +90,31 @@ do_uninstall_silent() {
 }
 
 do_install() {
-    # Run checks but ignore all failures
-    check_ssh_environment || true
-    check_storage || true
-
+    # 1. Check for existing install FIRST
     if [ -d "$INSTALL_DIR" ]; then
-        echo -e "\n${YELLOW}[!] Already installed. Cleaning up...${NC}"
+        echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
+        printf " Do you want to reinstall/overwrite? (y/n): "
+        read -r confirm
+        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+            echo -e "${CYAN}[*] Installation aborted.${NC}"
+            pause; return
+        fi
+        echo -e "${CYAN}[*] Cleaning old files...${NC}"
         do_uninstall_silent || true
     fi
 
+    # 2. Run environment checks
+    check_ssh_environment || true
+    check_storage || true
+
+    # 3. Download fresh from GitHub
     echo -e "\n${CYAN}[*] Downloading Latest Files from GitHub...${NC}"
     mkdir -p "$INSTALL_DIR" >/dev/null 2>&1 || true
-    
-    # Forced downloads
     curl -sL "$GITHUB_ROOT/gen_report.sh" -o "$INSTALL_DIR/gen_report.sh" >/dev/null 2>&1 || true
     curl -sL "$GITHUB_ROOT/wireless_report.asp" -o "$INSTALL_DIR/wireless_report.asp" >/dev/null 2>&1 || true
-    
     chmod +x "$REPORT_SCRIPT" >/dev/null 2>&1 || true
 
-    # Startup Logic
+    # 4. Persistence & Menu
     if [ -f "/jffs/scripts/services-start" ]; then
         grep -q "$REPORT_SCRIPT" /jffs/scripts/services-start || echo "sh $REPORT_SCRIPT &" >> /jffs/scripts/services-start
     else
@@ -119,15 +122,12 @@ do_install() {
         chmod +x /jffs/scripts/services-start
     fi
 
-    # Web UI Injection
     echo -e "${CYAN}[*] Injecting Menu Tab...${NC}"
     curl -sL "$GITHUB_ROOT/install_menu.sh" | sh >/dev/null 2>&1 || true
 
-    # Start Service (The important part: silencing the background script errors)
-    echo -e "${CYAN}[*] Starting Background Service (Errors Silenced)...${NC}"
+    # 5. Launch Service (Errors Silenced)
+    echo -e "${CYAN}[*] Starting Background Service...${NC}"
     sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
-    
-    # Refresh Web Server
     service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1 || true
 
     echo -e "${GREEN}[+] Installation complete!${NC}"
@@ -136,9 +136,13 @@ do_install() {
 
 do_uninstall() {
     echo -e "\n${RED}[!] Removing Wireless Report...${NC}"
-    do_uninstall_silent || true
-    service restart_httpd >/dev/null 2>&1 || true
-    echo -e "${GREEN}[+] Uninstalled.${NC}"
+    printf " Are you sure? (y/n): "
+    read -r confirm
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        do_uninstall_silent || true
+        service restart_httpd >/dev/null 2>&1 || true
+        echo -e "${GREEN}[+] Uninstalled.${NC}"
+    fi
     pause
 }
 
@@ -146,7 +150,7 @@ pause() { printf "\nPress [Enter] to return..."; read -r discard; }
 
 while true; do
     clear; check_version
-    echo -e "  (1)  Install Wireless Report (Force)\n  (2)  Uninstall Wireless Report (Force)\n  (3)  Check/Update Script\n  (e)  Exit"
+    echo -e "  (1)  Install Wireless Report\n  (2)  Uninstall Wireless Report\n  (3)  Check/Update Script\n  (e)  Exit"
     echo -e "${CYAN}==================================================${NC}"
     printf " Selection: "
     read -r choice
