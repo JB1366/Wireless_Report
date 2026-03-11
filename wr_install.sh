@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.1                                 #
+#  Version: 1.0.1                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -85,7 +85,7 @@ check_ssh_environment() {
     NODE_USER=$(nvram get http_username)
     
     if [ -z "$NODE_IPS" ]; then
-        echo -e "${RED}[!] No Mesh Nodes detected. This script requires a Mesh environment.${NC}"
+        echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
         echo -e "${RED}[!] Installation aborted.${NC}"
         exit 1
     fi
@@ -206,7 +206,6 @@ do_uninstall() {
             # If the file still has addon markers (like Unbound), re-mount it.
             if grep -q "tabName" /tmp/menuTree.js; then
                 mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
-                echo -e "${GREEN}[+] Other addons detected (like Unbound): Restoring menu mount.${NC}"
             else
                 echo -e "${CYAN}[*] No other addons found: Leaving menu at factory default.${NC}"
             fi
