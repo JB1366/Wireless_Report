@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.2.9 (Smart Update Logic)                                       #
+#  Version: 1.0.1                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -28,7 +28,7 @@ check_version() {
     fi
     REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_URL")
     if [ $? -ne 0 ] || [ -z "$REMOTE_DATA" ]; then
-        REMOTE_VER="" 
+        REMOTE_VER=""
     else
         REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
     fi
@@ -85,7 +85,7 @@ check_ssh_environment() {
     NODE_USER=$(nvram get http_username)
     
     if [ -z "$NODE_IPS" ]; then
-        echo -e "${RED}[!] No Mesh Nodes detected. This script requires a Mesh environment.${NC}"
+        echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
         echo -e "${RED}[!] Installation aborted.${NC}"
         exit 1
     fi
@@ -123,6 +123,7 @@ do_install() {
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
 
     if [ -f "$MENU_SCRIPT" ]; then
+        echo -e "${CYAN}[*] Mounting Wireless Report TAB to Wireless menu...${NC}"
         sh "$MENU_SCRIPT" >/dev/null 2>&1
         
         [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
@@ -146,7 +147,7 @@ do_install() {
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
-    pause 
+    pause
 }
 
 do_update() {
@@ -202,7 +203,7 @@ pause() { printf "\nPress [Enter] to return..."; read discard; }
 while true; do
     clear; check_version; show_menu; read choice
     case "$choice" in
-        1) do_install ;;   
+        1) do_install ;;
         2) do_uninstall ;;
         3) do_update ;;
         e|E) clear; exit 0 ;;
