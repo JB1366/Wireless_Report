@@ -203,7 +203,6 @@ do_uninstall() {
             sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
             
             # 3. COEXISTENCE CHECK: Did we leave other addons behind?
-            # If the file still has addon markers (like Unbound), re-mount it.
             if grep -q "tabName" /tmp/menuTree.js; then
                 mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
             else
