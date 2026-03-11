@@ -1,6 +1,7 @@
 #!/bin/sh
 #============================================================================#
-#  Wireless Report Installer - Version 1.0.6 (THE FINAL BALANCED VERSION)     #
+#  Wireless Report Installer                                                 #
+#  Version: 1.0.1                                 #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -8,6 +9,7 @@
 GITHUB_ROOT="https://raw.githubusercontent.com/JB1366/Wireless_Report/main"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/gen_report.sh"
+MENU_SCRIPT="$INSTALL_DIR/install_menu.sh"
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
 CONF_FILE="$INSTALL_DIR/webui.conf"
 
@@ -15,7 +17,6 @@ CONF_FILE="$INSTALL_DIR/webui.conf"
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-YELLOW='\033[0;33m'
 NC='\033[0m'
 
 check_version() {
@@ -46,118 +47,201 @@ check_version() {
     echo -e "${CYAN}==================================================${NC}"
 }
 
-check_ssh_environment() {
-    echo -e "${CYAN}[*] Verifying SSH Environment...${NC}"
-    if [ ! -f "$SSH_KEY" ]; then
-        echo -e "${YELLOW}[!] SSH Key missing. Continuing anyway...${NC}"
-        return 0
-    fi
-    ROUTER_IP=$(nvram get lan_ipaddr)
-    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
-    NODE_USER=$(nvram get http_username)
-    
-    for IP in $NODE_IPS; do
-        echo -ne "[*] Testing SSH to Node ($IP)... "
-        /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1 || true
-        echo -e "${GREEN}OK${NC}"
-    done
-}
-
 check_storage() {
     echo -e "${CYAN}[*] Checking for USB Storage...${NC}"
     USB_PATH=$(mount | grep -E "ext2|ext3|ext4|tfat|ntfs|vfat" | grep -v "/jffs" | awk '{print $3}' | head -n 1)
     if [ -n "$USB_PATH" ]; then
         DATA_DIR="$USB_PATH/gen_report"
-        echo -e "${GREEN}[+] USB Found: $DATA_DIR${NC}"
+        echo -e "${GREEN}[+] USB Found: Using $DATA_DIR for history.${NC}"
     else
         DATA_DIR="$INSTALL_DIR/data"
-        echo -e "${YELLOW}[!] No USB: Using JFFS.${NC}"
+        echo -e "${RED}[!] No USB detected: Using JFFS at $DATA_DIR.${NC}"
     fi
-    mkdir -p "$DATA_DIR" >/dev/null 2>&1 || true
+    mkdir -p "$DATA_DIR" 2>/dev/null
 }
 
-do_uninstall_silent() {
-    umount -l /www/require/modules/menuTree.js >/dev/null 2>&1 || true
-    umount -l /www/user/wireless_report.asp >/dev/null 2>&1 || true
-    [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-    [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1 || true
+show_menu() {
+    echo -e ""
+    echo -e "  (1)  Install Wireless Report"
+    echo -e "  (2)  Uninstall Wireless Report"
+    echo -e "  (3)  Check/Update Latest Script"
+    echo -e "  (e)  Exit"
+    echo -e ""
+    echo -e "${CYAN}==================================================${NC}"
+    printf " Selection: "
+}
+
+check_ssh_environment() {
+    echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     
-    sed -i "\|$REPORT_SCRIPT|d" /jffs/scripts/services-start >/dev/null 2>&1 || true
-    killall gen_report.sh >/dev/null 2>&1 || true
-    rm -rf "$INSTALL_DIR" >/dev/null 2>&1 || true
-    rm -f /tmp/wireless.asp >/dev/null 2>&1 || true
-    rm -f /tmp/*.db /tmp/*.tmp >/dev/null 2>&1 || true
+    if [ ! -f "$SSH_KEY" ]; then
+        echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
+        echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
+        exit 1
+    fi
+
+    ROUTER_IP=$(nvram get lan_ipaddr)
+    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
+    NODE_USER=$(nvram get http_username)
+    
+    if [ -z "$NODE_IPS" ]; then
+        echo -e "${RED}[!] No Mesh Nodes detected. This script requires a Mesh environment.${NC}"
+        echo -e "${RED}[!] Installation aborted.${NC}"
+        exit 1
+    fi
+
+    for IP in $NODE_IPS; do
+        echo -ne "[*] Testing Passwordless SSH to Node ($IP)... "
+        /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
+        
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}AUTHENTICATED${NC}"
+        else
+            echo -e "${RED}FAILED${NC}"
+            echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
+            exit 1
+        fi
+    done
 }
 
 do_install() {
-    # 1. Check for existing install FIRST
-    if [ -d "$INSTALL_DIR" ]; then
-        echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
-        printf " Do you want to reinstall/overwrite? (y/n): "
-        read -r confirm
-        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-            echo -e "${CYAN}[*] Installation aborted.${NC}"
-            pause; return
-        fi
-        echo -e "${CYAN}[*] Cleaning old files...${NC}"
-        do_uninstall_silent || true
+    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
+        exit 1
     fi
 
-    # 2. Run environment checks
-    check_ssh_environment || true
-    check_storage || true
+    check_storage
+    check_ssh_environment
+    echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
+    mkdir -p "$INSTALL_DIR" 2>/dev/null
 
-    # 3. Download fresh from GitHub
-    echo -e "\n${CYAN}[*] Downloading Latest Files from GitHub...${NC}"
-    mkdir -p "$INSTALL_DIR" >/dev/null 2>&1 || true
-    curl -sL "$GITHUB_ROOT/gen_report.sh" -o "$INSTALL_DIR/gen_report.sh" >/dev/null 2>&1 || true
-    curl -sL "$GITHUB_ROOT/wireless_report.asp" -o "$INSTALL_DIR/wireless_report.asp" >/dev/null 2>&1 || true
-    chmod +x "$REPORT_SCRIPT" >/dev/null 2>&1 || true
+    # Pre-cleanup to prevent double tabs
+    [ -f "/tmp/menuTree.js" ] && sed -i '/Wireless Report/d' /tmp/menuTree.js 2>/dev/null
 
-    # 4. Persistence & Menu
-    if [ -f "/jffs/scripts/services-start" ]; then
-        grep -q "$REPORT_SCRIPT" /jffs/scripts/services-start || echo "sh $REPORT_SCRIPT &" >> /jffs/scripts/services-start
+    curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
+    curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
+    chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
+
+    if [ -f "$MENU_SCRIPT" ]; then
+        # NEW: Visual confirmation of menu injection
+        echo -e "${CYAN}[*] Mounting Wireless Report TAB to Wireless menu...${NC}"
+        sh "$MENU_SCRIPT" >/dev/null 2>&1
+        
+        [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
+        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
+        [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
+        echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
+        chmod +x /jffs/scripts/services-start 2>/dev/null
+        
+        [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
+        sed -i "/wireless_report/d" /jffs/scripts/service-event
+        [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
+        echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
+        chmod +x /jffs/scripts/service-event
+        
+        [ -f "$INSTALL_DIR/wireless.asp" ] && rm -f "$INSTALL_DIR/wireless.asp" 2>/dev/null
+        
+        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
+        sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
+        
+        echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
     else
-        echo -e "#!/bin/sh\nsh $REPORT_SCRIPT &" > /jffs/scripts/services-start
-        chmod +x /jffs/scripts/services-start
+        echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
-
-    echo -e "${CYAN}[*] Injecting Menu Tab...${NC}"
-    curl -sL "$GITHUB_ROOT/install_menu.sh" | sh >/dev/null 2>&1 || true
-
-    # 5. Launch Service (Errors Silenced)
-    echo -e "${CYAN}[*] Starting Background Service...${NC}"
-    sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
-    service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1 || true
-
-    echo -e "${GREEN}[+] Installation complete!${NC}"
     pause
+}
+
+do_update() {
+    if [ ! -f "$REPORT_SCRIPT" ]; then
+        echo -e "${RED}[!] Wireless Report is not installed.${NC}"
+        printf " Would you like to install it now? (y/n): "
+        read choice
+        if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+            do_install
+        fi
+    else
+        # Compare versions
+        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+        REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_ROOT/gen_report.sh")
+        REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+        
+        if [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
+            echo -e "${GREEN}[+] You are already on the latest version (v$LOCAL_VER).${NC}"
+            printf " Force a re-install anyway? (y/n): "
+            read choice
+            if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+                do_install
+            fi
+        else
+            echo -e "${CYAN}[*] Update found: v$LOCAL_VER -> v$REMOTE_VER${NC}"
+            do_install
+        fi
+    fi
 }
 
 do_uninstall() {
-    echo -e "\n${RED}[!] Removing Wireless Report...${NC}"
+    # 1. THE GATEKEEPER: Don't run if folder is missing
+    if [ ! -d "$INSTALL_DIR" ]; then
+        echo -e "\n${RED}[!] Wireless Report is not installed.${NC}"
+        pause
+        return
+    fi
+
+    echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
     printf " Are you sure? (y/n): "
-    read -r confirm
+    read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        do_uninstall_silent || true
-        service restart_httpd >/dev/null 2>&1 || true
-        echo -e "${GREEN}[+] Uninstalled.${NC}"
+        [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+
+        # 2. REVERSE THE MOUNT (The "Un-insert" step)
+        if mount | grep -q "menuTree.js"; then
+            echo -e "${CYAN}[*] Detaching menu for cleaning...${NC}"
+            # Force unmount so the WebUI stops looking at our modified file
+            umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
+            
+            # Remove the Wireless Report line from the source file
+            sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
+            
+            # 3. COEXISTENCE CHECK: Did we leave other addons behind?
+            # If the file still has addon markers (like Unbound), re-mount it.
+            if grep -q "tabName" /tmp/menuTree.js; then
+                mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
+                echo -e "${GREEN}[+] Other addons detected (like Unbound): Restoring menu mount.${NC}"
+            else
+                echo -e "${CYAN}[*] No other addons found: Leaving menu at factory default.${NC}"
+            fi
+        fi
+
+        # 4. UNMOUNT THE PAGE: Stop the specific ASP redirect
+        if [ -n "$INSTALLED_PAGE" ]; then
+            umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+        fi
+
+        # 5. SYSTEM CLEANUP
+        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
+        sed -i "/wireless_report/d" /jffs/scripts/service-event
+        killall gen_report.sh >/dev/null 2>&1
+
+        # 6. RESTART WEB SERVER
+        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
+
+        # 7. DELETE FILES
+        rm -rf "$INSTALL_DIR" 2>/dev/null
+        rm -f /tmp/wireless.asp 2>/dev/null
+
+        echo -e "${GREEN}[+] Uninstalled. Wireless Report tab is gone.${NC}"
     fi
     pause
 }
 
-pause() { printf "\nPress [Enter] to return..."; read -r discard; }
+pause() { printf "\nPress [Enter] to return..."; read discard; }
 
 while true; do
-    clear; check_version
-    echo -e "  (1)  Install Wireless Report\n  (2)  Uninstall Wireless Report\n  (3)  Check/Update Script\n  (e)  Exit"
-    echo -e "${CYAN}==================================================${NC}"
-    printf " Selection: "
-    read -r choice
+    clear; check_version; show_menu; read choice
     case "$choice" in
         1) do_install ;;
         2) do_uninstall ;;
-        3) do_install ;;
+        3) do_update ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
