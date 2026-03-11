@@ -179,9 +179,10 @@ do_update() {
 }
 
 do_uninstall() {
-    # 1. Check if the script is actually installed first
-    if [ ! -d "$INSTALL_DIR" ] && [ ! -f "/tmp/menuTree.js" ]; then
-        echo -e "\n${RED}[!] Wireless Report is not detected on this system.${NC}"
+    # 1. Gatekeeper: Check if the script is actually installed before proceeding
+    if [ ! -d "$INSTALL_DIR" ]; then
+        echo -e "\n${RED}[!] Wireless Report is not detected at $INSTALL_DIR.${NC}"
+        echo -e "${CYAN}[*] Nothing to uninstall.${NC}"
         pause
         return
     fi
@@ -190,33 +191,35 @@ do_uninstall() {
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        # Load configuration to get the specific userX.asp page used
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
         
-        # 2. Surgical Removal: Target the specific tabName regardless of the URL/userX.asp
+        # 2. Surgical Removal: Target the specific tabName regardless of URL or spacing
         if [ -f "/tmp/menuTree.js" ]; then
-            echo -e "${CYAN}[*] Removing Wireless Report tab from active menu...${NC}"
-            # This regex targets the entire object line to ensure no leftovers remain
+            echo -e "${CYAN}[*] Removing Wireless Report tab from menu...${NC}"
+            # This regex deletes any line containing "Wireless Report" to handle userX.asp changes
             sed -i '/tabName: "Wireless Report"/d' /tmp/menuTree.js
         fi
 
-        # 3. Unmount only the custom ASP page
+        # 3. Unmount only the specific custom page, keeping the rest of the addon menu alive
         if [ -n "$INSTALLED_PAGE" ]; then
             umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
         fi
 
-        # 4. Standard Cleanup (Cron/Services/Processes)
+        # 4. Standard Cleanup (Startup scripts and event handlers)
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
         killall gen_report.sh >/dev/null 2>&1
         
-        # 5. Restart Web UI to apply menu changes
+        # 5. Restart Web UI to apply changes immediately
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         
-        # 6. File Cleanup
+        # 6. Final File Deletion
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp 2>/dev/null
         
-        echo -e "${GREEN}[+] Uninstalled. Please refresh your browser (Ctrl+F5) to clear cache.${NC}"
+        echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
+        echo -e "${RED}[!] IMPORTANT: You MUST Hard-Refresh your browser (Ctrl+F5) to see the menu change.${NC}"
     fi
     pause
 }
