@@ -1,13 +1,15 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.1                                                            #
+#  Version: 1.0.2                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
 # --- Configuration ---
 GITHUB_ROOT="https://raw.githubusercontent.com/JB1366/Wireless_Report/main"
 INSTALL_DIR="/jffs/addons/wireless_report"
+# Fix: SCRIPT_DIR must be defined for mkdir to work
+SCRIPT_DIR="/jffs/addons/wireless_report" 
 REPORT_SCRIPT="$INSTALL_DIR/gen_report.sh"
 MENU_SCRIPT="$INSTALL_DIR/install_menu.sh"
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
@@ -17,6 +19,7 @@ CONF_FILE="$INSTALL_DIR/webui.conf"
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 check_version() {
@@ -60,245 +63,122 @@ check_storage() {
     mkdir -p "$DATA_DIR" 2>/dev/null
 }
 
-show_menu() {
-    echo -e ""
-    echo -e "  (1)  Install Wireless Report"
-    echo -e "  (2)  Uninstall Wireless Report"
-    echo -e "  (3)  Check/Update Latest Script"
-    echo -e "  (e)  Exit"
-    echo -e ""
-    echo -e "${CYAN}==================================================${NC}"
-    printf " Selection: "
-}
-
 check_ssh_environment() {
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
-    
     if [ ! -f "$SSH_KEY" ]; then
         echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
-        echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
         exit 1
     fi
-
     ROUTER_IP=$(nvram get lan_ipaddr)
     NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
     NODE_USER=$(nvram get http_username)
-    
     if [ -z "$NODE_IPS" ]; then
-        echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
-        echo -e "${RED}[!] Installation aborted.${NC}"
+        echo -e "${RED}[!] No AIMesh Nodes detected.${NC}"
         exit 1
     fi
-
     for IP in $NODE_IPS; do
-        echo -ne "[*] Testing Passwordless SSH to Node ($IP)... "
+        echo -ne "[*] Testing SSH to Node ($IP)... "
         /usr/bin/ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
-        
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}AUTHENTICATED${NC}"
-        else
-            echo -e "${RED}FAILED${NC}"
-            echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
-            exit 1
-        fi
+        [ $? -eq 0 ] && echo -e "${GREEN}OK${NC}" || { echo -e "${RED}FAIL${NC}"; exit 1; }
     done
 }
 
+do_uninstall_silent() {
+    [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+    if mount | grep -q "menuTree.js"; then
+        umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
+        sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
+        if grep -q "tabName" /tmp/menuTree.js; then
+            mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
+        fi
+    fi
+    [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+    sed -i "\|$REPORT_SCRIPT|d" /jffs/scripts/services-start
+    killall gen_report.sh >/dev/null 2>&1
+    rm -rf "$INSTALL_DIR" 2>/dev/null
+    rm -f /tmp/wireless.asp 2>/dev/null
+}
+
 do_install() {
-    # 1. GATEKEEPER: Check for existing installation
-    # Using absolute path to bypass any variable scope issues
-    if [ -d "/jffs/addons/wireless_report" ]; then
+    if [ -d "$INSTALL_DIR" ]; then
         echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
         printf " Do you want to reinstall/overwrite? (y/n): "
         read -r confirm
-        
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-            echo -e "${CYAN}[*] Installation cancelled. Returning to menu...${NC}"
-            pause
-            return
+            echo -e "${CYAN}[*] Returning to menu...${NC}"
+            pause; return
         fi
-
-        echo -e "${CYAN}[*] Preparing for reinstallation...${NC}"
-        # We run the uninstall logic (silently) to ensure we don't double-up on 
-        # menu entries or startup scripts before writing the new ones.
         do_uninstall_silent
     fi
 
-    echo -e "\n${CYAN}[*] Starting Wireless Report Installation...${NC}"
+    if [ ! -f "./gen_report.sh" ] || [ ! -f "./wireless_report.asp" ]; then
+        echo -e "\n${RED}[!] ERROR: Installation files not found in current directory.${NC}"
+        pause; return
+    fi
 
-    # 2. CREATE DIRECTORIES
+    echo -e "\n${CYAN}[*] Starting Installation...${NC}"
     mkdir -p "$INSTALL_DIR"
-    mkdir -p "$SCRIPT_DIR"
+    cp "./gen_report.sh" "$INSTALL_DIR/"
+    cp "./wireless_report.asp" "$INSTALL_DIR/"
+    chmod +x "$REPORT_SCRIPT"
 
-    # 3. DEPLOY SCRIPTS
-    echo -e "${CYAN}[*] Copying script files...${NC}"
-    # Assuming these are in the same folder as your installer
-    cp ./gen_report.sh "$INSTALL_DIR/"
-    cp ./wireless_report.asp "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/gen_report.sh"
-
-    # 4. CONFIGURE STARTUP (services-start)
     if [ -f "/jffs/scripts/services-start" ]; then
-        # Only add if not already present (double-check)
-        if ! grep -q "$INSTALL_DIR/gen_report.sh" /jffs/scripts/services-start; then
-            echo "sh $INSTALL_DIR/gen_report.sh &" >> /jffs/scripts/services-start
-        fi
+        grep -q "$REPORT_SCRIPT" /jffs/scripts/services-start || echo "sh $REPORT_SCRIPT &" >> /jffs/scripts/services-start
     else
-        echo "#!/bin/sh" > /jffs/scripts/services-start
-        echo "sh $INSTALL_DIR/gen_report.sh &" >> /jffs/scripts/services-start
+        echo -e "#!/bin/sh\nsh $REPORT_SCRIPT &" > /jffs/scripts/services-start
         chmod +x /jffs/scripts/services-start
     fi
 
-    # 5. INJECT MENU TAB
-    # This calls your specific menu injection logic
-    if [ -f "./install_menu.sh" ]; then
-        echo -e "${CYAN}[*] Injecting Wireless Report into Web UI...${NC}"
-        sh ./install_menu.sh
-    fi
-
-    # 6. START SERVICE IMMEDIATELY
-    echo -e "${CYAN}[*] Starting report generator...${NC}"
-    sh "$INSTALL_DIR/gen_report.sh" &
-
-    # 7. REFRESH HTTPD
+    [ -f "./install_menu.sh" ] && sh ./install_menu.sh
+    
+    sh "$REPORT_SCRIPT" &
     service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
 
     echo -e "${GREEN}[+] Installation completed successfully!${NC}"
-    echo -e "${CYAN}[i] You can now access the report via the Wireless menu tab.${NC}"
     pause
 }
 
 do_uninstall() {
-    # 1. GATEKEEPER: Check if installed before proceeding
     if [ ! -d "$INSTALL_DIR" ]; then
-        echo -e "\n${RED}[!] Wireless Report is not detected as installed.${NC}"
-        pause
-        return
+        echo -e "\n${RED}[!] Wireless Report is not installed.${NC}"
+        pause; return
     fi
-
     echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
     printf " Are you sure? (y/n): "
-    read confirm
+    read -r confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-
-        # 2. MOUNT MANAGEMENT: Un-insert logic
-        if mount | grep -q "menuTree.js"; then
-            echo -e "${CYAN}[*] Detaching menu for cleaning...${NC}"
-            umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
-            
-            # Delete our specific tab line
-            sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
-            
-            # 3. COEXISTENCE CHECK: Restore menu if other addons (like Unbound) are present
-            if grep -q "tabName" /tmp/menuTree.js; then
-                mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
-                echo -e "${GREEN}[+] Other addons detected: Preserving shared menu.${NC}"
-            fi
-        fi
-
-        # 4. UNMOUNT PAGE & CLEANUP
-        [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
-        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        sed -i "/wireless_report/d" /jffs/scripts/service-event
-        killall gen_report.sh >/dev/null 2>&1
-        
-        # 5. REFRESH & WIPE
+        do_uninstall_silent
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
-        rm -rf "$INSTALL_DIR" 2>/dev/null
-        rm -f /tmp/wireless.asp 2>/dev/null
-        
-        echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
+        echo -e "${GREEN}[+] Uninstalled.${NC}"
     fi
     pause
 }
 
 do_update() {
-    if [ ! -f "$REPORT_SCRIPT" ]; then
-        echo -e "${RED}[!] Wireless Report is not installed.${NC}"
-        printf " Would you like to install it now? (y/n): "
-        read choice
-        if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-            do_install
-        fi
+    # Check for update and run do_install if confirmed
+    LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+    REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_ROOT/gen_report.sh")
+    REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+    
+    if [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
+        echo -e "${GREEN}[+] Up to date (v$LOCAL_VER).${NC}"
+        printf " Reinstall anyway? (y/n): "
+        read -r choice
+        [ "$choice" = "y" ] || [ "$choice" = "Y" ] && do_install
     else
-        # Compare versions
-        LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
-        REMOTE_DATA=$(curl -s --connect-timeout 2 "$GITHUB_ROOT/gen_report.sh")
-        REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
-        
-        if [ "$LOCAL_VER" = "$REMOTE_VER" ]; then
-            echo -e "${GREEN}[+] You are already on the latest version (v$LOCAL_VER).${NC}"
-            printf " Force a re-install anyway? (y/n): "
-            read choice
-            if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-                do_install
-            fi
-        else
-            echo -e "${CYAN}[*] Update found: v$LOCAL_VER -> v$REMOTE_VER${NC}"
-            do_install
-        fi
+        do_install
     fi
 }
 
-do_uninstall() {
-    # 1. THE GATEKEEPER: Don't run if folder is missing
-    if [ ! -d "$INSTALL_DIR" ]; then
-        echo -e "\n${RED}[!] Wireless Report is not installed.${NC}"
-        pause
-        return
-    fi
-
-    echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
-    printf " Are you sure? (y/n): "
-    read confirm
-    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
-        [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-
-        # 2. REVERSE THE MOUNT (The "Un-insert" step)
-        if mount | grep -q "menuTree.js"; then
-            echo -e "${CYAN}[*] Detaching menu for cleaning...${NC}"
-            # Force unmount so the WebUI stops looking at our modified file
-            umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
-            
-            # Remove the Wireless Report line from the source file
-            sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
-            
-            # 3. COEXISTENCE CHECK: Did we leave other addons behind?
-            # If the file still has addon markers (like Unbound), re-mount it.
-            if grep -q "tabName" /tmp/menuTree.js; then
-                mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
-            else
-                echo -e "${CYAN}[*] No other addons found: Leaving menu at factory default.${NC}"
-            fi
-        fi
-
-        # 4. UNMOUNT THE PAGE: Stop the specific ASP redirect
-        if [ -n "$INSTALLED_PAGE" ]; then
-            umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
-        fi
-
-        # 5. SYSTEM CLEANUP
-        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        sed -i "/wireless_report/d" /jffs/scripts/service-event
-        killall gen_report.sh >/dev/null 2>&1
-
-        # 6. RESTART WEB SERVER
-        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
-
-        # 7. DELETE FILES
-        rm -rf "$INSTALL_DIR" 2>/dev/null
-        rm -f /tmp/wireless.asp 2>/dev/null
-
-        echo -e "${GREEN}[+] Uninstalled. Wireless Report tab is gone.${NC}"
-    fi
-    pause
+pause() { printf "\nPress [Enter] to return..."; read -r discard; }
+show_menu() {
+    echo -e "  (1)  Install Wireless Report\n  (2)  Uninstall Wireless Report\n  (3)  Check/Update Script\n  (e)  Exit"
+    echo -e "${CYAN}==================================================${NC}"
+    printf " Selection: "
 }
-
-pause() { printf "\nPress [Enter] to return..."; read discard; }
 
 while true; do
-    clear; check_version; show_menu; read choice
+    clear; check_version; show_menu; read -r choice
     case "$choice" in
         1) do_install ;;
         2) do_uninstall ;;
