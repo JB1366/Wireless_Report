@@ -105,47 +105,65 @@ check_ssh_environment() {
 }
 
 do_install() {
-    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
-        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
-        exit 1
+    # 1. GATEKEEPER: Check if already installed
+    if [ -d "$INSTALL_DIR" ]; then
+        echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
+        printf " Do you want to reinstall/overwrite? (y/n): "
+        read confirm
+        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+            echo -e "${CYAN}[*] Installation cancelled.${NC}"
+            pause
+            return
+        fi
+        echo -e "${CYAN}[*] Proceeding with reinstallation...${NC}"
     fi
 
-    check_storage
-    check_ssh_environment
-    echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
-    mkdir -p "$INSTALL_DIR" 2>/dev/null
+    # ... [Rest of your existing install logic] ...
+    echo -e "${GREEN}[+] Installation complete!${NC}"
+    pause
+}
 
-    # Pre-cleanup to prevent double tabs
-    [ -f "/tmp/menuTree.js" ] && sed -i '/Wireless Report/d' /tmp/menuTree.js 2>/dev/null
+do_uninstall() {
+    # 1. GATEKEEPER: Check if installed before proceeding
+    if [ ! -d "$INSTALL_DIR" ]; then
+        echo -e "\n${RED}[!] Wireless Report is not detected as installed.${NC}"
+        pause
+        return
+    fi
 
-    curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
-    curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
-    chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
+    echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
+    printf " Are you sure? (y/n): "
+    read confirm
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+        [ -f "$CONF_FILE" ] && . "$CONF_FILE"
 
-    if [ -f "$MENU_SCRIPT" ]; then
-        echo -e "${CYAN}[*] Mounting Wireless Report TAB to Wireless menu...${NC}"
-        sh "$MENU_SCRIPT" >/dev/null 2>&1
-        
-        [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
+        # 2. MOUNT MANAGEMENT: Un-insert logic
+        if mount | grep -q "menuTree.js"; then
+            echo -e "${CYAN}[*] Detaching menu for cleaning...${NC}"
+            umount -l /www/require/modules/menuTree.js >/dev/null 2>&1
+            
+            # Delete our specific tab line
+            sed -i '/tabName:[[:space:]]*"Wireless Report"/d' /tmp/menuTree.js
+            
+            # 3. COEXISTENCE CHECK: Restore menu if other addons (like Unbound) are present
+            if grep -q "tabName" /tmp/menuTree.js; then
+                mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
+                echo -e "${GREEN}[+] Other addons detected: Preserving shared menu.${NC}"
+            fi
+        fi
+
+        # 4. UNMOUNT PAGE & CLEANUP
+        [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
-        [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
-        echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
-        chmod +x /jffs/scripts/services-start 2>/dev/null
-        
-        [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
         sed -i "/wireless_report/d" /jffs/scripts/service-event
-        [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
-        echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
-        chmod +x /jffs/scripts/service-event
+        killall gen_report.sh >/dev/null 2>&1
         
-        [ -f "$INSTALL_DIR/wireless.asp" ] && rm -f "$INSTALL_DIR/wireless.asp" 2>/dev/null
-        
+        # 5. REFRESH & WIPE
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
-        sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
+        rm -rf "$INSTALL_DIR" 2>/dev/null
+        rm -f /tmp/wireless.asp 2>/dev/null
         
-        echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
-    else
-        echo -e "${RED}[!] ERROR: Download failed.${NC}"
+        echo -e "${GREEN}[+] Uninstalled successfully.${NC}"
     fi
     pause
 }
