@@ -105,21 +105,66 @@ check_ssh_environment() {
 }
 
 do_install() {
-    # 1. GATEKEEPER: Check if already installed
-    if [ -d "$INSTALL_DIR" ]; then
+    # 1. GATEKEEPER: Check for existing installation
+    # Using absolute path to bypass any variable scope issues
+    if [ -d "INSTALL_DIR" ]; then
         echo -e "\n${YELLOW}[!] Wireless Report is ALREADY installed.${NC}"
         printf " Do you want to reinstall/overwrite? (y/n): "
-        read confirm
+        read -r confirm
+        
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-            echo -e "${CYAN}[*] Installation cancelled.${NC}"
+            echo -e "${CYAN}[*] Installation cancelled. Returning to menu...${NC}"
             pause
             return
         fi
-        echo -e "${CYAN}[*] Proceeding with reinstallation...${NC}"
+
+        echo -e "${CYAN}[*] Preparing for reinstallation...${NC}"
+        # We run the uninstall logic (silently) to ensure we don't double-up on 
+        # menu entries or startup scripts before writing the new ones.
+        do_uninstall_silent
     fi
 
-    # ... [Rest of your existing install logic] ...
-    echo -e "${GREEN}[+] Installation complete!${NC}"
+    echo -e "\n${CYAN}[*] Starting Wireless Report Installation...${NC}"
+
+    # 2. CREATE DIRECTORIES
+    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$SCRIPT_DIR"
+
+    # 3. DEPLOY SCRIPTS
+    echo -e "${CYAN}[*] Copying script files...${NC}"
+    # Assuming these are in the same folder as your installer
+    cp ./gen_report.sh "$INSTALL_DIR/"
+    cp ./wireless_report.asp "$INSTALL_DIR/"
+    chmod +x "$INSTALL_DIR/gen_report.sh"
+
+    # 4. CONFIGURE STARTUP (services-start)
+    if [ -f "/jffs/scripts/services-start" ]; then
+        # Only add if not already present (double-check)
+        if ! grep -q "$INSTALL_DIR/gen_report.sh" /jffs/scripts/services-start; then
+            echo "sh $INSTALL_DIR/gen_report.sh &" >> /jffs/scripts/services-start
+        fi
+    else
+        echo "#!/bin/sh" > /jffs/scripts/services-start
+        echo "sh $INSTALL_DIR/gen_report.sh &" >> /jffs/scripts/services-start
+        chmod +x /jffs/scripts/services-start
+    fi
+
+    # 5. INJECT MENU TAB
+    # This calls your specific menu injection logic
+    if [ -f "./install_menu.sh" ]; then
+        echo -e "${CYAN}[*] Injecting Wireless Report into Web UI...${NC}"
+        sh ./install_menu.sh
+    fi
+
+    # 6. START SERVICE IMMEDIATELY
+    echo -e "${CYAN}[*] Starting report generator...${NC}"
+    sh "$INSTALL_DIR/gen_report.sh" &
+
+    # 7. REFRESH HTTPD
+    service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
+
+    echo -e "${GREEN}[+] Installation completed successfully!${NC}"
+    echo -e "${CYAN}[i] You can now access the report via the Wireless menu tab.${NC}"
     pause
 }
 
