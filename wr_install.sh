@@ -184,28 +184,32 @@ do_uninstall() {
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"
-
-        # 1. Surgical Strike: Remove only our tab from the temp menu
+        
+        # 1. Surgical Removal: Delete any line containing our tab name
         if [ -f "/tmp/menuTree.js" ]; then
-            echo -e "${CYAN}[*] Removing tab from menu system...${NC}"
+            echo -e "${CYAN}[*] Removing Wireless Report tab from active menu...${NC}"
+            # This deletes the line even if the userX.asp number has changed
             sed -i '/tabName: "Wireless Report"/d' /tmp/menuTree.js
         fi
 
-        # 2. Unmount only the specific ASP page, NOT the whole menu
-        [ -n "$INSTALLED_PAGE" ] && umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+        # 2. Unmount only the custom ASP page
+        if [ -n "$INSTALLED_PAGE" ]; then
+            umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+        fi
 
-        # 3. Standard Cleanup
-        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
-        
+        # 3. Standard Cleanup (Cron/Services)
         sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
         sed -i "/wireless_report/d" /jffs/scripts/service-event
-
         killall gen_report.sh >/dev/null 2>&1
+        
+        # 4. Restart Web UI to reflect changes immediately
+        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
+        
+        # 5. File Cleanup
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp 2>/dev/null
-        # Note: We leave /tmp/menuTree.js mounted so other addons stay visible
         
-        echo -e "${GREEN}[+] Uninstalled. Wireless Report removed, other addons preserved.${NC}"
+        echo -e "${GREEN}[+] Uninstalled. Refresh your browser to see the changes.${NC}"
     fi
     pause
 }
