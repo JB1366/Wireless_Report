@@ -33,7 +33,7 @@ check_version() {
         REMOTE_VER=$(echo "$REMOTE_DATA" | grep "SCRIPT_VERSION=" | head -n 1 | cut -d'"' -f2 2>/dev/null)
     fi
     echo -e "${CYAN}==================================================${NC}"
-    echo -e "${CYAN}                WIRELESS REPORT                   ${NC}"
+    echo -e "${CYAN}              WIRELESS REPORT AIMESH              ${NC}"
     echo -e "${CYAN}==================================================${NC}"
     if [ -z "$REMOTE_VER" ]; then
         echo -e " STATUS: ${RED}[Offline]${NC} Could not reach GitHub"
