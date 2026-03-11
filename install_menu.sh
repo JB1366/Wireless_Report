@@ -1,68 +1,79 @@
 #!/bin/sh
 #============================================================================#
-#  Wireless Report Menu-Tab Insertion                                        #
-#  Version: 1.0.1                                                           #
+#  Wireless Report Menu-TAB Insertion                                        #
+#  Version: 1.0.1                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
 source /usr/sbin/helper.sh
 
+# --- Configuration ---
 SYSTEM_MENU="/www/require/modules/menuTree.js"
 TEMP_MENU="/tmp/menuTree.js"
 TAB_LABEL="Wireless Report"
 INSTALL_DIR="/jffs/addons/wireless_report"
-CONF_FILE="$INSTALL_DIR/webui.conf"
 WEB_PAGE="$INSTALL_DIR/wireless.asp"
 RAM_PAGE="/tmp/wireless.asp"
 
-# 1. Load Choice
-[ -f "$CONF_FILE" ] && . "$CONF_FILE" || MENU_TYPE=1
+# Does the firmware support addons?
+nvram get rc_support | grep -q am_addons
+if [ $? != 0 ]; then
+    logger "Wireless Report:" "This firmware does not support addons!"
+    exit 5
+fi
 
-# 2. Safety Placeholders
-[ ! -f "$WEB_PAGE" ] && echo "<html><body>Loading...</body></html>" > "$WEB_PAGE"
-[ ! -f "$RAM_PAGE" ] && cp "$WEB_PAGE" "$RAM_PAGE"
+# Create the directory if it doesn't exist
+mkdir -p "$INSTALL_DIR"
 
-# 3. Get Mount Point
+# Ensure the RAM target exists so the mount doesn't fail later
+if [ ! -f "$RAM_PAGE" ]; then
+    echo "<html><body>Generating Report... Please refresh.</body></html>" > "$RAM_PAGE"
+fi
+
+# If this is a first-time install, create a placeholder so the API sees a file
+if [ ! -f "$WEB_PAGE" ]; then
+    echo "Initial Install: Creating placeholder."
+    echo "<html><body>Generating Report... Please refresh.</body></html>" > "$WEB_PAGE"
+fi
+
+# Obtain the first available mount point in $am_webui_page
 am_get_webui_page "$WEB_PAGE"
-[ "$am_webui_page" = "none" ] && exit 1
 
-# 4. RESTORED CP COMMAND - This puts the file in the web path
-cp -f "$WEB_PAGE" "/www/user/$am_webui_page"
-echo "INSTALLED_PAGE=$am_webui_page" >> "$CONF_FILE"
+if [ "$am_webui_page" = "none" ]; then
+    logger "Wireless Report:" "Unable to install Wireless Report"
+    exit 5
+fi
+logger "Wireless Report:" "Mounting Wireless\Wireless Report as $am_webui_page"
 
-# 5. Prepare Buffer
+cp "$WEB_PAGE" "/www/user/$am_webui_page"
+
+# Copy mounted user page to installed directory config
+echo "INSTALLED_PAGE=$am_webui_page" > "$INSTALL_DIR/webui.conf"
+
+# Copy menuTree (if no other script has done it yet) so we can modify it
 if [ ! -f "$TEMP_MENU" ]; then
-    cp "$SYSTEM_MENU" "$TEMP_MENU"
+    cp "$SYSTEM_MENU" /tmp/
     mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 fi
 
-# 6. Clean Duplicates
-sed -i "/url: \"$am_webui_page\"/d" "$TEMP_MENU"
-sed -i "/tabName: \"$TAB_LABEL\"/d" "$TEMP_MENU"
+# Addons Menu-Tab Insertion
+# Insert Wireless Report before HELP menu
+# sed -i "/url: \"javascript:var helpwindow=window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
 
-# 7. LOGIC ENGINE
-
-if [ "$MENU_TYPE" = "2" ]; then
-    # SNEAKY WIRELESS
-    START_LINE=$(grep -ni 'url: "Advanced_Wireless_Content.asp"' "$TEMP_MENU" | head -n 1 | cut -d: -f1)
-    if [ -n "$START_LINE" ]; then
-        INSERT_LINE=$((START_LINE + 9))
-        sed -i "${INSERT_LINE}i \ \ \ \ \ \ \ \ \ \ \ \ {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
-    fi
+# Wireless Menu-Tab Insertion
+# Inject Wireless Report at the end of Advanced_Wireless_Content menu at Perfect End Offset
+START_LINE=$(grep -ni 'url: "Advanced_Wireless_Content.asp"' "$TEMP_MENU" | head -n 1 | cut -d: -f1)
+if [ -n "$START_LINE" ]; then
+    INSERT_LINE=$((START_LINE + 9))
+    sed -i "${INSERT_LINE}i \ \ \ \ \ \ \ \ \ \ \ \ {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
+    echo "Wireless Report tab successfully restored."
 else
-    # STANDARD ADDONS
-    if grep -q "menu_addons" "$TEMP_MENU"; then
-        # Join existing (e.g., Unbound is there)
-        sed -i "/index: \"menu_addons\"/,/tab: \[/ s/tab: \[/tab: \[{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}, /" "$TEMP_MENU"
-    else
-        # Create from scratch if Unbound is NOT there
-        # Adds new menu object safely after the Wireless block
-        sed -i '/index: "menu_Wireless"/!b;n;n;n;n;n;n;n;n;n;a ,{menuName: "Addons", index: "menu_addons", tab: [{url: "'"$am_webui_page"'", tabName: "'"$TAB_LABEL"'"}]}' "$TEMP_MENU"
-    fi
+    echo "ERROR: Wireless anchor not found."
+    exit 1
 fi
 
-# 8. Apply Mounts
-umount -l "$SYSTEM_MENU" 2>/dev/null
-mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
-umount -l "/www/user/$am_webui_page" 2>/dev/null
+# Remount modified menu
+umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
+umount "/www/user/$am_webui_page" 2>/dev/null
 mount -o bind "$RAM_PAGE" "/www/user/$am_webui_page"
+"$INSTALL_DIR/gen_report.sh" &

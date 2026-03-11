@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.1.6 (Zero-Kill Edition)                                        #
+#  Version: 1.2.4 (Strict Wireless Menu)                                     #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -78,7 +78,7 @@ check_ssh_environment() {
         exit 1
     fi
     ROUTER_IP=$(nvram get lan_ipaddr)
-    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $4 == 0 && $2 != "'"$ROUTER_IP"'") print $ IP }')
+    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
     NODE_USER=$(nvram get http_username)
     if [ -z "$NODE_IPS" ]; then
         echo -e "${GREEN}[+] No Mesh Nodes detected. Proceeding...${NC}"
@@ -97,16 +97,6 @@ check_ssh_environment() {
 }
 
 do_install() {
-    local menu_choice=1
-    if [ "$1" = "secret" ]; then
-        echo -e "\n${CYAN}[BACKDOOR] Select Menu Location:${NC}"
-        echo "  (1)  Addons Menu (Normal User)"
-        echo "  (2)  Wireless Menu (Sneaky)"
-        printf " Choice: "
-        read menu_choice
-        [ -z "$menu_choice" ] && menu_choice=1
-    fi
-
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
         exit 1
@@ -116,9 +106,6 @@ do_install() {
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR"
-    
-    # Write config FIRST so install_menu.sh can read it
-    echo "MENU_TYPE=$menu_choice" > "$CONF_FILE"
 
     curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
     curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
@@ -138,6 +125,9 @@ do_install() {
         [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
         echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
         chmod +x /jffs/scripts/service-event
+        
+        # Cleanup: Delete wireless.asp from the installation directory
+        [ -f "$INSTALL_DIR/wireless.asp" ] && rm "$INSTALL_DIR/wireless.asp"
         
         service restart_httpd 2>/dev/null || killall -HUP httpd 2>/dev/null
         sh "$REPORT_SCRIPT" > /dev/null 2>&1 &
@@ -181,7 +171,6 @@ while true; do
     case "$choice" in
         1|3) do_install ;;   
         2) do_uninstall ;;
-        wireless) do_install "secret" ;; # Backdoor
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
