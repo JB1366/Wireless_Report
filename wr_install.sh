@@ -117,7 +117,17 @@ check_ssh_environment() {
 }
 
 do_install() {
-    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+    if [ -f "$CONF_FILE" ]; then
+    OLD_PAGE=$(grep "INSTALLED_PAGE" "$CONF_FILE" | cut -d'=' -f2)
+    
+    if [ -n "$OLD_PAGE" ]; then
+        echo -e "${CYAN}[*] Detaching existing $OLD_PAGE mount...${NC}"
+        umount -l "/www/user/$OLD_PAGE" >/dev/null 2>&1
+        rm -f "/www/user/$OLD_PAGE" >/dev/null 2>&1
+    fi
+fi
+	
+	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
         exit 1
     fi
