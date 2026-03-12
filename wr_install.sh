@@ -121,6 +121,7 @@ check_ssh_environment() {
     # Save ONLY the authenticated nodes to webui.conf
     sed -i '/SSH_NODES=/d' "$CONF_FILE"
     echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
+}
 
 do_install() {
     # 1. READ existing config to find the old mount
