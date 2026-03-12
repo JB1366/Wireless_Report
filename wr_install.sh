@@ -88,7 +88,7 @@ check_ssh_environment() {
     [ -z "$SSH_PORT" ] && SSH_PORT=22  
     NODE_USER=$(nvram get http_username)
     
-    # 1. Get the list and handle the filtering inside the loop
+    # Get all entries from the list
     ALL_ENTRIES=$(nvram get asus_device_list | sed 's/</\n/g' | sort -t . -k 4,4n)
     
     any_success=0
@@ -97,11 +97,11 @@ check_ssh_environment() {
     for line in $ALL_ENTRIES; do
         [ -z "$line" ] && continue
         
-        # Extract Alias ($2) and IP ($3)
+        # Extract Alias and IP
         ALIAS=$(echo "$line" | cut -d'>' -f2)
         IP=$(echo "$line" | cut -d'>' -f3)
 
-        # 2. Check if the line ends with '>2' (The Mesh Node Flag)
+        # Check if the line specifically ends with the Mesh Node flag (>2)
         if echo "$line" | grep -q '>2$'; then
             echo -ne "[*] Testing SSH to $ALIAS ($IP)... "
             /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
@@ -114,7 +114,7 @@ check_ssh_environment() {
                 echo -e "${RED}FAILED (Check SSH Keys)${NC}"
             fi
         else
-            # 3. This correctly skips the Main Router (.1) and other clients
+            # This will now correctly skip only the Main Router and non-mesh clients
             echo -e "${CYAN}[-] Skipping $ALIAS ($IP): Not an AIMesh Node.${NC}"
         fi
     done
@@ -124,6 +124,7 @@ check_ssh_environment() {
         exit 1
     fi
 
+    # Clean up and save to the config
     sed -i '/SSH_NODES=/d' "$CONF_FILE"
     echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
 }
