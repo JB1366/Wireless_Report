@@ -106,7 +106,7 @@ check_ssh_environment() {
             echo -e "${GREEN}AUTHENTICATED${NC}"
             any_success=1
             # Build the list of only successful nodes
-            VALID_NODES="$VALID_NODES $IP"
+            VALID_NODES="$VALID_NODES $ALIAS|$IP"
         else
             echo -e "${RED}FAILED${NC}"
         fi

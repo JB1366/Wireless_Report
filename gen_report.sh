@@ -39,9 +39,15 @@ CONF_FILE="/jffs/addons/wireless_report/webui.conf"
 if [ -n "$SSH_NODES" ]; then
     TARGET_LIST="$SSH_NODES"
 else
-    # This is your existing fallback logic
+    # Fallback uses the same Name|IP format
     TARGET_LIST=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
 fi
+
+for line in $TARGET_LIST; do
+    ALIAS=$(echo "$line" | cut -d'|' -f1)
+    IP=$(echo "$line" | cut -d'|' -f2)
+    # ... now ALIAS will be "LivingRoom" instead of the IP ...
+done
 
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"
