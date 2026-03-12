@@ -101,8 +101,9 @@ check_ssh_environment() {
         ALIAS=$(echo "$line" | cut -d'>' -f2)
         IP=$(echo "$line" | cut -d'>' -f3)
 
-        # Check if the line specifically ends with the Mesh Node flag (>2)
-        if echo "$line" | grep -q '>2$'; then
+        # FIX: Check if the node contains the '>2' flag anywhere in the line.
+        # This is safer than checking for the end of the line.
+        if echo "$line" | grep -q '>2'; then
             echo -ne "[*] Testing SSH to $ALIAS ($IP)... "
             /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
             
@@ -114,7 +115,7 @@ check_ssh_environment() {
                 echo -e "${RED}FAILED (Check SSH Keys)${NC}"
             fi
         else
-            # This will now correctly skip only the Main Router and non-mesh clients
+            # This skips the Main Router (.1) which usually has flag '>0' or '>1'
             echo -e "${CYAN}[-] Skipping $ALIAS ($IP): Not an AIMesh Node.${NC}"
         fi
     done
@@ -124,7 +125,7 @@ check_ssh_environment() {
         exit 1
     fi
 
-    # Clean up and save to the config
+    # Save to the config
     sed -i '/SSH_NODES=/d' "$CONF_FILE"
     echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
 }
