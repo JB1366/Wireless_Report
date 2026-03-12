@@ -75,7 +75,10 @@ show_menu() {
 
 check_ssh_environment() {
     mkdir -p "$INSTALL_DIR" 2>/dev/null
-	echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
+    # Ensure the file exists so sed does not error out on first install or upgrade
+    [ ! -f "$CONF_FILE" ] && touch "$CONF_FILE"
+
+    echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     
     if [ ! -f "$SSH_KEY" ]; then
         echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
@@ -86,11 +89,10 @@ check_ssh_environment() {
     SSH_PORT=$(nvram get sshd_port)
     [ -z "$SSH_PORT" ] && SSH_PORT=22  
 
-    # CHANGED: Pull both Alias ($2) and IP ($3) from nvram
+    # Pull both Alias ($2) and IP ($3) from nvram
     NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
     NODE_USER=$(nvram get http_username)
     
-    # 2. Check if NODE_IPS (not NODE_DATA) is empty
     if [ -z "$NODE_IPS" ]; then
         echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
         echo -e "${RED}[!] Installation aborted.${NC}"
@@ -100,9 +102,7 @@ check_ssh_environment() {
     any_success=0
     VALID_NODES=""
     
-    # 3. Loop through the list we just made
     for line in $NODE_IPS; do
-        # Extract the Name and IP from the "Name|IP" string
         ALIAS=$(echo "$line" | cut -d'|' -f1)
         IP=$(echo "$line" | cut -d'|' -f2)
 
@@ -112,14 +112,12 @@ check_ssh_environment() {
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
             any_success=1
-            # Save it with the Alias included
             VALID_NODES="$VALID_NODES $ALIAS|$IP"
         else
             echo -e "${RED}FAILED${NC}"
         fi
     done
 
-    # Final Gatekeeper
     if [ "$any_success" -eq 0 ]; then
         echo -e "${RED}[!] Error: No nodes authenticated. Setup SSH Keys and try again.${NC}"
         exit 1
@@ -142,7 +140,7 @@ do_install() {
         fi
     fi
 	
-	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
         exit 1
     fi
@@ -151,7 +149,10 @@ do_install() {
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     
-    [ ! -f "$CONF_FILE" ] && echo "REPORT_UNIT=F" > "$CONF_FILE"
+    # FIX: Check if the specific setting exists, not just the file
+    if ! grep -q "REPORT_UNIT=" "$CONF_FILE" 2>/dev/null; then
+        echo "REPORT_UNIT=F" >> "$CONF_FILE"
+    fi
 
     # Pre-cleanup to prevent double tabs
     [ -f "/tmp/menuTree.js" ] && sed -i '/Wireless Report/d' /tmp/menuTree.js 2>/dev/null
@@ -161,7 +162,6 @@ do_install() {
     chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
 	
     if [ -f "$MENU_SCRIPT" ]; then
-        # NEW: Visual confirmation of menu injection
         echo -e "${CYAN}[*] Mounting Wireless Report TAB to Wireless menu...${NC}"
         sh "$MENU_SCRIPT" >/dev/null 2>&1
         
