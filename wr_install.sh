@@ -78,7 +78,7 @@ check_ssh_environment() {
     
     if [ ! -f "$SSH_KEY" ]; then
         echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
-        echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
+        echo -e "${RED}[!] Please setup passwordless SSH Key(s) and try again.${NC}"
         exit 1
     fi
 
@@ -105,13 +105,11 @@ check_ssh_environment() {
             any_success=1
         else
             echo -e "${RED}FAILED${NC}"
-            # Removed the exit 1 from here so it keeps checking the rest
         fi
     done
 
-    # This is the new gatekeeper: Only exit if NO nodes authenticated
     if [ "$any_success" -eq 0 ]; then
-        echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
+        echo -e "${RED}[!] Please setup passwordless SSH Key(s) and try again.${NC}"
         exit 1
     fi
 }
@@ -218,7 +216,7 @@ do_uninstall() {
             if grep -q "tabName" /tmp/menuTree.js; then
                 mount --bind /tmp/menuTree.js /www/require/modules/menuTree.js
             else
-                echo -e "${CYAN}[*] No other addons found: Leaving menu at factory default.${NC}"
+                echo -e "${CYAN}[*] Restoring menu to factory default.${NC}"
             fi
         fi
 
@@ -239,7 +237,6 @@ do_uninstall() {
         # 7. DELETE FILES
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp 2>/dev/null
-
         echo -e "${GREEN}[+] Uninstalled. Wireless Report tab is gone.${NC}"
     fi
     pause
