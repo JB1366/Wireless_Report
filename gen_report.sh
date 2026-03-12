@@ -237,7 +237,7 @@ for line in $NODE_DATA; do
         cur_c=$(echo "$NODE_OUT" | grep "COUNT|" | cut -d'|' -f2); [ -z "$cur_c" ] && cur_c=0
 		cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
         cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2); N_TOTAL=$((N_TOTAL + cur_c))
-        boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
+		boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
         
         # Color-Synced Footers for ALL DEVICES
         CONSOLIDATED_T="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}</span>"
@@ -249,13 +249,7 @@ for line in $NODE_DATA; do
         # Color-Synced Footers for NODES view
         [ -z "$N_UPTIMES" ] && N_UPTIMES="<span style='color:$CUR_COLOR;'>$cur_up_v</span>" || N_UPTIMES="$N_UPTIMES$PIPE<span style='color:$CUR_COLOR;'>$cur_up_v</span>"
         [ -z "$N_BOOTS" ] && N_BOOTS="<span style='color:$CUR_COLOR;'>$boot_d</span>" || N_BOOTS="$N_BOOTS$PIPE<span style='color:$CUR_COLOR;'>$boot_d</span>"
-        
-        if [ -z "$N_SPLIT_COUNTS" ]; then
-            N_SPLIT_COUNTS="<span style='color:$CUR_COLOR;'>$cur_c</span>"
-        else
-            N_SPLIT_COUNTS="$N_SPLIT_COUNTS <span style='color:white;'>|</span> <span style='color:$CUR_COLOR;'>$cur_c</span>"
-        fi
-        
+        [ -z "$N_SPLIT_COUNTS" ] && N_SPLIT_COUNTS="$cur_c" || N_SPLIT_COUNTS="$N_SPLIT_COUNTS | $cur_c"
         echo "$NODE_OUT" | grep "DATA|" | while read -r dline; do
             m_up=$(echo "$dline" | cut -d'|' -f2 | tr '[:lower:]' '[:upper:]')
             [ "$m_up" = "C8:7F:54:4F:C8:01" ] || grep -qi "$m_up" "$SEEN_MACS" && continue
