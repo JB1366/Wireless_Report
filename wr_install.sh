@@ -85,11 +85,11 @@ check_ssh_environment() {
     SSH_PORT=$(nvram get sshd_port)
     [ -z "$SSH_PORT" ] && SSH_PORT=22  
 
-#   ROUTER_IP=$(nvram get lan_ipaddr)
-#   NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
-	NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $3}')
+    # CHANGED: Pull both Alias ($2) and IP ($3) from nvram
+    NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
     NODE_USER=$(nvram get http_username)
     
+    # 2. Check if NODE_IPS (not NODE_DATA) is empty
     if [ -z "$NODE_IPS" ]; then
         echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
         echo -e "${RED}[!] Installation aborted.${NC}"
@@ -98,14 +98,20 @@ check_ssh_environment() {
 
     any_success=0
     VALID_NODES=""
-    for IP in $NODE_IPS; do
-        echo -ne "[*] Testing Passwordless SSH to Node ($IP) on port $SSH_PORT... "
+    
+    # 3. Loop through the list we just made
+    for line in $NODE_IPS; do
+        # Extract the Name and IP from the "Name|IP" string
+        ALIAS=$(echo "$line" | cut -d'|' -f1)
+        IP=$(echo "$line" | cut -d'|' -f2)
+
+        echo -ne "[*] Testing Passwordless SSH to $ALIAS ($IP) on port $SSH_PORT... "
         /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
         
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
             any_success=1
-            # Build the list of only successful nodes
+            # Save it with the Alias included
             VALID_NODES="$VALID_NODES $ALIAS|$IP"
         else
             echo -e "${RED}FAILED${NC}"
