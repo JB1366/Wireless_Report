@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.7"
+SCRIPT_VERSION="1.0.8"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -161,6 +161,9 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
     [ "$iface" = "wl0.0" ] || [ "$iface" = "wl1.0" ] && continue
     SNAME=$(nvram get "${iface}_ssid")
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
+    # NEW FILTER: Skip hidden/backhaul hex SSIDs
+    if echo "$SNAME" | grep -qE '^[0-9A-Fa-f]{16,}$'; then continue; fi
+    [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
     for mac in $(wl -i "$iface" assoclist 2>/dev/null | awk '{print $2}'); do
         m_up=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
         [ "$m_up" = "C8:7F:54:4F:C8:01" ] && continue
@@ -216,6 +219,7 @@ for line in $TARGET_LIST; do
         NODE_COUNT=0
         for iface in \$(ifconfig -a | grep -oE \"wl[0-9](\.[0-9])?\"); do
             SN=\$(nvram get \"\${iface}_ssid\"); [ -z \"\$SN\" ] && SN=\$(nvram get \"\${iface%.*}_ssid\")
+            if echo \"\$SN\" | grep -qE '^[0-9A-Fa-f]{16,}$'; then continue; fi
             for mac in \$(wl -i \"\$iface\" assoclist 2>/dev/null | awk '{print \$2}'); do
                 RAW=\$(wl -i \"\$iface\" sta_info \"\$mac\" 2>/dev/null)
                 RSSI=\$(wl -i \"\$iface\" rssi \"\$mac\" 2>/dev/null | awk '{print \$1}')
