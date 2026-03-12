@@ -1,9 +1,9 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.6                                                            #
+#  Version: 1.0.7                                                            #
 #  Author: JB_1366                                                           #
-#  Revised: any node installs script                                                          #
+#  Revised: change to nvram get asus_device_list                                                          #
 #============================================================================#
 
 # --- Configuration ---
@@ -83,10 +83,11 @@ check_ssh_environment() {
     fi
 
     SSH_PORT=$(nvram get sshd_port)
-    [ -z "$SSH_PORT" ] && SSH_PORT=22  # Fallback to 22 if the variable is empty
+    [ -z "$SSH_PORT" ] && SSH_PORT=22  
 
-    ROUTER_IP=$(nvram get lan_ipaddr)
-    NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
+#   ROUTER_IP=$(nvram get lan_ipaddr)
+#   NODE_IPS=$(nvram get cfg_device_list | sed 's/</\n/g' | awk -F '>' '{print $2}' | grep -E '^[0-9.]+$' | grep -v "$ROUTER_IP")
+	NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $3}')
     NODE_USER=$(nvram get http_username)
     
     if [ -z "$NODE_IPS" ]; then
@@ -108,8 +109,9 @@ check_ssh_environment() {
         fi
     done
 
+    # Final Gatekeeper
     if [ "$any_success" -eq 0 ]; then
-        echo -e "${RED}[!] Please setup passwordless SSH Key(s) and try again.${NC}"
+        echo -e "${RED}[!] Error: No nodes authenticated. Setup SSH Keys and try again.${NC}"
         exit 1
     fi
 }
