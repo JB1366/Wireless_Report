@@ -243,11 +243,11 @@ for line in $NODE_DATA; do
         boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
         
         # Color-Synced Footers for ALL DEVICES
-                                                                                                                                                                                                                  ="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}</span>"
+        CONSOLIDATED_T="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}</span>"
         CONSOLIDATED_L="$CONSOLIDATED_L | <span style='color:$CUR_COLOR;'>${cur_l}</span>"
         CONSOLIDATED_U="$CONSOLIDATED_U | <span style='color:$CUR_COLOR;'>${cur_up_v}</span>"
         CONSOLIDATED_B="$CONSOLIDATED_B | <span style='color:$CUR_COLOR;'>${boot_d}</span>"
-        [ -z "$N_TEMPS" ] && N_TEMPS="${cur_t}" && N_LOADS="$cur_l" || N_TEMPS="$N_TEMPS$PIPE${cur_t}" && N_LOADS="$N_LOADS$PIPE$cur_l"
+        if [ -z "$N_TEMPS" ]; then N_TEMPS="$cur_t"; N_LOADS="$cur_l"; else N_TEMPS="$N_TEMPS$PIPE$cur_t"; N_LOADS="$N_LOADS$PIPE$cur_l"; fi
 		               
         # Color-Synced Footers for NODES view
         [ -z "$N_UPTIMES" ] && N_UPTIMES="<span style='color:$CUR_COLOR;'>$cur_up_v</span>" || N_UPTIMES="$N_UPTIMES$PIPE<span style='color:$CUR_COLOR;'>$cur_up_v</span>"
