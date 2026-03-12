@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.6"
+SCRIPT_VERSION="1.0.7"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -34,6 +34,14 @@ SSH_PORT=${SSH_PORT:-22}
 USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1); [ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
 CONF_FILE="/jffs/addons/wireless_report/webui.conf"
 [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+
+# --- ADD THIS BLOCK NOW ---
+if [ -n "$SSH_NODES" ]; then
+    TARGET_LIST="$SSH_NODES"
+else
+    # This is your existing fallback logic
+    TARGET_LIST=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
+fi
 
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"
@@ -190,7 +198,7 @@ CONSOLIDATED_L="<span class='val-blue'>${M_LOAD}</span>"
 CONSOLIDATED_U="<span class='val-blue'>${M_UPTIME_STR}</span>"
 CONSOLIDATED_B="<span class='val-blue'>${M_BOOT_TIME}</span>"
 N_SPLIT_COUNTS=""
-for line in $NODE_DATA; do
+for line in $TARGET_LIST; do
     NODE_OUT=""
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue

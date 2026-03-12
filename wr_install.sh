@@ -1,9 +1,9 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.7                                                            #
+#  Version: 1.0.8                                                            #
 #  Author: JB_1366                                                           #
-#  Revised: change to nvram get asus_device_list                             #
+#  Revised: fix node asus_device_list                                        #
 #============================================================================#
 
 # --- Configuration ---
@@ -97,6 +97,7 @@ check_ssh_environment() {
     fi
 
     any_success=0
+    VALID_NODES=""
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing Passwordless SSH to Node ($IP) on port $SSH_PORT... "
         /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
@@ -104,6 +105,8 @@ check_ssh_environment() {
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
             any_success=1
+            # Build the list of only successful nodes
+            VALID_NODES="$VALID_NODES $IP"
         else
             echo -e "${RED}FAILED${NC}"
         fi
@@ -114,7 +117,10 @@ check_ssh_environment() {
         echo -e "${RED}[!] Error: No nodes authenticated. Setup SSH Keys and try again.${NC}"
         exit 1
     fi
-}
+
+    # Save ONLY the authenticated nodes to webui.conf
+    sed -i '/SSH_NODES=/d' "$CONF_FILE"
+    echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
 
 do_install() {
     # 1. READ existing config to find the old mount
