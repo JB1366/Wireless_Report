@@ -3,7 +3,7 @@
 #  Wireless Report Installer                                                 #
 #  Version: 1.0.7                                                            #
 #  Author: JB_1366                                                           #
-#  Revised: change to nvram get asus_device_list                                                          #
+#  Revised: change to nvram get asus_device_list                             #
 #============================================================================#
 
 # --- Configuration ---
