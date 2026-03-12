@@ -183,7 +183,6 @@ done
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""; N_SPLIT_COUNTS=""
 NODE_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"; PIPE=" <span style='color:white;'>|</span> "; COLOR_IDX=0; ACTIVE_NODES=0
 MC_T=$(get_temp_class "$M_TEMP"); MC_L=$(get_load_class "$M_LOAD")
-
 MAIN_LABEL="<span class='router-branding'>$M_NAME (MAIN)</span>"
 CONSOLIDATED_T="<span class='val-blue'>${M_TEMP}</span>"
 CONSOLIDATED_L="<span class='val-blue'>${M_LOAD}</span>"
@@ -274,8 +273,7 @@ done
 
 T_EXC=$((T_EXC + $(grep -c "EXC" "$Q_RELAY"))); T_GOOD=$((T_GOOD + $(grep -c "GOOD" "$Q_RELAY")))
 T_FAIR=$((T_FAIR + $(grep -c "FAIR" "$Q_RELAY"))); T_POOR=$((T_POOR + $(grep -c "POOR" "$Q_RELAY")))
-mv "$NEW_HISTORY" "$HISTORY_DB"
-
+mv "$NEW_HISTORY" "$HISTORY_DB"; GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 
 if [ "$ACTIVE_NODES" -ge 1 ]; then 
