@@ -14,6 +14,7 @@ TAB_LABEL="Wireless Report"
 INSTALL_DIR="/jffs/addons/wireless_report"
 WEB_PAGE="$INSTALL_DIR/wireless.asp"
 RAM_PAGE="/tmp/wireless.asp"
+CONF_FILE="$INSTALL_DIR/webui.conf"
 
 # Does the firmware support addons?
 nvram get rc_support | grep -q am_addons
