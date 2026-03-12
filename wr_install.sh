@@ -74,7 +74,8 @@ show_menu() {
 }
 
 check_ssh_environment() {
-    echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
+    mkdir -p "$INSTALL_DIR" 2>/dev/null
+	echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     
     if [ ! -f "$SSH_KEY" ]; then
         echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
@@ -149,7 +150,7 @@ do_install() {
     check_storage
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
-    mkdir -p "$INSTALL_DIR" 2>/dev/null
+    
     [ ! -f "$CONF_FILE" ] && echo "REPORT_UNIT=F" > "$CONF_FILE"
 
     # Pre-cleanup to prevent double tabs
