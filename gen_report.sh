@@ -83,6 +83,20 @@ check_new() {
 
 ip_to_num() { echo "$1" | awk -F. '{if(NF==4) printf "%03d%03d%03d%03d", $1,$2,$3,$4; else printf "000000000000";}' ; }
 
+get_band_html() {
+    local iface=$1; local width=$2; local w_text=""
+    [ -n "$width" ] && w_text=" ($width"M")"
+    if echo "$iface" | grep -q "wl0"; then echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
+    elif echo "$iface" | grep -q "wl1"; then echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
+    else echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>"; fi
+}
+
+fmt_time() {
+    T=$1; [ -z "$T" ] || ! echo "$T" | grep -qE '^[0-9]+$' && echo "<span data-sort='0'>---</span>" && return
+    local pulse=""; [ "$T" -lt 1800 ] && pulse="pulse-blue"
+    echo "$T" | awk -v p="$pulse" '{d=int($1/86400); h=int(($1%86400)/3600); m=int(($1%3600)/60); printf "<span class=\""p"\" data-sort=\"%s\">", $1; if(d>0) printf "%02dd %02dh", d, h; else if(h>0) printf "%02dh %02dm", h, m; else printf "00h %02dm", m; printf "</span>";}'
+}
+
 # Updated to handle F or C based on webui.conf
 to_f() {
     local raw_c=$1
@@ -111,23 +125,7 @@ get_temp_class() {
         awk -v t="$val" 'BEGIN { if(t>167) print "stat-hot"; else if(t>155) print "stat-warm"; else print "val-blue"; }'
     fi
 }
-
-get_band_html() {
-    local iface=$1; local width=$2; local w_text=""
-    [ -n "$width" ] && w_text=" ($width"M")"
-    if echo "$iface" | grep -q "wl0"; then echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
-    elif echo "$iface" | grep -q "wl1"; then echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
-    else echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>"; fi
-}
-
-fmt_time() {
-    T=$1; [ -z "$T" ] || ! echo "$T" | grep -qE '^[0-9]+$' && echo "<span data-sort='0'>---</span>" && return
-    local pulse=""; [ "$T" -lt 1800 ] && pulse="pulse-blue"
-    echo "$T" | awk -v p="$pulse" '{d=int($1/86400); h=int(($1%86400)/3600); m=int(($1%3600)/60); printf "<span class=\""p"\" data-sort=\"%s\">", $1; if(d>0) printf "%02dd %02dh", d, h; else if(h>0) printf "%02dh %02dm", h, m; else printf "00h %02dm", m; printf "</span>";}'
-}
-
-to_f() { [ -z "$1" ] || ! echo "$1" | grep -qE '^-?[0-9]+$' && echo "--" && return; echo "$1" | awk '{printf "%.0f", ($1 * 1.8) + 32}'; }
-get_temp_class() { local f=$1; [ "$f" = "--" ] && echo "val-blue" && return; awk -v t="$f" 'BEGIN { if(t>167) print "stat-hot"; else if(t>155) print "stat-warm"; else print "val-blue"; }'; }
+ 
 get_load_class() { local l=$1; [ "$l" = "--" ] && echo "val-blue" && return; awk -v l="$l" 'BEGIN { if(l>2.0) print "stat-hot"; else if(l>1.0) print "stat-warm"; else print "val-blue"; }'; }
 
 # --- Data Capture ---
@@ -243,6 +241,7 @@ for line in $NODE_DATA; do
         
         # Color-Synced Footers for ALL DEVICES
         CONSOLIDATED_T="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}</span>"
+        [ -z "$N_TEMPS" ] && N_TEMPS="${cur_t}" || N_TEMPS="$N_TEMPS$PIPE${cur_t}"
         CONSOLIDATED_L="$CONSOLIDATED_L | <span style='color:$CUR_COLOR;'>${cur_l}</span>"
         CONSOLIDATED_U="$CONSOLIDATED_U | <span style='color:$CUR_COLOR;'>${cur_up_v}</span>"
         CONSOLIDATED_B="$CONSOLIDATED_B | <span style='color:$CUR_COLOR;'>${boot_d}</span>"
@@ -490,7 +489,7 @@ function closePopout() { document.getElementById('popoutModal').style.display = 
                   $MAIN_LABEL<br>
                   <span style="font-size:11px; font-weight:normal;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="$MC_T">$M_TEMP</span> • Load: <span class="$MC_L">$MC_L">$M_LOAD</span> • Devices: <span class="val-blue">$M_TOTAL</span></div>
+                  <div class="header-stats-row">Temp: <span class="$MC_T">$M_TEMP</span> • Load: <span class="$MC_L">$M_LOAD</span> • Devices: <span class="val-blue">$M_TOTAL</span></div>
                 </div>
                 <table id="mainTable" class="report_table show-ip">
                   <thead><tr>
