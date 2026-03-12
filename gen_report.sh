@@ -1,26 +1,26 @@
 #!/bin/sh
 #============================================================================#
-#  _    _  _               _                                                 #
-# | |  | |(_)             | |                                                #
-# | |  | | _  _ __  ___   | |  ___  ___  ___                                 #
-# | |/\| || || '__|/ _ \  | | / _ \/ __|/ __|                                #
-# \  /\  /| || |  |  __/  | ||  __/\__ \\__ \                                #
-#  \/  \/ |_||_|   \___|  |_| \___||___/|___/                                #
+#               _    _  _               _                                    #
+#              | |  | |(_)             | |                                   #
+#              | |  | | _  _ __  ___   | |  ___  ___  ___                    #
+#              | |/\| || || '__|/ _ \  | | / _ \/ __|/ __|                   #
+#              \  /\  /| || |  |  __/  | ||  __/\__ \\__ \                   #
+#               \/  \/ |_||_|   \___|  |_| \___||___/|___/                   #
 #                                                                            #
-#  _____                             _                                       #
-# |  __ \                           | |                                      #
-# | |__) | ___  _ __    ___   _ __  | |_                                     #
-# |  _  / / _ \| '_ \  / _ \ | '__| | __|                                    #
-# | | \ \|  __/| |_) || (_) || |    | |_                                     #
-# |_|  \_\\___|| .__/  \___/ |_|     \__|                                    #
-#              | |                                                           #
-#              |_|                                                           #
+#               _____                             _                          #
+#              |  __ \                           | |                         #
+#              | |__) | ___  _ __    ___   _ __  | |_                        #
+#              |  _  / / _ \| '_ \  / _ \ | '__| | __|                       #
+#              | | \ \|  __/| |_) || (_) || |    | |_                        #
+#              |_|  \_\\___|| .__/  \___/ |_|     \__|                       #
+#                           | |                                              #
+#                           |_|                                              #
 #                                                                            #
 # Author: JB_1366                                                            #
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.4"
+SCRIPT_VERSION="1.0.5"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -83,6 +83,35 @@ check_new() {
 
 ip_to_num() { echo "$1" | awk -F. '{if(NF==4) printf "%03d%03d%03d%03d", $1,$2,$3,$4; else printf "000000000000";}' ; }
 
+# Updated to handle F or C based on webui.conf
+to_f() {
+    local raw_c=$1
+    [ -z "$raw_c" ] || ! echo "$raw_c" | grep -qE '^-?[0-9]+$' && echo "--" && return
+    
+    # Default to Fahrenheit if REPORT_UNIT is missing or not 'C'
+    if [ "$REPORT_UNIT" = "C" ]; then
+        echo "${raw_c}°C"
+    else
+        # The math: (C * 1.8) + 32
+        echo "$raw_c" | awk '{printf "%.0f°F", ($1 * 1.8) + 32}'
+    fi
+}
+
+# Adjusted thresholds: 167°F (75°C) and 155°F (68°C)
+get_temp_class() {
+    local temp_str=$1
+    [ "$temp_str" = "--" ] && echo "val-blue" && return
+    
+    # Strip the symbol for comparison
+    local val=$(echo "$temp_str" | sed 's/[^0-9.]//g')
+    
+    if [ "$REPORT_UNIT" = "C" ]; then
+        awk -v t="$val" 'BEGIN { if(t>75) print "stat-hot"; else if(t>68) print "stat-warm"; else print "val-blue"; }'
+    else
+        awk -v t="$val" 'BEGIN { if(t>167) print "stat-hot"; else if(t>155) print "stat-warm"; else print "val-blue"; }'
+    fi
+}
+
 get_band_html() {
     local iface=$1; local width=$2; local w_text=""
     [ -n "$width" ] && w_text=" ($width"M")"
@@ -105,8 +134,11 @@ get_load_class() { local l=$1; [ "$l" = "--" ] && echo "val-blue" && return; awk
 grep "0x2" /proc/net/arp | awk '{print $4 "|" $1}' | tr '[:lower:]' '[:upper:]' > $ARP_CACHE
 [ -f "$YAZ_CLIENTS" ] && awk -F',' '{print toupper($1) "|" $2 "|" $3}' "$YAZ_CLIENTS" > $YAZ_CACHE || > $YAZ_CACHE
 T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0
-M_C=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null | cut -c1-2)
-M_TEMP=$(to_f "$M_C"); M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
+# Updated Main Temp Grab
+M_C_RAW=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
+M_C=$((M_C_RAW / 1000))
+M_TEMP=$(to_f "$M_C")
+M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
 M_TOTAL=0; N_TOTAL=0
 M_UPTIME_STR=$(uptime | awk -F'( |multivars_delim|,|:)+' '{if ($7=="day" || $7=="days") print $6"d "$8"h "$9"m"; else print $6"h "$7"m"}')
 M_BOOT_TIME=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%m/%d %I:%M %p")
@@ -155,7 +187,7 @@ NODE_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"; PIPE=" <span styl
 MC_T=$(get_temp_class "$M_TEMP"); MC_L=$(get_load_class "$M_LOAD")
 
 MAIN_LABEL="<span class='router-branding'>$M_NAME (MAIN)</span>"
-CONSOLIDATED_T="<span class='val-blue'>${M_TEMP}°F</span>"
+CONSOLIDATED_T="<span class='val-blue'>${M_TEMP}</span>"
 CONSOLIDATED_L="<span class='val-blue'>${M_LOAD}</span>"
 CONSOLIDATED_U="<span class='val-blue'>${M_UPTIME_STR}</span>"
 CONSOLIDATED_B="<span class='val-blue'>${M_BOOT_TIME}</span>"
@@ -199,7 +231,10 @@ for line in $NODE_DATA; do
         NODE_BRAND="<span class='router-branding' style='color:$CUR_COLOR;'>${ALIAS}<sup>$ACTIVE_NODES</sup></span>"
         [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES$PIPE$NODE_BRAND"
         
-        cur_t_raw=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2); cur_t=$(to_f "$cur_t_raw")
+        cur_t_raw=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2)
+        # Check if node sent millidegrees or whole degrees
+        [ ${#cur_t_raw} -gt 3 ] && cur_t_raw=$((cur_t_raw / 1000))
+        cur_t=$(to_f "$cur_t_raw")
         cur_l=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
         cur_c=$(echo "$NODE_OUT" | grep "COUNT|" | cut -d'|' -f2); [ -z "$cur_c" ] && cur_c=0
         cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
@@ -207,12 +242,12 @@ for line in $NODE_DATA; do
         boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
         
         # Color-Synced Footers for ALL DEVICES
-        CONSOLIDATED_T="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}°F</span>"
+        CONSOLIDATED_T="$CONSOLIDATED_T | <span style='color:$CUR_COLOR;'>${cur_t}</span>"
         CONSOLIDATED_L="$CONSOLIDATED_L | <span style='color:$CUR_COLOR;'>${cur_l}</span>"
         CONSOLIDATED_U="$CONSOLIDATED_U | <span style='color:$CUR_COLOR;'>${cur_up_v}</span>"
         CONSOLIDATED_B="$CONSOLIDATED_B | <span style='color:$CUR_COLOR;'>${boot_d}</span>"
         
-        [ -z "$N_TEMPS" ] && N_TEMPS="${cur_t}°F" || N_TEMPS="$N_TEMPS$PIPE${cur_t}°F"
+        [ -z "$N_TEMPS" ] && N_TEMPS="${cur_t}" || N_TEMPS="$N_TEMPS$PIPE${cur_t}"
         [ -z "$N_LOADS" ] && N_LOADS="$cur_l" || N_LOADS="$N_LOADS$PIPE$cur_l"
         
         # Color-Synced Footers for NODES view
@@ -455,7 +490,7 @@ function closePopout() { document.getElementById('popoutModal').style.display = 
                   $MAIN_LABEL<br>
                   <span style="font-size:11px; font-weight:normal;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="$MC_T">$M_TEMP°F</span> • Load: <span class="$MC_L">$M_LOAD</span> • Devices: <span class="val-blue">$M_TOTAL</span></div>
+                  <div class="header-stats-row">Temp: <span class="$MC_T">$M_TEMP</span> • Load: <span class="$MC_L">$MC_L">$M_LOAD</span> • Devices: <span class="val-blue">$M_TOTAL</span></div>
                 </div>
                 <table id="mainTable" class="report_table show-ip">
                   <thead><tr>

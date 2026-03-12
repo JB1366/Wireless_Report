@@ -1,7 +1,7 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Menu-TAB Insertion                                        #
-#  Version: 1.0.2                                                            #
+#  Version: 1.0.3                                                            #
 #  Author: JB_1366                                                           #
 #============================================================================#
 
@@ -48,7 +48,12 @@ logger "Wireless Report:" "Mounting Wireless\Wireless Report as $am_webui_page"
 cp "$WEB_PAGE" "/www/user/$am_webui_page"
 
 # Copy mounted user page to installed directory config
-echo "INSTALLED_PAGE=$am_webui_page" > "$INSTALL_DIR/webui.conf"
+if [ -f "$CONF_FILE" ]; then
+    sed -i '/INSTALLED_PAGE=/d' "$CONF_FILE"
+    echo "INSTALLED_PAGE=$am_webui_page" >> "$CONF_FILE"
+else
+    echo "INSTALLED_PAGE=$am_webui_page" > "$CONF_FILE"
+fi
 
 # Copy menuTree (if no other script has done it yet) so we can modify it
 if [ ! -f "$TEMP_MENU" ]; then
@@ -64,6 +69,7 @@ sed -i "/url: \"$am_webui_page\"/d" "$TEMP_MENU"
 # Addons Menu-Tab Insertion
 # Insert Wireless Report before HELP menu
 # sed -i "/url: \"javascript:var helpwindow=window.open('\/ext\/shared-jy\/redirect.htm'/i {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
+# logger "Wireless Report:" "Mounting Addons\Wireless Report as $am_webui_page"
 
 # Wireless Menu-Tab Insertion
 # Inject Wireless Report at the end of Advanced_Wireless_Content menu at Perfect End Offset

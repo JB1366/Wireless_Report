@@ -1,8 +1,9 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.4                                                            #
+#  Version: 1.0.5                                                            #
 #  Author: JB_1366                                                           #
+#  Revised: add F/C                                                          #
 #============================================================================#
 
 # --- Configuration ---
@@ -65,6 +66,7 @@ show_menu() {
     echo -e "  (1)  Install Wireless Report"
     echo -e "  (2)  Uninstall Wireless Report"
     echo -e "  (3)  Check/Update Latest Script"
+	echo -e "  (4)  Temperature Unit: °F(def) or °C"
     echo -e "  (e)  Exit"
     echo -e ""
     echo -e "${CYAN}==================================================${NC}"
@@ -238,12 +240,56 @@ do_uninstall() {
 
 pause() { printf "\nPress [Enter] to return..."; read discard; }
 
+set_temp_unit() {
+    clear
+    echo -e "${CYAN}==================================================${NC}"
+    echo -e "             TEMPERATURE UNIT SETTINGS            "
+    echo -e "${CYAN}==================================================${NC}"
+    
+    # Load existing config to see current setting
+    [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+    CURRENT_UNIT=${REPORT_UNIT:-F}
+    
+    echo -e " Current Setting: ${GREEN}$CURRENT_UNIT${NC}"
+    echo -e ""
+    echo -e "  (1)  Fahrenheit (°F) - Default"
+    echo -e "  (2)  Celsius (°C)"
+    echo -e "  (r)  Return to main menu"
+    echo -e ""
+    printf " Selection: "
+    read t_choice
+
+    case "$t_choice" in
+        1) NEW_UNIT="F" ;;
+        2) NEW_UNIT="C" ;;
+        r|R) return ;;
+        *) echo -e "${RED}Invalid selection.${NC}"; sleep 1; set_temp_unit; return ;;
+    esac
+
+    # Update the config file
+    if [ ! -f "$CONF_FILE" ]; then
+        echo "REPORT_UNIT=$NEW_UNIT" > "$CONF_FILE"
+    else
+        # Remove old entry if it exists and append new one
+        sed -i '/REPORT_UNIT=/d' "$CONF_FILE"
+        echo "REPORT_UNIT=$NEW_UNIT" >> "$CONF_FILE"
+    fi
+
+    echo -e "${GREEN}[+] Temperature unit set to $NEW_UNIT${NC}"
+    
+    # Trigger a report regeneration in the background to apply changes immediately
+    [ -f "$REPORT_SCRIPT" ] && sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
+    
+    pause
+}
+
 while true; do
     clear; check_version; show_menu; read choice
     case "$choice" in
         1) do_install ;;
         2) do_uninstall ;;
         3) do_update ;;
+		4) set_temp_unit ;;
         e|E) clear; exit 0 ;;
         *) echo -e "${RED}Invalid selection.${NC}"; sleep 1 ;;
     esac
