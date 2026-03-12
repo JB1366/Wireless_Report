@@ -140,9 +140,6 @@ M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
 M_TOTAL=0; N_TOTAL=0
 M_UPTIME_STR=$(uptime | awk -F'( |multivars_delim|,|:)+' '{if ($7=="day" || $7=="days") print $6"d "$8"h "$9"m"; else print $6"h "$7"m"}')
 M_BOOT_TIME=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%m/%d %I:%M %p")
-# --- Reset Accumulators to prevent double entries ---
-M_TOTAL=0; N_TOTAL=0; ACTIVE_NODES=0; COLOR_IDX=0
-N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""; N_SPLIT_COUNTS=""; CONSOLIDATED_T=""; CONSOLIDATED_L=""; CONSOLIDATED_U=""; CONSOLIDATED_B=""
 
 # Main Router Scan
 for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
@@ -238,7 +235,7 @@ for line in $NODE_DATA; do
         cur_t=$(to_f "$cur_t_raw")
         cur_l=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
         cur_c=$(echo "$NODE_OUT" | grep "COUNT|" | cut -d'|' -f2); [ -z "$cur_c" ] && cur_c=0
-        cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
+		cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
         cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2); N_TOTAL=$((N_TOTAL + cur_c))
         boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
         
