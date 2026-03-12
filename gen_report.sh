@@ -140,6 +140,9 @@ M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
 M_TOTAL=0; N_TOTAL=0
 M_UPTIME_STR=$(uptime | awk -F'( |multivars_delim|,|:)+' '{if ($7=="day" || $7=="days") print $6"d "$8"h "$9"m"; else print $6"h "$7"m"}')
 M_BOOT_TIME=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%m/%d %I:%M %p")
+# --- Reset Accumulators to prevent double entries ---
+M_TOTAL=0; N_TOTAL=0; ACTIVE_NODES=0; COLOR_IDX=0
+N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""; N_SPLIT_COUNTS=""; CONSOLIDATED_T=""; CONSOLIDATED_L=""; CONSOLIDATED_U=""; CONSOLIDATED_B=""
 
 # Main Router Scan
 for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
