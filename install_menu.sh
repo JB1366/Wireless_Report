@@ -49,9 +49,15 @@ cp "$WEB_PAGE" "/www/user/$am_webui_page"
 
 # Copy mounted user page to installed directory config
 if [ -f "$CONF_FILE" ]; then
-    sed -i '/INSTALLED_PAGE=/d' "$CONF_FILE"
-    echo "INSTALLED_PAGE=$am_webui_page" >> "$CONF_FILE"
+    if grep -q "INSTALLED_PAGE=" "$CONF_FILE"; then
+        # Replace the value in-place so REPORT_UNIT stays safe
+        sed -i "s/^INSTALLED_PAGE=.*/INSTALLED_PAGE=$am_webui_page/" "$CONF_FILE"
+    else
+        # Line doesn't exist, append it
+        echo "INSTALLED_PAGE=$am_webui_page" >> "$CONF_FILE"
+    fi
 else
+    # File missing, create it
     echo "INSTALLED_PAGE=$am_webui_page" > "$CONF_FILE"
 fi
 

@@ -117,15 +117,16 @@ check_ssh_environment() {
 }
 
 do_install() {
+    # 1. READ existing config to find the old mount
     if [ -f "$CONF_FILE" ]; then
-    OLD_PAGE=$(grep "INSTALLED_PAGE" "$CONF_FILE" | cut -d'=' -f2)
-    
-    if [ -n "$OLD_PAGE" ]; then
-        echo -e "${CYAN}[*] Detaching existing $OLD_PAGE mount...${NC}"
-        umount -l "/www/user/$OLD_PAGE" >/dev/null 2>&1
-        rm -f "/www/user/$OLD_PAGE" >/dev/null 2>&1
+        OLD_PAGE=$(grep "INSTALLED_PAGE" "$CONF_FILE" | cut -d'=' -f2)
+        
+        if [ -n "$OLD_PAGE" ]; then
+            echo -e "${CYAN}[*] Detaching existing $OLD_PAGE mount...${NC}"
+            umount -l "/www/user/$OLD_PAGE" >/dev/null 2>&1
+            rm -f "/www/user/$OLD_PAGE" >/dev/null 2>&1
+        fi
     fi
-fi
 	
 	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
@@ -136,8 +137,6 @@ fi
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR" 2>/dev/null
-	
-	# Auto-create default config if missing so scripts have valid data
     [ ! -f "$CONF_FILE" ] && echo "REPORT_UNIT=F" > "$CONF_FILE"
 
     # Pre-cleanup to prevent double tabs
