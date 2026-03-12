@@ -249,7 +249,7 @@ for line in $NODE_DATA; do
         # Color-Synced Footers for NODES view
         [ -z "$N_UPTIMES" ] && N_UPTIMES="<span style='color:$CUR_COLOR;'>$cur_up_v</span>" || N_UPTIMES="$N_UPTIMES$PIPE<span style='color:$CUR_COLOR;'>$cur_up_v</span>"
         [ -z "$N_BOOTS" ] && N_BOOTS="<span style='color:$CUR_COLOR;'>$boot_d</span>" || N_BOOTS="$N_BOOTS$PIPE<span style='color:$CUR_COLOR;'>$boot_d</span>"
-        [ -z "$N_SPLIT_COUNTS" ] && N_SPLIT_COUNTS="$cur_c" || N_SPLIT_COUNTS="$N_SPLIT_COUNTS | $cur_c"
+        if [ -z "$N_SPLIT_COUNTS" ]; then N_SPLIT_COUNTS="$cur_c"; else N_SPLIT_COUNTS="$N_SPLIT_COUNTS | $cur_c"; fi
         echo "$NODE_OUT" | grep "DATA|" | while read -r dline; do
             m_up=$(echo "$dline" | cut -d'|' -f2 | tr '[:lower:]' '[:upper:]')
             [ "$m_up" = "C8:7F:54:4F:C8:01" ] || grep -qi "$m_up" "$SEEN_MACS" && continue
@@ -274,7 +274,7 @@ done
 
 T_EXC=$((T_EXC + $(grep -c "EXC" "$Q_RELAY"))); T_GOOD=$((T_GOOD + $(grep -c "GOOD" "$Q_RELAY")))
 T_FAIR=$((T_FAIR + $(grep -c "FAIR" "$Q_RELAY"))); T_POOR=$((T_POOR + $(grep -c "POOR" "$Q_RELAY")))
-mv "$NEW_HISTORY" "$HISTORY_DB"; GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
+mv "$NEW_HISTORY" "$HISTORY_DB"
 
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 
