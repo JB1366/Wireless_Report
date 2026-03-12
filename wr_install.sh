@@ -1,9 +1,9 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.5                                                            #
+#  Version: 1.0.6                                                            #
 #  Author: JB_1366                                                           #
-#  Revised: add F/C                                                          #
+#  Revised: any node installs script                                                          #
 #============================================================================#
 
 # --- Configuration ---
@@ -95,18 +95,25 @@ check_ssh_environment() {
         exit 1
     fi
 
+    any_success=0
     for IP in $NODE_IPS; do
         echo -ne "[*] Testing Passwordless SSH to Node ($IP) on port $SSH_PORT... "
         /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
         
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
+            any_success=1
         else
             echo -e "${RED}FAILED${NC}"
-            echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
-            exit 1
+            # Removed the exit 1 from here so it keeps checking the rest
         fi
     done
+
+    # This is the new gatekeeper: Only exit if NO nodes authenticated
+    if [ "$any_success" -eq 0 ]; then
+        echo -e "${RED}[!] Please setup passwordless SSH Keys on your nodes and try again.${NC}"
+        exit 1
+    fi
 }
 
 do_install() {
