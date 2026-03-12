@@ -75,55 +75,56 @@ show_menu() {
 
 check_ssh_environment() {
     mkdir -p "$INSTALL_DIR" 2>/dev/null
-    # Ensure the file exists so sed does not error out on first install or upgrade
     [ ! -f "$CONF_FILE" ] && touch "$CONF_FILE"
 
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     
     if [ ! -f "$SSH_KEY" ]; then
         echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
-        echo -e "${RED}[!] Please setup passwordless SSH Key(s) and try again.${NC}"
         exit 1
     fi
 
     SSH_PORT=$(nvram get sshd_port)
     [ -z "$SSH_PORT" ] && SSH_PORT=22  
 
-    # Pull both Alias ($2) and IP ($3) from nvram
-    NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
+    # 1. Get ALL devices from the list to check them one by one
+    ALL_NODES=$(nvram get asus_device_list | sed 's/</\n/g' | sort -t . -k 4,4n)
     NODE_USER=$(nvram get http_username)
     
-    if [ -z "$NODE_IPS" ]; then
-        echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
-        echo -e "${RED}[!] Installation aborted.${NC}"
-        exit 1
-    fi
-
     any_success=0
     VALID_NODES=""
     
-    for line in $NODE_IPS; do
-        ALIAS=$(echo "$line" | cut -d'|' -f1)
-        IP=$(echo "$line" | cut -d'|' -f2)
-
-        echo -ne "[*] Testing Passwordless SSH to $ALIAS ($IP) on port $SSH_PORT... "
-        /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
+    for line in $ALL_NODES; do
+        [ -z "$line" ] && continue
         
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}AUTHENTICATED${NC}"
-            any_success=1
-            VALID_NODES="$VALID_NODES $ALIAS|$IP"
+        # Split the data fields
+        ALIAS=$(echo "$line" | cut -d'>' -f2)
+        IP=$(echo "$line" | cut -d'>' -f3)
+        TYPE=$(echo "$line" | cut -d'>' -f10) # The 10th field is the device type
+
+        # 2. Check if it is a Mesh Node (Type 2)
+        if [ "$TYPE" = "2" ]; then
+            echo -ne "[*] Testing SSH to $ALIAS ($IP)... "
+            /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
+            
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}AUTHENTICATED${NC}"
+                any_success=1
+                VALID_NODES="$VALID_NODES $ALIAS|$IP"
+            else
+                echo -e "${RED}FAILED (Check SSH Keys)${NC}"
+            fi
         else
-            echo -e "${RED}FAILED${NC}"
+            # 3. Inform the user why other IPs (like .252) are being ignored
+            echo -e "${CYAN}[-] Skipping $ALIAS ($IP): Not an AIMesh Node.${NC}"
         fi
     done
 
     if [ "$any_success" -eq 0 ]; then
-        echo -e "${RED}[!] Error: No nodes authenticated. Setup SSH Keys and try again.${NC}"
+        echo -e "${RED}[!] Error: No Mesh nodes authenticated.${NC}"
         exit 1
     fi
 
-    # Save ONLY the authenticated nodes to webui.conf
     sed -i '/SSH_NODES=/d' "$CONF_FILE"
     echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
 }
