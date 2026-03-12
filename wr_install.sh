@@ -79,16 +79,11 @@ check_ssh_environment() {
 
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     
-    if [ ! -f "$SSH_KEY" ]; then
-        echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
-        exit 1
-    fi
-
-    SSH_PORT=$(nvram get sshd_port)
-    [ -z "$SSH_PORT" ] && SSH_PORT=22  
+    # 1. Get the Main Router IP to make sure we skip it
+    LAN_IP=$(nvram get lan_ipaddr)
     NODE_USER=$(nvram get http_username)
     
-    # Get all entries from the list
+    # 2. Get the full list of devices
     ALL_ENTRIES=$(nvram get asus_device_list | sed 's/</\n/g' | sort -t . -k 4,4n)
     
     any_success=0
@@ -97,35 +92,33 @@ check_ssh_environment() {
     for line in $ALL_ENTRIES; do
         [ -z "$line" ] && continue
         
-        # Extract Alias and IP
         ALIAS=$(echo "$line" | cut -d'>' -f2)
         IP=$(echo "$line" | cut -d'>' -f3)
 
-        # FIX: Check if the node contains the '>2' flag anywhere in the line.
-        # This is safer than checking for the end of the line.
-        if echo "$line" | grep -q '>2'; then
-            echo -ne "[*] Testing SSH to $ALIAS ($IP)... "
-            /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
-            
-            if [ $? -eq 0 ]; then
-                echo -e "${GREEN}AUTHENTICATED${NC}"
-                any_success=1
-                VALID_NODES="$VALID_NODES $ALIAS|$IP"
-            else
-                echo -e "${RED}FAILED (Check SSH Keys)${NC}"
-            fi
+        # 3. If it's the Main Router, skip it quietly
+        if [ "$IP" = "$LAN_IP" ]; then
+            continue
+        fi
+
+        # 4. Try to connect to EVERYTHING else. If it works, it's a node!
+        echo -ne "[*] Testing Connection to $ALIAS ($IP)... "
+        /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
+        
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}AUTHENTICATED${NC}"
+            any_success=1
+            VALID_NODES="$VALID_NODES $ALIAS|$IP"
         else
-            # This skips the Main Router (.1) which usually has flag '>0' or '>1'
-            echo -e "${CYAN}[-] Skipping $ALIAS ($IP): Not an AIMesh Node.${NC}"
+            # If it fails, it's probably just a regular client (phone/PC), so skip it
+            echo -e "${CYAN}[-] Skipping: No SSH response.${NC}"
         fi
     done
 
     if [ "$any_success" -eq 0 ]; then
-        echo -e "${RED}[!] Error: No Mesh nodes authenticated.${NC}"
+        echo -e "${RED}[!] Error: No Mesh nodes responded to SSH.${NC}"
         exit 1
     fi
 
-    # Save to the config
     sed -i '/SSH_NODES=/d' "$CONF_FILE"
     echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
 }
