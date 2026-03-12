@@ -75,52 +75,118 @@ show_menu() {
 
 check_ssh_environment() {
     mkdir -p "$INSTALL_DIR" 2>/dev/null
+    # Ensure the file exists so sed does not error out on first install or upgrade
     [ ! -f "$CONF_FILE" ] && touch "$CONF_FILE"
 
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
     
-    # 1. Get the Main Router IP to make sure we skip it
-    LAN_IP=$(nvram get lan_ipaddr)
+    if [ ! -f "$SSH_KEY" ]; then
+        echo -e "${RED}[!] ERROR: Local SSH Key not found at $SSH_KEY${NC}"
+        echo -e "${RED}[!] Please setup passwordless SSH Key(s) and try again.${NC}"
+        exit 1
+    fi
+
+    SSH_PORT=$(nvram get sshd_port)
+    [ -z "$SSH_PORT" ] && SSH_PORT=22  
+
+    # Pull both Alias ($2) and IP ($3) from nvram
+    NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
     NODE_USER=$(nvram get http_username)
     
-    # 2. Get the full list of devices
-    ALL_ENTRIES=$(nvram get asus_device_list | sed 's/</\n/g' | sort -t . -k 4,4n)
-    
+    if [ -z "$NODE_IPS" ]; then
+        echo -e "${RED}[!] No AIMesh Nodes detected. This script requires a AIMesh environment.${NC}"
+        echo -e "${RED}[!] Installation aborted.${NC}"
+        exit 1
+    fi
+
     any_success=0
     VALID_NODES=""
     
-    for line in $ALL_ENTRIES; do
-        [ -z "$line" ] && continue
-        
-        ALIAS=$(echo "$line" | cut -d'>' -f2)
-        IP=$(echo "$line" | cut -d'>' -f3)
+    for line in $NODE_IPS; do
+        ALIAS=$(echo "$line" | cut -d'|' -f1)
+        IP=$(echo "$line" | cut -d'|' -f2)
 
-        # 3. If it's the Main Router, skip it quietly
-        if [ "$IP" = "$LAN_IP" ]; then
-            continue
-        fi
-
-        # 4. Try to connect to EVERYTHING else. If it works, it's a node!
-        echo -ne "[*] Testing Connection to $ALIAS ($IP)... "
-        /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
+        echo -ne "[*] Testing Passwordless SSH to $ALIAS ($IP) on port $SSH_PORT... "
+        /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=3 -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>&1
         
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}AUTHENTICATED${NC}"
             any_success=1
             VALID_NODES="$VALID_NODES $ALIAS|$IP"
         else
-            # If it fails, it's probably just a regular client (phone/PC), so skip it
-            echo -e "${CYAN}[-] Skipping: No SSH response.${NC}"
+            echo -e "${RED}FAILED${NC}"
         fi
     done
 
     if [ "$any_success" -eq 0 ]; then
-        echo -e "${RED}[!] Error: No Mesh nodes responded to SSH.${NC}"
+        echo -e "${RED}[!] Error: No nodes authenticated. Setup SSH Keys and try again.${NC}"
         exit 1
     fi
 
+    # Save ONLY the authenticated nodes to webui.conf
     sed -i '/SSH_NODES=/d' "$CONF_FILE"
     echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONF_FILE"
+}
+
+do_install() {
+    # 1. READ existing config to find the old mount
+    if [ -f "$CONF_FILE" ]; then
+        OLD_PAGE=$(grep "INSTALLED_PAGE" "$CONF_FILE" | cut -d'=' -f2)
+        
+        if [ -n "$OLD_PAGE" ]; then
+            echo -e "${CYAN}[*] Detaching existing $OLD_PAGE mount...${NC}"
+            umount -l "/www/user/$OLD_PAGE" >/dev/null 2>&1
+            rm -f "/www/user/$OLD_PAGE" >/dev/null 2>&1
+        fi
+    fi
+	
+    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+        echo -e "${RED}[!] ERROR: JFFS custom scripts are not enabled.${NC}"
+        exit 1
+    fi
+
+    check_storage
+    check_ssh_environment
+    echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
+    
+    # FIX: Check if the specific setting exists, not just the file
+    if ! grep -q "REPORT_UNIT=" "$CONF_FILE" 2>/dev/null; then
+        echo "REPORT_UNIT=F" >> "$CONF_FILE"
+    fi
+
+    # Pre-cleanup to prevent double tabs
+    [ -f "/tmp/menuTree.js" ] && sed -i '/Wireless Report/d' /tmp/menuTree.js 2>/dev/null
+
+    curl -s --connect-timeout 5 "$GITHUB_ROOT/gen_report.sh" -o "$REPORT_SCRIPT"
+    curl -s --connect-timeout 5 "$GITHUB_ROOT/install_menu.sh" -o "$MENU_SCRIPT"
+    chmod +x "$REPORT_SCRIPT" "$MENU_SCRIPT" 2>/dev/null
+	
+    if [ -f "$MENU_SCRIPT" ]; then
+        echo -e "${CYAN}[*] Mounting Wireless Report TAB to Wireless menu...${NC}"
+        sh "$MENU_SCRIPT" >/dev/null 2>&1
+        
+        [ ! -f "/jffs/scripts/services-start" ] && echo "#!/bin/sh" > /jffs/scripts/services-start
+        sed -i "\|$MENU_SCRIPT|d" /jffs/scripts/services-start
+        [ -n "$(tail -c 1 /jffs/scripts/services-start 2>/dev/null)" ] && echo "" >> /jffs/scripts/services-start
+        echo "sh $MENU_SCRIPT # Inject Wireless Report" >> /jffs/scripts/services-start
+        chmod +x /jffs/scripts/services-start 2>/dev/null
+        
+        [ ! -f "/jffs/scripts/service-event" ] && echo "#!/bin/sh" > /jffs/scripts/service-event
+        sed -i "/wireless_report/d" /jffs/scripts/service-event
+        [ -n "$(tail -c 1 /jffs/scripts/service-event 2>/dev/null)" ] && echo "" >> /jffs/scripts/service-event
+        echo "if [ \"\$1\" = \"restart\" ] && [ \"\$2\" = \"wireless_report\" ]; then sh $REPORT_SCRIPT; fi # Wireless Report" >> /jffs/scripts/service-event
+        chmod +x /jffs/scripts/service-event
+        
+        [ -f "$INSTALL_DIR/wireless.asp" ] && rm -f "$INSTALL_DIR/wireless.asp" 2>/dev/null
+        
+        service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
+        sh "$REPORT_SCRIPT" >/dev/null 2>&1 &
+        
+        echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
+    else
+        echo -e "${RED}[!] ERROR: Download failed.${NC}"
+    fi
+    pause
 }
 
 do_update() {
