@@ -136,6 +136,9 @@ fi
     check_ssh_environment
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
     mkdir -p "$INSTALL_DIR" 2>/dev/null
+	
+	# Auto-create default config if missing so scripts have valid data
+    [ ! -f "$CONF_FILE" ] && echo "REPORT_UNIT=F" > "$CONF_FILE"
 
     # Pre-cleanup to prevent double tabs
     [ -f "/tmp/menuTree.js" ] && sed -i '/Wireless Report/d' /tmp/menuTree.js 2>/dev/null
@@ -259,7 +262,7 @@ pause() { printf "\nPress [Enter] to return..."; read discard; }
 set_temp_unit() {
     clear
     echo -e "${CYAN}==================================================${NC}"
-    echo -e "             TEMPERATURE UNIT SETTINGS            "
+    echo -e "             TEMPERATURE UNIT SETTINGS                        "
     echo -e "${CYAN}==================================================${NC}"
     
     # Load existing config to see current setting
