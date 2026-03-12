@@ -190,6 +190,7 @@ CONSOLIDATED_U="<span class='val-blue'>${M_UPTIME_STR}</span>"
 CONSOLIDATED_B="<span class='val-blue'>${M_BOOT_TIME}</span>"
 
 for line in $NODE_DATA; do
+    NODE_OUT=""
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue
     # UPDATED: Use the loaded $SSH_PORT
@@ -233,7 +234,7 @@ for line in $NODE_DATA; do
         [ ${#cur_t_raw} -gt 3 ] && cur_t_raw=$((cur_t_raw / 1000))
         cur_t=$(to_f "$cur_t_raw")
         cur_l=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
-        cur_c=$(echo "$NODE_OUT" | grep "COUNT|" | cut -d'|' -f2); [ -z "$cur_c" ] && cur_c=0
+        cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2)
 		cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
         cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2); N_TOTAL=$((N_TOTAL + cur_c))
 		boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
@@ -248,11 +249,13 @@ for line in $NODE_DATA; do
         # Color-Synced Footers for NODES view
         [ -z "$N_UPTIMES" ] && N_UPTIMES="<span style='color:$CUR_COLOR;'>$cur_up_v</span>" || N_UPTIMES="$N_UPTIMES$PIPE<span style='color:$CUR_COLOR;'>$cur_up_v</span>"
         [ -z "$N_BOOTS" ] && N_BOOTS="<span style='color:$CUR_COLOR;'>$boot_d</span>" || N_BOOTS="$N_BOOTS$PIPE<span style='color:$CUR_COLOR;'>$boot_d</span>"
-        if [ -z "$N_SPLIT_COUNTS" ]; then N_SPLIT_COUNTS="$cur_c"; else N_SPLIT_COUNTS="$N_SPLIT_COUNTS | $cur_c"; fi
-        echo "$NODE_OUT" | grep "DATA|" | while read -r dline; do
+        node_display_count=0
+		while read -r dline; do
             m_up=$(echo "$dline" | cut -d'|' -f2 | tr '[:lower:]' '[:upper:]')
             [ "$m_up" = "C8:7F:54:4F:C8:01" ] || grep -qi "$m_up" "$SEEN_MACS" && continue
-            echo "$m_up" >> "$SEEN_MACS"; r_raw=$(echo "$dline" | cut -d'|' -f3)
+			N_TOTAL=$((N_TOTAL + 1))
+            node_display_count=$((node_display_count + 1))
+			echo "$m_up" >> "$SEEN_MACS"; r_raw=$(echo "$dline" | cut -d'|' -f3)
             if [ "$r_raw" -ge -50 ]; then echo "EXC" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
@@ -267,12 +270,22 @@ for line in $NODE_DATA; do
             ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw")
             N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
             echo "$N_ROW" >> $NODE_ROWS; echo "$N_ROW" >> $ALL_ROWS
-        done
+        done <<EOF
+$(echo "$NODE_OUT" | grep "DATA|")
+EOF
+        # 1. Take the CURRENT color (Blue for Node 1, Green for Node 2)
+        # 2. Wrap the count in that color and ADD it to the existing list
+        if [ -z "$N_SPLIT_COUNTS" ]; then 
+            N_SPLIT_COUNTS="<span style='color:$CUR_COLOR;'>$node_display_count</span>"
+        else 
+            N_SPLIT_COUNTS="$N_SPLIT_COUNTS | <span style='color:$CUR_COLOR;'>$node_display_count</span>"
+        fi
     fi
 done
 
 T_EXC=$((T_EXC + $(grep -c "EXC" "$Q_RELAY"))); T_GOOD=$((T_GOOD + $(grep -c "GOOD" "$Q_RELAY")))
 T_FAIR=$((T_FAIR + $(grep -c "FAIR" "$Q_RELAY"))); T_POOR=$((T_POOR + $(grep -c "POOR" "$Q_RELAY")))
+echo "DEBUG: Main=$M_TOTAL Node=$N_TOTAL" > /tmp/math_check.txt
 mv "$NEW_HISTORY" "$HISTORY_DB"; GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 
@@ -330,7 +343,7 @@ cat <<HTML >> $OUT_FILE
   .bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
   .section-header { background: linear-gradient(to bottom, #171b1f, #354961); color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
   .router-branding { color: #0096ff; font-size: 1.4em; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
-  .header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; }
+  .header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
   .sep-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
   .val-blue { color: #0096ff; font-weight: bold; }
   .m-val, .s-val { display: inline; } .i-val, .if-val { display: none; }
