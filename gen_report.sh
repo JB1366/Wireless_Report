@@ -24,7 +24,8 @@ SCRIPT_VERSION="1.0.6"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
-NODE_DATA=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $4 == 0 && $2 != "'"$ROUTER_IP"'") print $1 "|" $2 }' | sort -t . -k 4,4n)
+# NODE_DATA=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $4 == 0 && $2 != "'"$ROUTER_IP"'") print $1 "|" $2 }' | sort -t . -k 4,4n)
+NODE_DATA=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $1 "|" $3}' | sort -t . -k 4,4n)
 NODE_COUNT_TOTAL=$(echo "$NODE_DATA" | grep -c "|"); [ "$NODE_COUNT_TOTAL" -gt 1 ] && N_SUFFIX="(NODES)" || N_SUFFIX="(NODE)"
 NODE_USER=$(nvram get http_username)
 SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
@@ -188,13 +189,13 @@ CONSOLIDATED_T="<span class='val-blue'>${M_TEMP}</span>"
 CONSOLIDATED_L="<span class='val-blue'>${M_LOAD}</span>"
 CONSOLIDATED_U="<span class='val-blue'>${M_UPTIME_STR}</span>"
 CONSOLIDATED_B="<span class='val-blue'>${M_BOOT_TIME}</span>"
-
+N_SPLIT_COUNTS=""
 for line in $NODE_DATA; do
     NODE_OUT=""
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue
     # UPDATED: Use the loaded $SSH_PORT
-    NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 "${NODE_USER}@${IP}" "
+    NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=1 "${NODE_USER}@${IP}" "
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         F_UP=\$(awk -v s=\"\$UP_SEC\" 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf \"%dd %dh\", d, h; else if(h>0) printf \"%dh %dm\", h, m; else printf \"0h %dm\", m}')
@@ -273,12 +274,12 @@ for line in $NODE_DATA; do
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
-        # 1. Take the CURRENT color (Blue for Node 1, Green for Node 2)
-        # 2. Wrap the count in that color and ADD it to the existing list
-        if [ -z "$N_SPLIT_COUNTS" ]; then 
-            N_SPLIT_COUNTS="<span style='color:$CUR_COLOR;'>$node_display_count</span>"
-        else 
-            N_SPLIT_COUNTS="$N_SPLIT_COUNTS | <span style='color:$CUR_COLOR;'>$node_display_count</span>"
+        if [ -n "$node_display_count" ]; then
+            if [ -z "$N_SPLIT_COUNTS" ]; then
+                N_SPLIT_COUNTS="<span style='color:$CUR_COLOR;'>$node_display_count</span>"
+            else
+                N_SPLIT_COUNTS="$N_SPLIT_COUNTS | <span style='color:$CUR_COLOR;'>$node_display_count</span>"
+            fi
         fi
     fi
 done
