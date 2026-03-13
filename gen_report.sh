@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.9"
+SCRIPT_VERSION="1.1.0"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -74,6 +74,25 @@ get_trend() {
     if [ "$current" -gt "$old" ]; then echo "<span class='trend-box trend-up sig-exc'>↑</span>"
     elif [ "$current" -lt "$old" ]; then echo "<span class='trend-box trend-down sig-poor'>↓</span>"
     else echo "<span class='trend-box'>•</span>"; fi
+}
+
+get_name() {
+    local mac=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+    local name=""
+
+    # 1. Try YazDHCP
+    [ -f "$YAZ_CACHE" ] && name=$(grep -i "$mac" "$YAZ_CACHE" | awk -F'|' '{print $3}' | head -n 1)
+
+    # 2. Try dnsmasq leases
+    [ -z "$name" ] && name=$(grep -i "$mac" /var/lib/misc/dnsmasq.leases | awk '{print $4}' | head -n 1)
+
+    # 3. Try custom_clientlist (The NVRAM string you just showed me)
+    if [ -z "$name" ] || [ "$name" = "*" ]; then
+        name=$(nvram get custom_clientlist | sed 's/</\n/g' | grep -i "$mac" | awk -F'>' '{print $1}')
+    fi
+
+    [ -z "$name" ] || [ "$name" = "*" ] && name="Unknown"
+    echo "$name"
 }
 
 check_new() {
@@ -211,20 +230,7 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
         is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$rssi"); bars=$(get_bars "$rssi")
         rssi_style=$(get_rssi_style "$rssi")
         uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
-        # 1. Try YazDHCP first
-        yaz_data=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | head -n 1)
-        name=$(echo "$yaz_data" | awk -F'|' '{print $3}')
-        # 2. Fallback to dnsmasq leases if still empty
-        if [ -z "$name" ] || [ "$name" = "Unknown" ]; then
-        name=$(grep -i "$m_up" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
-        fi
-        # 3. Fallback to NVRAM custom_clientlist if still empty
-        if [ -z "$name" ] || [ "$name" = "*" ] || [ "$name" = "Unknown" ]; then
-        # Look for the MAC in the custom_clientlist and grab the preceding name
-        name=$(nvram get custom_clientlist | sed 's/</\n/g' | grep -i "$m_up" | awk -F'>' '{print $1}')
-        fi
-        # 4. Final default
-        [ -z "$name" ] || [ "$name" = "*" ] && name="Unknown"
+        name=$(get_name "$m_up")
         ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$ip" ] && ip=$(echo "$yaz_data" | awk -F'|' '{print $2}')
         [ -z "$ip" ] && ip="---"
@@ -320,10 +326,11 @@ for line in $TARGET_LIST; do
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
             else echo "POOR" >> "$Q_RELAY"; fi
-            yaz_data_n=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | head -n 1)
-            n_name=$(echo "$yaz_data_n" | awk -F'|' '{print $3}'); [ -z "$n_name" ] && n_name="Unknown"
+            # ADD THESE
+            n_name=$(get_name "$m_up")
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
-            [ -z "$n_ip" ] && n_ip=$(echo "$yaz_data_n" | awk -F'|' '{print $2}')
+            # If ARP doesn't have the IP, check the YazDHCP file as a last resort
+            [ -z "$n_ip" ] && n_ip=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | awk -F'|' '{print $2}' | head -n 1)
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
             is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$r_raw"); bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
