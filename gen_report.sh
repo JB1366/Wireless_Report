@@ -89,19 +89,20 @@ get_band_html() {
     local w_text=""; [ -n "$width" ] && w_text=" ($width"M")"
     local hw_band=""
 
-    # Define Tri-Band / Quad-Band models
-    local TRI_QUAD="GT-AX11000 GT-AXE11000 GT-AXE16000 GT-BE98 Pro GT-BE98 RT-AX92U ET12 XT12 XT8"
+    # Consolidated list of Tri-Band and Quad-Band models
+    local TRI_QUAD="RT-BE96U GT-BE19000 GS-BE12000 GS-BE18000 BT6 BT8 BT10 RT-AXE7800 GT-AXE11000 ET8 ET9 ET12 RT-AX92U GT-AX11000 GT6 XT8 XT9 XT12 GT-BE98 GT-AXE16000 BQ16"
 
-    if echo "$TRI_QUAD" | grep -q "$model"; then
-        # Tri/Quad-Band Logic
+    # Check if the model name (or part of it) exists in our Tri/Quad list
+    if echo "$TRI_QUAD" | grep -qi "$model" || echo "$model" | grep -qiE "ZenWiFi|ROG"; then
         case "$iface" in
             wl0*) hw_band="2.4G" ;;
             wl1*) hw_band="5G-1" ;;
-            wl2*) hw_band="5G-2" ;; # or 6G on AXE/BE models
-            wl3*) hw_band="6G"   ;;
+            wl2*) hw_band="5G-2" ;; # Often the second 5G or first 6G
+            wl3*) hw_band="6G"   ;; # Quad-band specific
+            *)    hw_band="5G"   ;;
         esac
     else
-        # Standard Dual-Band Logic (Most models)
+        # Standard Dual-Band Logic (Default for RT-AX86U, RT-AX88U, etc.)
         case "$iface" in
             wl0*) hw_band="2.4G" ;;
             wl1*) hw_band="5G"   ;;
