@@ -258,7 +258,7 @@ for line in $TARGET_LIST; do
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue
     # UPDATED: Use the loaded $SSH_PORT
-    NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=1 "${NODE_USER}@${IP}" "
+    NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no "${NODE_USER}@${IP}" "
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         F_UP=\$(awk -v s=\"\$UP_SEC\" 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf \"%dd %dh\", d, h; else if(h>0) printf \"%dh %dm\", h, m; else printf \"0h %dm\", m}')
