@@ -87,9 +87,16 @@ ip_to_num() { echo "$1" | awk -F. '{if(NF==4) printf "%03d%03d%03d%03d", $1,$2,$
 get_band_html() {
     local iface=$1; local width=$2; local w_text=""
     [ -n "$width" ] && w_text=" ($width"M")"
-    if echo "$iface" | grep -q "wl0"; then echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
-    elif echo "$iface" | grep -q "wl1"; then echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
-    else echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>"; fi
+    
+    # Priority 1: If bandwidth is 20M or 40M, it's 2.4G
+    if [ "$width" = "20" ] || [ "$width" = "40" ]; then
+        echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
+    # Priority 2: Use interface name for 5G/6G
+    elif echo "$iface" | grep -q "wl1"; then
+        echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
+    else
+        echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>"
+    fi
 }
 
 fmt_time() {
