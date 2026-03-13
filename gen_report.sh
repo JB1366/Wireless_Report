@@ -89,7 +89,8 @@ get_band_html() {
     local w_text=""; [ -n "$width" ] && w_text=" ($width"M")"
     local theUILabel="Unknown"
 
-    # Specific mapping for GT-BE98, GT-BE98_PRO, and GT-AXE16000
+    # 1. Specific "Flipped" Mapping (2.4G is wl3)
+    # Models: GT-BE98, GT-BE98 Pro, GT-AXE16000
     if echo "$model" | grep -qiE "GT-BE98|GT-AXE16000"; then
         case "$iface" in
             wl0*) theUILabel="5G" ;;
@@ -101,15 +102,21 @@ get_band_html() {
                 ;;
             wl3*) theUILabel="2.4G" ;;
         esac
-    # Standard Tri-Band / Quad-Band logic for other high-end models (ZenWiFi, etc.)
-    elif echo "$model" | grep -qiE "BQ16|ET12|XT12|GT-AX11000|ZenWiFi|ROG"; then
+
+    # 2. Standard Tri-Band / Quad-Band Mapping (2.4G is wl0)
+    # Models: RT-BE96U, GT-BE19000, GS-BE12000, GS-BE18000, BT6, BT8, BT10, 
+    #         RT-AXE7800, GT-AXE11000, ET8, ET9, ET12, RT-AX92U, GT-AX11000, 
+    #         GT6, XT8, XT9, XT12, BQ16
+    elif echo "$model" | grep -qiE "BE96U|BE19000|BE12000|BE18000|BT6|BT8|BT10|AXE7800|AXE11000|ET8|ET9|ET12|AX92U|GT6|XT8|XT9|XT12|BQ16|ZenWiFi|ROG"; then
         case "$iface" in
             wl0*) theUILabel="2.4G" ;;
             wl1*) theUILabel="5G-1" ;;
             wl2*) theUILabel="5G-2" ;; 
             wl3*) theUILabel="6G"   ;;
         esac
-    # Default Dual-Band (GT-AX6000, RT-AX86U, etc.)
+
+    # 3. Default Dual-Band Mapping
+    # Models: GT-AX6000, RT-AX86U, RT-AX88U, etc.
     else
         case "$iface" in
             wl0*) theUILabel="2.4G" ;;
