@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.0.8"
+SCRIPT_VERSION="1.0.9"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -85,26 +85,35 @@ check_new() {
 ip_to_num() { echo "$1" | awk -F. '{if(NF==4) printf "%03d%03d%03d%03d", $1,$2,$3,$4; else printf "000000000000";}' ; }
 
 get_band_html() {
-    local iface=$1; local width=$2; local w_text=""
-    [ -n "$width" ] && w_text=" ($width"M")"
-    
-    # Ask the hardware directly: returns "2.4G", "5G", or "6G"
-    local hw_band=$(wl -i "$iface" band 2>/dev/null | awk '{print $1}')
-    
+    local iface=$1; local width=$2; local model=$3
+    local w_text=""; [ -n "$width" ] && w_text=" ($width"M")"
+    local hw_band=""
+
+    # Define Tri-Band / Quad-Band models
+    local TRI_QUAD="GT-AX11000 GT-AXE11000 GT-AXE16000 GT-BE98 Pro GT-BE98 RT-AX92U RT-AX89X ET12 XT12 XT8"
+
+    if echo "$TRI_QUAD" | grep -q "$model"; then
+        # Tri/Quad-Band Logic
+        case "$iface" in
+            wl0*) hw_band="2.4G" ;;
+            wl1*) hw_band="5G-1" ;;
+            wl2*) hw_band="5G-2" ;; # or 6G on AXE/BE models
+            wl3*) hw_band="6G"   ;;
+        esac
+    else
+        # Standard Dual-Band Logic (Most models)
+        case "$iface" in
+            wl0*) hw_band="2.4G" ;;
+            wl1*) hw_band="5G"   ;;
+            *)    hw_band="5G"   ;;
+        esac
+    fi
+
     case "$hw_band" in
-        "2.4G")
-            echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>" ;;
-        "5G")
-            echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>" ;;
-        "6G")
-            echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>" ;;
-        *)
-            # Fallback for older drivers/virtual interfaces if 'wl band' fails
-            if echo "$iface" | grep -q "wl0"; then
-                echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
-            else
-                echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
-            fi ;;
+        "2.4G") echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>" ;;
+        "5G"|"5G-1"|"5G-2") echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>$hw_band$w_text</span></td>" ;;
+        "6G") echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>" ;;
+        *)    echo "<td data-sort='0' style='text-align:center;'>Unknown$w_text</td>" ;;
     esac
 }
 
@@ -191,7 +200,8 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
         ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$ip" ] && ip=$(echo "$yaz_data" | awk -F'|' '{print $2}')
         [ -z "$ip" ] && ip="---"
-        ip_s=$(ip_to_num "$ip"); band_td=$(get_band_html "$iface" "$mhz_width")
+        # M_NAME is already grabbed at the top of your script
+        ip_s=$(ip_to_num "$ip"); band_td=$(get_band_html "$iface" "$mhz_width" "$M_NAME")
         if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1)); elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1)); elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1)); else T_POOR=$((T_POOR+1)); fi
         ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$SNAME</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_time "$uptime")</td></tr>"
         echo "$ROW_STR" >> $MAIN_ROWS; echo "$ROW_STR" >> $ALL_ROWS
@@ -289,7 +299,8 @@ for line in $TARGET_LIST; do
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
             is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$r_raw"); bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
-            ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw")
+            # ALIAS contains the node model name from your SSH_NODES list
+            ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw" "$ALIAS")
             N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
             echo "$N_ROW" >> $NODE_ROWS; echo "$N_ROW" >> $ALL_ROWS
         done <<EOF
