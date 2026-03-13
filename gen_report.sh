@@ -90,7 +90,7 @@ get_band_html() {
     local hw_band=""
 
     # Define Tri-Band / Quad-Band models
-    local TRI_QUAD="GT-AX11000 GT-AXE11000 GT-AXE16000 GT-BE98 Pro GT-BE98 RT-AX92U RT-AX89X ET12 XT12 XT8"
+    local TRI_QUAD="GT-AX11000 GT-AXE11000 GT-AXE16000 GT-BE98 Pro GT-BE98 RT-AX92U ET12 XT12 XT8"
 
     if echo "$TRI_QUAD" | grep -q "$model"; then
         # Tri/Quad-Band Logic
