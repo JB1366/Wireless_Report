@@ -211,8 +211,20 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
         is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$rssi"); bars=$(get_bars "$rssi")
         rssi_style=$(get_rssi_style "$rssi")
         uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
+        # 1. Try YazDHCP first
         yaz_data=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | head -n 1)
-        name=$(echo "$yaz_data" | awk -F'|' '{print $3}'); [ -z "$name" ] && name="Unknown"
+        name=$(echo "$yaz_data" | awk -F'|' '{print $3}')
+        # 2. Fallback to dnsmasq leases if still empty
+        if [ -z "$name" ] || [ "$name" = "Unknown" ]; then
+        name=$(grep -i "$m_up" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+        fi
+        # 3. Fallback to NVRAM custom_clientlist if still empty
+        if [ -z "$name" ] || [ "$name" = "*" ] || [ "$name" = "Unknown" ]; then
+        # Look for the MAC in the custom_clientlist and grab the preceding name
+        name=$(nvram get custom_clientlist | sed 's/</\n/g' | grep -i "$m_up" | awk -F'>' '{print $1}')
+        fi
+        # 4. Final default
+        [ -z "$name" ] || [ "$name" = "*" ] && name="Unknown"
         ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$ip" ] && ip=$(echo "$yaz_data" | awk -F'|' '{print $2}')
         [ -z "$ip" ] && ip="---"
