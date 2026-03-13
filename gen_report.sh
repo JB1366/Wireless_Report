@@ -24,7 +24,6 @@ SCRIPT_VERSION="1.0.8"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
-# NODE_DATA=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | awk -F '>' '{ if ($2 ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $4 == 0 && $2 != "'"$ROUTER_IP"'") print $1 "|" $2 }' | sort -t . -k 4,4n)
 NODE_DATA=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
 NODE_COUNT_TOTAL=$(echo "$NODE_DATA" | grep -v "^$" | wc -l); [ "$NODE_COUNT_TOTAL" -gt 1 ] && N_SUFFIX="(NODES)" || N_SUFFIX="(NODE)"
 NODE_USER=$(nvram get http_username)
@@ -32,22 +31,9 @@ SSH_KEY="/tmp/home/root/.ssh/id_dropbear"
 SSH_PORT=$(nvram get sshd_port)
 SSH_PORT=${SSH_PORT:-22}
 USB_PATH=$(find /mnt -maxdepth 2 -type d -name "gen_report" | head -n 1); [ -z "$USB_PATH" ] && USB_PATH="/tmp/gen_report" && mkdir -p "$USB_PATH"
-CONF_FILE="/jffs/addons/wireless_report/webui.conf"
-[ -f "$CONF_FILE" ] && . "$CONF_FILE"
-
-# --- ADD THIS BLOCK NOW ---
-if [ -n "$SSH_NODES" ]; then
-    TARGET_LIST="$SSH_NODES"
-else
-    # Fallback uses the same Name|IP format
-    TARGET_LIST=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
-fi
-
-for line in $TARGET_LIST; do
-    ALIAS=$(echo "$line" | cut -d'|' -f1)
-    IP=$(echo "$line" | cut -d'|' -f2)
-    # ... now ALIAS will be "LivingRoom" instead of the IP ...
-done
+CONF_FILE="/jffs/addons/wireless_report/webui.conf"; [ -f "$CONF_FILE" ] && . "$CONF_FILE"
+if [ -n "$SSH_NODES" ]; then TARGET_LIST="$SSH_NODES"; else TARGET_LIST=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n); fi
+for line in $TARGET_LIST; do ALIAS=$(echo "$line" | cut -d'|' -f1); IP=$(echo "$line" | cut -d'|' -f2); done
 
 # --- Environment ---
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/jffs/bin"
@@ -307,7 +293,6 @@ T_FAIR=$((T_FAIR + $(grep -c "FAIR" "$Q_RELAY"))); T_POOR=$((T_POOR + $(grep -c 
 echo "DEBUG: Main=$M_TOTAL Node=$N_TOTAL" > /tmp/math_check.txt
 mv "$NEW_HISTORY" "$HISTORY_DB"; GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
-
 if [ "$ACTIVE_NODES" -ge 1 ]; then 
     FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$M_TOTAL</span> | $N_SPLIT_COUNTS"
 else 
