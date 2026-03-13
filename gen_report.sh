@@ -87,33 +87,41 @@ ip_to_num() { echo "$1" | awk -F. '{if(NF==4) printf "%03d%03d%03d%03d", $1,$2,$
 get_band_html() {
     local iface=$1; local width=$2; local model=$3
     local w_text=""; [ -n "$width" ] && w_text=" ($width"M")"
-    local hw_band=""
+    local theUILabel="Unknown"
 
-    # Consolidated list of Tri-Band and Quad-Band models
-    local TRI_QUAD="RT-BE96U GT-BE19000 GS-BE12000 GS-BE18000 BT6 BT8 BT10 RT-AXE7800 GT-AXE11000 ET8 ET9 ET12 RT-AX92U GT-AX11000 GT6 XT8 XT9 XT12 GT-BE98 GT-AXE16000 BQ16"
-
-    # Check if the model name (or part of it) exists in our Tri/Quad list
-    if echo "$TRI_QUAD" | grep -qi "$model" || echo "$model" | grep -qiE "ZenWiFi|ROG"; then
+    # Specific mapping for GT-BE98, GT-BE98_PRO, and GT-AXE16000
+    if echo "$model" | grep -qiE "GT-BE98|GT-AXE16000"; then
         case "$iface" in
-            wl0*) hw_band="2.4G" ;;
-            wl1*) hw_band="5G-1" ;;
-            wl2*) hw_band="5G-2" ;; # Often the second 5G or first 6G
-            wl3*) hw_band="6G"   ;; # Quad-band specific
-            *)    hw_band="5G"   ;;
+            wl0*) theUILabel="5G" ;;
+            wl1*) 
+                if echo "$model" | grep -qi "PRO"; then theUILabel="6G"; else theUILabel="5G-2"; fi
+                ;;
+            wl2*)
+                if echo "$model" | grep -qi "PRO"; then theUILabel="6G-2"; else theUILabel="6G"; fi
+                ;;
+            wl3*) theUILabel="2.4G" ;;
         esac
-    else
-        # Standard Dual-Band Logic (Default for RT-AX86U, RT-AX88U, etc.)
+    # Standard Tri-Band / Quad-Band logic for other high-end models (ZenWiFi, etc.)
+    elif echo "$model" | grep -qiE "BQ16|ET12|XT12|GT-AX11000|ZenWiFi|ROG"; then
         case "$iface" in
-            wl0*) hw_band="2.4G" ;;
-            wl1*) hw_band="5G"   ;;
-            *)    hw_band="5G"   ;;
+            wl0*) theUILabel="2.4G" ;;
+            wl1*) theUILabel="5G-1" ;;
+            wl2*) theUILabel="5G-2" ;; 
+            wl3*) theUILabel="6G"   ;;
+        esac
+    # Default Dual-Band (GT-AX6000, RT-AX86U, etc.)
+    else
+        case "$iface" in
+            wl0*) theUILabel="2.4G" ;;
+            wl1*) theUILabel="5G"   ;;
+            *)    theUILabel="5G"   ;;
         esac
     fi
 
-    case "$hw_band" in
+    case "$theUILabel" in
         "2.4G") echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>" ;;
-        "5G"|"5G-1"|"5G-2") echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>$hw_band$w_text</span></td>" ;;
-        "6G") echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>" ;;
+        "5G"|"5G-1"|"5G-2") echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>$theUILabel$w_text</span></td>" ;;
+        "6G"|"6G-1"|"6G-2") echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>$theUILabel$w_text</span></td>" ;;
         *)    echo "<td data-sort='0' style='text-align:center;'>Unknown$w_text</td>" ;;
     esac
 }
