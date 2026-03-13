@@ -88,17 +88,24 @@ get_band_html() {
     local iface=$1; local width=$2; local w_text=""
     [ -n "$width" ] && w_text=" ($width"M")"
     
-    if echo "$iface" | grep -q "wl0"; then
-        # Subnets .52 and .53 - Always 2.4G
-        echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
-    elif echo "$iface" | grep -q "wl1"; then
-        # Subnet .54 and .222 - Hardware is 5G
-        # If a 5G device (like the Switch) is idling at 20M, we keep it Blue but maybe dim the width
-        echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
-    else
-        # 6GHz Radio
-        echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>"
-    fi
+    # Ask the hardware directly: returns "2.4G", "5G", or "6G"
+    local hw_band=$(wl -i "$iface" band 2>/dev/null | awk '{print $1}')
+    
+    case "$hw_band" in
+        "2.4G")
+            echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>" ;;
+        "5G")
+            echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>" ;;
+        "6G")
+            echo "<td data-sort='6' style='text-align:center;'><span class='text-6g'>6G$w_text</span></td>" ;;
+        *)
+            # Fallback for older drivers/virtual interfaces if 'wl band' fails
+            if echo "$iface" | grep -q "wl0"; then
+                echo "<td data-sort='2.4' style='text-align:center;'><span class='text-24'>2.4G$w_text</span></td>"
+            else
+                echo "<td data-sort='5' style='text-align:center;'><span class='text-5g'>5G$w_text</span></td>"
+            fi ;;
+    esac
 }
 
 fmt_time() {
@@ -222,11 +229,12 @@ for line in $TARGET_LIST; do
                 TX=\$(echo \"\$RAW\" | grep \"rate of last tx pkt\" | awk -F': ' '{print \$2}' | awk '{print \$1/1000}')
                 MX=\$(echo \"\$RAW\" | grep \"Max Rate =\" | awk '{print \$4}')
                 W=\$(echo \"\$RAW\" | grep \"chanspec\" | awk -F'/' '{print \$2}' | awk '{print \$1}')
+                HB=\$(wl -i \"\$iface\" band | awk '{print \$1}')
                 [ -z \"\$W\" ] && W=\"20\"
                 RXD=\$(echo \"\$RX\" | awk '{if (\$1==0) print \"?\"; else printf \"%.0f\", \$1}')
                 TXD=\$(echo \"\$TX\" | awk -v m=\"\$MX\" '{if (\$1==0) print m; else printf \"%.0f\", \$1}')
                 [ \"\$RXD\" = \"?\" ] && [ \"\$TXD\" = \"?\" ] && LRD=\"\${MX:-?}\" || LRD=\"\${RXD} / \${TXD}M\"
-                echo \"DATA|\$mac|\$RSSI|\$iface|\$(echo \"\$RAW\" | grep \"in network\" | awk '{print \$3}')|\$SN|\$TX|\$LRD|\$W\"
+                echo \"DATA|\$mac|\$RSSI|\$iface|\$(echo \"\$RAW\" | grep \"in network\" | awk '{print \$3}')|\$SN|\$TX|\$LRD|\$W|\$HB\"
                 NODE_COUNT=\$((NODE_COUNT + 1))
             done
         done
@@ -279,7 +287,7 @@ for line in $TARGET_LIST; do
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
             [ -z "$n_ip" ] && n_ip=$(echo "$yaz_data_n" | awk -F'|' '{print $2}')
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
-            l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9)
+            l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
             is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$r_raw"); bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
             ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw")
             N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
