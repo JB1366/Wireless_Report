@@ -44,7 +44,7 @@ if [ "$am_webui_page" = "none" ]; then
     logger "Wireless Report:" "Unable to install Wireless Report"
     exit 5
 fi
-logger "Wireless Report:" "Mounting Wireless\Wireless Report as $am_webui_page"
+logger -t "Wireless Report" "Mounting Wireless\Wireless Report as $am_webui_page"
 
 cp "$WEB_PAGE" "/www/user/$am_webui_page"
 

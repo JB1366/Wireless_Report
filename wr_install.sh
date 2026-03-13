@@ -250,7 +250,8 @@ do_uninstall() {
 
         # 4. UNMOUNT THE PAGE: Stop the specific ASP redirect
         if [ -n "$INSTALLED_PAGE" ]; then
-            umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+            logger -t "Wireless Report" "Mounting $INSTALLED_PAGE"
+			umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 			rm -f "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
         fi
 
