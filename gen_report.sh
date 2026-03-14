@@ -80,13 +80,13 @@ get_name() {
     local mac=$(echo "$1" | tr '[:lower:]' '[:upper:]')
     local name=""
 
-    # 1. Try YazDHCP
+    # YazDHCP
     [ -f "$YAZ_CACHE" ] && name=$(grep -i "$mac" "$YAZ_CACHE" | awk -F'|' '{print $3}' | head -n 1)
 
-    # 2. Try dnsmasq leases
+    # dnsmasq leases
     [ -z "$name" ] && name=$(grep -i "$mac" /var/lib/misc/dnsmasq.leases | awk '{print $4}' | head -n 1)
 
-    # 3. Try custom_clientlist (The NVRAM string you just showed me)
+    # custom_clientlist 
     if [ -z "$name" ] || [ "$name" = "*" ]; then
         name=$(nvram get custom_clientlist | sed 's/</\n/g' | grep -i "$mac" | awk -F'>' '{print $1}')
     fi
@@ -108,7 +108,7 @@ get_band_html() {
     local w_text=""; [ -n "$width" ] && w_text=" ($width"M")"
     local theUILabel="Unknown"
 
-    # 1. Specific "Flipped" Mapping (2.4G is wl3)
+    # Specific "Flipped" Mapping 
     # Models: GT-BE98, GT-BE98 Pro, GT-AXE16000
     if echo "$model" | grep -qiE "GT-BE98|GT-AXE16000"; then
         case "$iface" in
@@ -122,7 +122,7 @@ get_band_html() {
             wl3*) theUILabel="2.4G" ;;
         esac
 
-    # 2. Standard Tri-Band / Quad-Band Mapping (2.4G is wl0)
+    # Standard Tri-Band / Quad-Band Mapping 
     # Models: RT-BE96U, GT-BE19000, GS-BE12000, GS-BE18000, BT6, BT8, BT10, 
     #         RT-AXE7800, GT-AXE11000, ET8, ET9, ET12, RT-AX92U, GT-AX11000, 
     #         GT6, XT8, XT9, XT12, BQ16
@@ -134,7 +134,7 @@ get_band_html() {
             wl3*) theUILabel="6G"   ;;
         esac
 
-    # 3. Default Dual-Band Mapping
+    # Default Dual-Band Mapping
     # Models: GT-AX6000, RT-AX86U, RT-AX88U, etc.
     else
         case "$iface" in
@@ -158,7 +158,7 @@ fmt_time() {
     echo "$T" | awk -v p="$pulse" '{d=int($1/86400); h=int(($1%86400)/3600); m=int(($1%3600)/60); printf "<span class=\""p"\" data-sort=\"%s\">", $1; if(d>0) printf "%02dd %02dh", d, h; else if(h>0) printf "%02dh %02dm", h, m; else printf "00h %02dm", m; printf "</span>";}'
 }
 
-# Updated to handle F or C based on webui.conf
+# F or C based on webui.conf
 to_f() {
     local raw_c=$1
     [ -z "$raw_c" ] || ! echo "$raw_c" | grep -qE '^-?[0-9]+$' && echo "--" && return
@@ -172,7 +172,7 @@ to_f() {
     fi
 }
 
-# Adjusted thresholds: 167°F (75°C) and 155°F (68°C)
+# thresholds: 167°F (75°C) and 155°F (68°C)
 get_temp_class() {
     local temp_str=$1
     [ "$temp_str" = "--" ] && echo "val-blue" && return
@@ -193,7 +193,6 @@ get_load_class() { local l=$1; [ "$l" = "--" ] && echo "val-blue" && return; awk
 grep "0x2" /proc/net/arp | awk '{print $4 "|" $1}' | tr '[:lower:]' '[:upper:]' > $ARP_CACHE
 [ -f "$YAZ_CLIENTS" ] && awk -F',' '{print toupper($1) "|" $2 "|" $3}' "$YAZ_CLIENTS" > $YAZ_CACHE || > $YAZ_CACHE
 T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0
-# Updated Main Temp Grab
 M_C_RAW=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
 M_C=$((M_C_RAW / 1000))
 M_TEMP=$(to_f "$M_C")
@@ -207,7 +206,6 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
     [ "$iface" = "wl0.0" ] || [ "$iface" = "wl1.0" ] && continue
     SNAME=$(nvram get "${iface}_ssid")
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
-    # NEW FILTER: Skip hidden/backhaul hex SSIDs
     if echo "$SNAME" | grep -qE '^[0-9A-Fa-f]{16,}$'; then continue; fi
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
     for mac in $(wl -i "$iface" assoclist 2>/dev/null | awk '{print $2}'); do
@@ -234,7 +232,6 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
         ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$ip" ] && ip=$(echo "$yaz_data" | awk -F'|' '{print $2}')
         [ -z "$ip" ] && ip="---"
-        # M_NAME is already grabbed at the top of your script
         ip_s=$(ip_to_num "$ip"); band_td=$(get_band_html "$iface" "$mhz_width" "$M_NAME")
         if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1)); elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1)); elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1)); else T_POOR=$((T_POOR+1)); fi
         ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$SNAME</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_time "$uptime")</td></tr>"
@@ -257,7 +254,6 @@ for line in $TARGET_LIST; do
     NODE_OUT=""
     IP=$(echo "$line" | cut -d'|' -f2); ALIAS=$(echo "$line" | cut -d'|' -f1)
     [ -z "$IP" ] && continue
-    # UPDATED: Use the loaded $SSH_PORT
     NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no "${NODE_USER}@${IP}" "
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
@@ -295,7 +291,7 @@ for line in $TARGET_LIST; do
         NODE_BRAND="<span class='router-branding' style='color:$CUR_COLOR;'>${ALIAS}<sup>$ACTIVE_NODES</sup></span>"
         [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES$PIPE$NODE_BRAND"
         
-		# 1. Capture and Process Node Temp
+		# Capture and Process Node Temp
         cur_t_raw=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2)
         [ ${#cur_t_raw} -gt 3 ] && cur_t_raw=$((cur_t_raw / 1000))
         cur_t=$(to_f "$cur_t_raw")
@@ -326,10 +322,8 @@ for line in $TARGET_LIST; do
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
             else echo "POOR" >> "$Q_RELAY"; fi
-            # ADD THESE
             n_name=$(get_name "$m_up")
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
-            # If ARP doesn't have the IP, check the YazDHCP file as a last resort
             [ -z "$n_ip" ] && n_ip=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | awk -F'|' '{print $2}' | head -n 1)
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
