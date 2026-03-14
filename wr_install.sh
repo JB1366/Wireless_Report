@@ -1,9 +1,9 @@
 #!/bin/sh
 #============================================================================#
 #  Wireless Report Installer                                                 #
-#  Version: 1.0.8                                                            #
+#  Version: 1.1.0                                                            #
 #  Author: JB_1366                                                           #
-#  Revised: fix node asus_device_list                                        #
+#  Revised: logger adjust                                                    #
 #============================================================================#
 
 # --- Configuration ---
@@ -250,7 +250,7 @@ do_uninstall() {
 
         # 4. UNMOUNT THE PAGE: Stop the specific ASP redirect
         if [ -n "$INSTALLED_PAGE" ]; then
-            logger -t "Wireless Report" "Unmounting $INSTALLED_PAGE"
+            logger -t "Wireless Report" "Unmounting Wireless\Wireless Report as $INSTALLED_PAGE"
 			umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 			rm -f "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
         fi
