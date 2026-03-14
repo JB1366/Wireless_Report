@@ -80,16 +80,10 @@ sed -i "/url: \"$am_webui_page\"/d" "$TEMP_MENU"
 # logger "Wireless Report:" "Mounting Addons\Wireless Report as $am_webui_page"
 
 # Wireless Menu-Tab Insertion
-# Inject Wireless Report at the end of Advanced_Wireless_Content menu at Perfect End Offset
-START_LINE=$(grep -ni 'url: "Advanced_Wireless_Content.asp"' "$TEMP_MENU" | head -n 1 | cut -d: -f1)
-if [ -n "$START_LINE" ]; then
-    INSERT_LINE=$((START_LINE + 9))
-    sed -i "${INSERT_LINE}i \ \ \ \ \ \ \ \ \ \ \ \ {url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"}," "$TEMP_MENU"
-    echo "Wireless Report tab successfully restored."
-else
-    echo "ERROR: Wireless anchor not found."
-    exit 1
-fi
+# Inject Wireless Report tab just before the Wireless menu's __INHERIT__ sentinel
+sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ {/{url: \"NULL\", tabName: \"__INHERIT__\"}/i \\
+{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},
+}" "$TEMP_MENU"
 
 # Remount modified menu
 umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
