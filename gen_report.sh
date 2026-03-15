@@ -408,8 +408,8 @@ cat <<HTML >> $OUT_FILE
   .modal-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
   .close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; font-weight: bold; }
   .modal-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
-  .modal-grid td { height: 25px; line-height: 25px; padding: 0 6px !important; }
   .modal-grid .report-column { flex: 1; max-width: 49.5%; }
+  #popoutModal th, #popoutModal td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
   .dash-sep { color: rgba(255,255,255,0.4); font-size: 0.9em; margin: 0 4px; animation: sep-glow 3s infinite ease-in-out; }
   @keyframes sep-glow { 0% { color: rgba(255,255,255,0.2); } 50% { color: #0096ff; text-shadow: 0 0 5px #0096ff; } 100% { color: rgba(255,255,255,0.2); } }
   #allCol { display: none; }
@@ -466,14 +466,11 @@ function sortTable(n, tId, keepDir, forceDesc) {
     table.setAttribute("data-dir-" + n, dir);
     var headers = table.querySelectorAll('th');
     headers.forEach(function(h, idx) {
+        var isPop = tId.startsWith("pop");
         var baseText = h.innerText.replace(/[▼▲⇅]/g, "").trim();
-        var toggleIcon = (idx === 1 || idx === 4) ? " ⇅" : "";
-        if (idx === n) h.innerHTML = baseText + (dir === "asc" ? " ▲" : " ▼");
-        else {
-            if(idx === 1) h.innerHTML = (table.classList.contains('show-ip') ? "IP ADDRESS" : "MAC ADDRESS") + toggleIcon;
-            else if(idx === 4) h.innerHTML = (table.classList.contains('show-iface') ? "IFACE" : "SSID") + toggleIcon;
-            else h.innerHTML = baseText + toggleIcon;
-        }
+        var toggleIcon = (idx === 1 || idx === 4) ? (isPop ? "" : " ⇅") : "";
+        if (idx === n) h.innerHTML = baseText + (isPop ? "" : (dir === "asc" ? " ▲" : " ▼"));
+        else h.innerHTML = (idx === 1 ? (table.classList.contains('show-ip') ? "IP ADDRESS" : "MAC ADDRESS") : (idx === 4 ? (table.classList.contains('show-iface') ? "IFACE" : "SSID") : baseText)) + toggleIcon;
     });
     rows.sort(function(a, b) {
         var valA, valB; var cellA = a.cells[n]; var cellB = b.cells[n];
