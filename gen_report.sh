@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.1.1"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -79,18 +79,11 @@ get_trend() {
 get_name() {
     local mac=$(echo "$1" | tr '[:lower:]' '[:upper:]')
     local name=""
-
-    # YazDHCP
     [ -f "$YAZ_CACHE" ] && name=$(grep -i "$mac" "$YAZ_CACHE" | awk -F'|' '{print $3}' | head -n 1)
-
-    # dnsmasq leases
     [ -z "$name" ] && name=$(grep -i "$mac" /var/lib/misc/dnsmasq.leases | awk '{print $4}' | head -n 1)
-
-    # custom_clientlist 
     if [ -z "$name" ] || [ "$name" = "*" ]; then
         name=$(nvram get custom_clientlist | sed 's/</\n/g' | grep -i "$mac" | awk -F'>' '{print $1}')
     fi
-
     [ -z "$name" ] || [ "$name" = "*" ] && name="Unknown"
     echo "$name"
 }
@@ -108,7 +101,7 @@ get_band_html() {
     local w_text=""; [ -n "$width" ] && w_text=" ($width"M")"
     local theUILabel="Unknown"
 
-    # Specific "Flipped" Mapping 
+    # Specific "Flipped" Mapping
     # Models: GT-BE98, GT-BE98 Pro, GT-AXE16000
     if echo "$model" | grep -qiE "GT-BE98|GT-AXE16000"; then
         case "$iface" in
@@ -122,16 +115,16 @@ get_band_html() {
             wl3*) theUILabel="2.4G" ;;
         esac
 
-    # Standard Tri-Band / Quad-Band Mapping 
+    # Standard Tri-Band / Quad-Band Mapping
     # Models: RT-BE96U, GT-BE19000, GS-BE12000, GS-BE18000, BT6, BT8, BT10, 
     #         RT-AXE7800, GT-AXE11000, ET8, ET9, ET12, RT-AX92U, GT-AX11000, 
     #         GT6, XT8, XT9, XT12, BQ16
     elif echo "$model" | grep -qiE "BE96U|BE19000|BE12000|BE18000|BT6|BT8|BT10|AXE7800|AXE11000|ET8|ET9|ET12|AX92U|GT6|XT8|XT9|XT12|BQ16|ZenWiFi|ROG"; then
         case "$iface" in
-            wl0*) theUILabel="2.4G" ;;
-            wl1*) theUILabel="5G-1" ;;
-            wl2*) theUILabel="5G-2" ;; 
-            wl3*) theUILabel="6G"   ;;
+            wl0*|eth4*) theUILabel="2.4G" ;;
+            wl1*|eth5*) theUILabel="5G-1" ;;
+            wl2*|eth6*) theUILabel="5G-2" ;; 
+            wl3*)       theUILabel="6G"   ;;
         esac
 
     # Default Dual-Band Mapping
@@ -158,7 +151,6 @@ fmt_time() {
     echo "$T" | awk -v p="$pulse" '{d=int($1/86400); h=int(($1%86400)/3600); m=int(($1%3600)/60); printf "<span class=\""p"\" data-sort=\"%s\">", $1; if(d>0) printf "%02dd %02dh", d, h; else if(h>0) printf "%02dh %02dm", h, m; else printf "00h %02dm", m; printf "</span>";}'
 }
 
-# F or C based on webui.conf
 to_f() {
     local raw_c=$1
     [ -z "$raw_c" ] || ! echo "$raw_c" | grep -qE '^-?[0-9]+$' && echo "--" && return
@@ -172,7 +164,7 @@ to_f() {
     fi
 }
 
-# thresholds: 167°F (75°C) and 155°F (68°C)
+# Adjusted thresholds: 167°F (75°C) and 155°F (68°C)
 get_temp_class() {
     local temp_str=$1
     [ "$temp_str" = "--" ] && echo "val-blue" && return
@@ -202,9 +194,17 @@ M_UPTIME_STR=$(uptime | awk -F'( |multivars_delim|,|:)+' '{if ($7=="day" || $7==
 M_BOOT_TIME=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%m/%d %I:%M %p")
 
 # Main Router Scan
-for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?"); do
-    [ "$iface" = "wl0.0" ] || [ "$iface" = "wl1.0" ] && continue
-    SNAME=$(nvram get "${iface}_ssid")
+for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?|eth[4-6]"); do
+    case "$iface" in
+        wl0.0|wl1.0|wl2.0) continue ;;
+    esac
+    data_iface="$iface"
+    case "$iface" in
+        eth4) data_iface="wl0" ;;
+        eth5) data_iface="wl1" ;;
+        eth6) data_iface="wl2" ;;
+    esac
+    SNAME=$(nvram get "${data_iface}_ssid")
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
     if echo "$SNAME" | grep -qE '^[0-9A-Fa-f]{16,}$'; then continue; fi
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
@@ -322,8 +322,10 @@ for line in $TARGET_LIST; do
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
             else echo "POOR" >> "$Q_RELAY"; fi
+            # ADD THESE
             n_name=$(get_name "$m_up")
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
+            # If ARP doesn't have the IP, check the YazDHCP file as a last resort
             [ -z "$n_ip" ] && n_ip=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | awk -F'|' '{print $2}' | head -n 1)
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
