@@ -169,7 +169,6 @@ get_temp_class() {
     local temp_str=$1
     [ "$temp_str" = "--" ] && echo "val-blue" && return
     
-    # Strip the symbol for comparison
     local val=$(echo "$temp_str" | sed 's/[^0-9.]//g')
     
     if [ "$REPORT_UNIT" = "C" ]; then
@@ -207,7 +206,6 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?|eth[4-6]"); do
     SNAME=$(nvram get "${data_iface}_ssid")
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
     if echo "$SNAME" | grep -qE '^[0-9A-Fa-f]{16,}$'; then continue; fi
-    [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
     for mac in $(wl -i "$iface" assoclist 2>/dev/null | awk '{print $2}'); do
         m_up=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
         [ "$m_up" = "C8:7F:54:4F:C8:01" ] && continue
@@ -256,7 +254,6 @@ for line in $TARGET_LIST; do
     [ -z "$IP" ] && continue
     NODE_OUT=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no "${NODE_USER}@${IP}" "
         UP_SEC=\$(cut -d. -f1 /proc/uptime)
-        UP_SEC=\$(cut -d. -f1 /proc/uptime)
         F_UP=\$(awk -v s=\"\$UP_SEC\" 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf \"%dd %dh\", d, h; else if(h>0) printf \"%dh %dm\", h, m; else printf \"0h %dm\", m}')
         NODE_COUNT=0
         for iface in \$(ifconfig -a | grep -oE \"wl[0-9](\.[0-9])?\"); do
@@ -286,7 +283,6 @@ for line in $TARGET_LIST; do
         ACTIVE_NODES=$((ACTIVE_NODES + 1)); COLOR_IDX=$((COLOR_IDX + 1))
         CUR_COLOR=$(echo $NODE_COLORS | cut -d' ' -f$((COLOR_IDX)))
         [ -z "$CUR_COLOR" ] && CUR_COLOR="#ffffff"
-        
         STAR_HTML="<span style='color:$CUR_COLOR;'><sup>$ACTIVE_NODES</sup></span>"
         NODE_BRAND="<span class='router-branding' style='color:$CUR_COLOR;'>${ALIAS}<sup>$ACTIVE_NODES</sup></span>"
         [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES$PIPE$NODE_BRAND"
@@ -298,7 +294,6 @@ for line in $TARGET_LIST; do
         cur_l=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
         cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2)
 		cur_up_v=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
-        cur_up_r=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2); N_TOTAL=$((N_TOTAL + cur_c))
 		boot_d=$(date -d @$(( $(date +%s) - ${cur_up_r:-0} )) "+%m/%d %I:%M %p")
         
         # Color-Synced Footers for ALL DEVICES
@@ -322,15 +317,12 @@ for line in $TARGET_LIST; do
             elif [ "$r_raw" -ge -60 ]; then echo "GOOD" >> "$Q_RELAY"
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
             else echo "POOR" >> "$Q_RELAY"; fi
-            # ADD THESE
             n_name=$(get_name "$m_up")
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
-            # If ARP doesn't have the IP, check the YazDHCP file as a last resort
             [ -z "$n_ip" ] && n_ip=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | awk -F'|' '{print $2}' | head -n 1)
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
             is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$r_raw"); bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
-            # ALIAS contains the node model name from your SSH_NODES list
             ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw" "$ALIAS")
             N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
             echo "$N_ROW" >> $NODE_ROWS; echo "$N_ROW" >> $ALL_ROWS
@@ -349,7 +341,6 @@ done
 
 T_EXC=$((T_EXC + $(grep -c "EXC" "$Q_RELAY"))); T_GOOD=$((T_GOOD + $(grep -c "GOOD" "$Q_RELAY")))
 T_FAIR=$((T_FAIR + $(grep -c "FAIR" "$Q_RELAY"))); T_POOR=$((T_POOR + $(grep -c "POOR" "$Q_RELAY")))
-echo "DEBUG: Main=$M_TOTAL Node=$N_TOTAL" > /tmp/math_check.txt
 mv "$NEW_HISTORY" "$HISTORY_DB"; GRAND_TOTAL=$((M_TOTAL + N_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 if [ "$ACTIVE_NODES" -ge 1 ]; then 
