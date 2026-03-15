@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.1.2"
+SCRIPT_VERSION="1.1.3"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -121,19 +121,19 @@ get_band_html() {
     #         GT6, XT8, XT9, XT12, BQ16
     elif echo "$model" | grep -qiE "BE96U|BE19000|BE12000|BE18000|BT6|BT8|BT10|AXE7800|AXE11000|ET8|ET9|ET12|AX92U|GT6|XT8|XT9|XT12|BQ16|ZenWiFi|ROG"; then
         case "$iface" in
-            wl0*|eth4*) theUILabel="2.4G" ;;
-            wl1*|eth5*) theUILabel="5G-1" ;;
-            wl2*|eth6*) theUILabel="5G-2" ;; 
-            wl3*)       theUILabel="6G"   ;;
+            wl0*|eth1*|eth4*) theUILabel="2.4G" ;;
+            wl1*|eth2*|eth5*) theUILabel="5G-1" ;;
+            wl2*|eth6*)       theUILabel="5G-2" ;; 
+            wl3*)             theUILabel="6G"   ;;
         esac
 
     # Default Dual-Band Mapping
     # Models: GT-AX6000, RT-AX86U, RT-AX88U, etc.
     else
         case "$iface" in
-            wl0*) theUILabel="2.4G" ;;
-            wl1*) theUILabel="5G"   ;;
-            *)    theUILabel="5G"   ;;
+            wl0*|eth1*|eth4*|eth6*) theUILabel="2.4G" ;;
+            wl1*|eth2*|eth5*|eth7*) theUILabel="5G"   ;;
+            *)                      theUILabel="5G"   ;;
         esac
     fi
 
@@ -193,15 +193,22 @@ M_UPTIME_STR=$(uptime | awk -F'( |multivars_delim|,|:)+' '{if ($7=="day" || $7==
 M_BOOT_TIME=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%m/%d %I:%M %p")
 
 # Main Router Scan
-for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?|eth[4-6]"); do
+for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?|eth[1-7]"); do
     case "$iface" in
         wl0.0|wl1.0|wl2.0) continue ;;
     esac
     data_iface="$iface"
     case "$iface" in
-        eth4) data_iface="wl0" ;;
-        eth5) data_iface="wl1" ;;
-        eth6) data_iface="wl2" ;;
+        eth1|eth4|eth6) 
+            if [ -n "$(nvram get wl2_ssid)" ]; then
+                data_iface="wl2" # XT12 Tri-Band logic
+            else
+                data_iface="wl0" # AX86U/Pro 2.4G logic
+            fi
+            ;;
+        eth2|eth5|eth7) 
+            data_iface="wl1" # Standard/Pro 5G mapping
+            ;;
     esac
     SNAME=$(nvram get "${data_iface}_ssid")
     [ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
