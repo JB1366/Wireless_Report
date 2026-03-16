@@ -20,7 +20,7 @@
 #============================================================================#
 
 # --- Auto-Discovery ---
-SCRIPT_VERSION="1.1.3"
+SCRIPT_VERSION="1.1.4"
 ROUTER_IP=$(nvram get lan_ipaddr)
 DEVICE_LIST=$(nvram get cfg_device_list)
 M_NAME=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
@@ -234,12 +234,15 @@ for iface in $(ifconfig -a | grep -oE "wl[0-9](\.[0-9])?|eth[1-7]"); do
         rssi_style=$(get_rssi_style "$rssi")
         uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
         name=$(get_name "$m_up")
+        [ ${#name} -gt 20 ] && name="${name:0:17}..."
+        display_ssid="$SNAME"
+        [ ${#display_ssid} -gt 10 ] && display_ssid="${display_ssid:0:7}..."
         ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$ip" ] && ip=$(echo "$yaz_data" | awk -F'|' '{print $2}')
         [ -z "$ip" ] && ip="---"
         ip_s=$(ip_to_num "$ip"); band_td=$(get_band_html "$iface" "$mhz_width" "$M_NAME")
         if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1)); elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1)); elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1)); else T_POOR=$((T_POOR+1)); fi
-        ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$SNAME</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_time "$uptime")</td></tr>"
+        ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$display_ssid</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_time "$uptime")</td></tr>"
         echo "$ROW_STR" >> $MAIN_ROWS; echo "$ROW_STR" >> $ALL_ROWS
         M_TOTAL=$((M_TOTAL + 1))
     done
@@ -325,13 +328,17 @@ for line in $TARGET_LIST; do
             elif [ "$r_raw" -ge -70 ]; then echo "FAIR" >> "$Q_RELAY"
             else echo "POOR" >> "$Q_RELAY"; fi
             n_name=$(get_name "$m_up")
+            [ ${#n_name} -gt 20 ] && n_name="${n_name:0:17}..."
             n_ip=$(grep -i "$m_up" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
+            s_name=$(echo "$dline" | cut -d'|' -f6)
+            display_s_name="$s_name"
+            [ ${#display_s_name} -gt 10 ] && display_s_name="${display_s_name:0:7}..."
             [ -z "$n_ip" ] && n_ip=$(grep -i "$m_up" "$YAZ_CACHE" 2>/dev/null | awk -F'|' '{print $2}' | head -n 1)
             [ -z "$n_ip" ] && n_ip="---"; i_raw=$(echo "$dline" | cut -d'|' -f4); u_raw=$(echo "$dline" | cut -d'|' -f5); s_name=$(echo "$dline" | cut -d'|' -f6)
             l_rate_val=$(echo "$dline" | cut -d'|' -f7); l_rate_disp_n=$(echo "$dline" | cut -d'|' -f8); w_raw=$(echo "$dline" | cut -d'|' -f9); hb_raw=$(echo "$dline" | cut -d'|' -f10)
             is_new=$(check_new "$m_up"); trend=$(get_trend "$m_up" "$r_raw"); bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
             ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band_html "$i_raw" "$w_raw" "$ALIAS")
-            N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
+            N_ROW="<tr><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$display_s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
             echo "$N_ROW" >> $NODE_ROWS; echo "$N_ROW" >> $ALL_ROWS
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
@@ -394,6 +401,8 @@ cat <<HTML >> $OUT_FILE
   table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; cursor: pointer; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
   table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
   table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; background: #1c232b; vertical-align: middle; text-align: center; }
+  table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   table.report_table tr td:first-child { text-align: left; padding-left: 10px; }
   table.report_table tfoot td { border-top: 1px solid #475a68; padding: 12px 10px !important; font-weight: bold; background: #171b1f; color: #fff; }
   .f-res { color: #0096ff; }
