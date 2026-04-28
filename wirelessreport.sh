@@ -336,16 +336,17 @@ set_temp_date() {
     while true; do
         [ -f "$CONF_FILE" ] && . "$CONF_FILE"; update_time
         [ "$REPORT_UNIT" = "ISO" ] && DISPLAY_UNIT="C" || DISPLAY_UNIT="$REPORT_UNIT"
+        DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
         clear
         echo -e "${CYAN}==================================================${NC}"
-        echo -e "${CYAN}               Set Temperature/Date               ${NC}"
+        echo -e "${CYAN}                Set Temperature/Date                ${NC}"
         echo -e "${CYAN}==================================================${NC}"
         echo -e "   Unit: ${GREEN}°$DISPLAY_UNIT${NC}            Date: ${GREEN}$CUR_TIME${NC}"
         echo -e "${CYAN}==================================================${NC}"
         echo ""
-        echo "  (1)  Fahrenheit (°F) / USA  (Apr-26)"
-        echo "  (2)  Celsius    (°C) / INTL (26-Apr)"
-        echo "  (3)  Technical  (°C) / TECH (2026-04-26)"
+        echo "  (1)  Fahrenheit (°F) / USA  ($DATE_USA)"
+        echo "  (2)  Celsius    (°C) / INTL ($DATE_INTL)"
+        echo "  (3)  Technical  (°C) / TECH ($DATE_ISO)"
         echo "  (e)  Exit to main menu"
         echo ""
         printf " Selection: "
