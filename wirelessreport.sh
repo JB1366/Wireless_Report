@@ -439,37 +439,28 @@ set_threshold() {
         else
             CUR_VAL="${GREEN}-$(echo "$ROAM_THRESHOLD" | tr -d '"') dBm"
         fi
+        
         clear
         echo -e "${CYAN}==================================================${NC}"
-        echo -e "${CYAN}            RSSI Kick Threshold Setup             ${NC}"
-        echo -e "               (Current: $CUR_VAL${NC})           "
+        echo -e "${CYAN}             RSSI Kick Threshold Setup            ${NC}"
+        echo -e "                (Current: $CUR_VAL${NC})            "
         echo -e "${CYAN}==================================================${NC}"
-        echo -e " (Type [0] to Disable / [Enter] Asus Default 70)  "
+        echo -e "  (Type [0] to Disable / Asus Default is 70)  "
         echo -e "${CYAN}==================================================${NC}"
         echo -e ""
         echo -e "  [1] Set Kick Threshold (60-85)"
         echo -e "  [2] Manage [MAC] Skip List"
         echo -e "  [3] View Kick Log"
         echo -e ""
-        echo -e "  [e] Exit"
-        echo -e ""
         printf " Selection: "
         read -r choice
-        [ -z "$choice" ] && choice="1_default"
-        [ "$choice" = "0" ] && choice="1_disable"
         case "$choice" in
-            [eE]) return 0 ;;
-            1|1_default|1_disable)
-                if [ "$choice" = "1_default" ]; then
-                    threshold_input=70
-                elif [ "$choice" = "1_disable" ]; then
-                    threshold_input=0
-                else
-                    echo -e "\n Enter a value between 60 and 85 (or [0] to Disable):"
-                    printf " Selection [Enter for 70]: "
-                    read -r threshold_input
-                    [ -z "$threshold_input" ] && threshold_input=70
-                fi
+            "") return 0 ;;
+            1)
+                echo -e "\n Enter a value between 60 and 85 (or [0] to Disable):"
+                printf " Selection: "
+                read -r threshold_input
+                [ -z "$threshold_input" ] && continue
                 if [ "$threshold_input" = "0" ]; then
                     sed -i '/ROAM_THRESHOLD=/d' "$CONF_FILE"
                     ROAM_THRESHOLD=""
@@ -477,7 +468,7 @@ set_threshold() {
                 elif echo "$threshold_input" | grep -qE '^[0-9]+$'; then
                     if [ "$threshold_input" -lt 60 ] || [ "$threshold_input" -gt 85 ]; then
                         threshold_input=70
-                        echo -e "\n ${YELLOW}Out of range. Using 70.${NC}"
+                        echo -e "\n ${YELLOW}Out of range. Using Asus Default (70).${NC}"
                     fi
                     sed -i '/ROAM_THRESHOLD=/d' "$CONF_FILE"
                     echo "ROAM_THRESHOLD=$threshold_input" >> "$CONF_FILE"
@@ -507,12 +498,11 @@ set_threshold() {
                     echo -e " [1] Add Device (From Known List)"
                     echo -e " [2] Remove Device"
                     echo -e " [3] Manual Add (Enter MAC)"
-                    echo -e " [e] Back to Menu"
                     echo -e "${CYAN}==================================================${NC}"
                     printf " Selection: "
                     read -r sub_choice
                     case "$sub_choice" in
-                        [eE]) break ;;
+                        "") break ;;
                         1) 
                             clear
                             echo -e "${CYAN}--- Select a Device to Protect ---${NC}"
@@ -532,9 +522,9 @@ set_threshold() {
                                     echo " (No new devices to add)"
                                     sleep 2; continue
                                 fi
-                                echo -ne "\n Select number to protect (or [e] to cancel): "
-                                read -r k_num
-                                [ "$k_num" = "e" ] && continue
+                                echo -ne "\n Select number to protect: "
+								read -r k_num
+								[ -z "$k_num" ] && continue
                                 target_mac=$(grep "^$k_num|" /tmp/known_map | cut -d'|' -f2)
                                 if [ -n "$target_mac" ]; then
                                     echo "$target_mac" >> "$SKIP_DB"
@@ -560,11 +550,11 @@ set_threshold() {
                                         echo "$i|$smac" >> /tmp/rem_map
                                         i=$((i + 1))
                                     done < "$SKIP_DB"
-                                    echo -ne "\n Select number to remove ([e] to go back): "
-                                    read -r r_num
-                                    if [ -z "$r_num" ] || [ "$r_num" = "e" ] || [ "$r_num" = "E" ]; then
-                                        break 
-                                    fi
+                                    echo -ne "\n Select number to remove: "
+									read -r r_num
+									if [ -z "$r_num" ]; then
+										break 
+									fi
                                     target_mac=$(grep "^$r_num|" /tmp/rem_map | cut -d'|' -f2)
                                     if [ -n "$target_mac" ]; then
                                         sed -i "/$target_mac/d" "$SKIP_DB"
@@ -583,16 +573,21 @@ set_threshold() {
                             ;;
                         3) 
                             echo -ne "\n Enter MAC Address: "
-                            read -r manual_mac
-                            manual_mac=$(echo "$manual_mac" | tr '[:lower:]' '[:upper:]' | tr -cd '0-9A-F:')
-                            if ! echo "$manual_mac" | grep -qE '^([0-9A-F]{2}:){5}[0-9A-F]{2}$'; then
-                                echo -e "\n ${RED}Invalid format.${NC}"
-                            else
-                                echo "$manual_mac" >> "$SKIP_DB"
-                                echo -e "\n ${GREEN}Protected: $manual_mac${NC}"
-                            fi
-                            sleep 2
-                            ;;
+							read -r manual_mac
+							[ -z "$manual_mac" ] && continue 
+							manual_mac=$(echo "$manual_mac" | tr '[:lower:]' '[:upper:]' | tr -cd '0-9A-F:')
+							if ! echo "$manual_mac" | grep -qE '^([0-9A-F]{2}:){5}[0-9A-F]{2}$'; then
+								echo -e "\n ${RED}Invalid format.${NC}"
+							else
+								if grep -qs "$manual_mac" "$SKIP_DB"; then
+									echo -e "\n ${YELLOW}$manual_mac is already protected.${NC}"
+								else
+									echo "$manual_mac" >> "$SKIP_DB"
+									echo -e "\n ${GREEN}Protected: $manual_mac${NC}"
+								fi
+							fi
+							sleep 2
+							;;
                     esac
                 done
                 ;;
@@ -609,7 +604,6 @@ set_threshold() {
                     else
                         echo -e "\n          (No kick events logged yet)"
                         echo -e "${CYAN}==================================================${NC}"
-                        echo -e " [any key] Return to Menu"
                     fi
                     printf " Selection: "
                     read -r log_choice
