@@ -64,7 +64,7 @@ check_version() {
     if [ -z "$REMOTE_VER" ]; then
         echo -e " STATUS: ${RED}[Offline]${NC} Could not reach GitHub"
     elif [ "$LOCAL_VER" = "NOT INSTALLED" ]; then
-        echo -e " STATUS: [Ready] Latest available is v$REMOTE_VER"
+        echo -e " STATUS: ${RED}[Not Installed]${NC} Latest available: ${GREEN}v$REMOTE_VER${NC}"
     elif [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
         echo -e " STATUS: ${RED}[UPDATE AVAILABLE] v$REMOTE_VER${NC} ${GREEN}(Current: v$LOCAL_VER)${NC}"
     else
@@ -75,7 +75,7 @@ check_version() {
 
 show_menu() {
     [ -f "$CONF_FILE" ] && . "$CONF_FILE"; update_time
-	[ "$REPORT_UNIT" = "ISO" ] && DISPLAY_UNIT="C" || DISPLAY_UNIT="$REPORT_UNIT"
+	[ "$REPORT_UNIT" = "ISO" ] && DISPLAY_UNIT="C" || DISPLAY_UNIT="${REPORT_UNIT:-F}"
 	echo -e ""
     echo -e "  (1)  Install/Update"
     echo -e "  (2)  Uninstall"
