@@ -326,6 +326,7 @@ do_uninstall() {
         rm -rf "$INSTALL_DIR" 2>/dev/null
         rm -f /tmp/wireless.asp 2>/dev/null
 		case "$USB_PATH" in *wirelessreport|*data) rm -rf "$USB_PATH" 2>/dev/null ;; esac
+		REPORT_UNIT=""; DISPLAY_UNIT="F"
         echo -e "${GREEN}[+] Success: Wireless Report uninstalled.${NC}"
     fi
     pause
@@ -347,7 +348,6 @@ set_temp_date() {
         echo "  (1)  Fahrenheit (°F) / USA  ($DATE_USA)"
         echo "  (2)  Celsius    (°C) / INTL ($DATE_INTL)"
         echo "  (3)  Technical  (°C) / TECH ($DATE_ISO)"
-        echo "  (e)  Exit to main menu"
         echo ""
         printf " Selection: "
         read t_choice
@@ -355,7 +355,7 @@ set_temp_date() {
             1) NEW_UNIT="F" ;;
             2) NEW_UNIT="C" ;;
             3) NEW_UNIT="ISO" ;;
-            e|E) return ;;
+            "") return ;; 
             *) echo -e "${RED}Invalid selection.${NC}"; sleep 1; continue ;;
         esac
         sed -i '/REPORT_UNIT=/d' "$CONF_FILE"
