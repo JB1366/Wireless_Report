@@ -255,7 +255,7 @@ inject_menu() {
 	[ -f "$CONF_FILE" ] && sed -i '/^INSTALLED_PAGE=/d' "$CONF_FILE"
 	nvram get rc_support | grep -q am_addons
 	if [ $? != 0 ]; then
-		logger -t "Wireless_Report" "This firmware does not support addons!"
+		logger -p user.info -t "Wireless_Report" "This firmware does not support addons!"
 		exit 5
 	fi
 	if [ ! -f "$RAM_PAGE" ]; then
@@ -268,7 +268,7 @@ inject_menu() {
 	[ -f "$CONF_FILE" ] && sed -i '/^INSTALLED_PAGE=/d' "$CONF_FILE"
 	am_get_webui_page "$WEB_PAGE"
 	if [ "$am_webui_page" = "none" ]; then
-		logger -t "Wireless_Report" "Unable to install Wireless Report"
+		logger -p user.info -t "Wireless_Report" "Unable to install Wireless Report"
 		exit 5
 	fi
 	cp "$WEB_PAGE" "/www/user/$am_webui_page"
@@ -286,7 +286,7 @@ inject_menu() {
 	sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ {/{url: \"NULL\", tabName: \"__INHERIT__\"}/i \\
 	{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},
 	}" "$TEMP_MENU"
-	logger -t "Wireless_Report" "Mounting Menu[Wireless] TAB[Wireless Report] as $am_webui_page"
+	logger -p user.info -t "Wireless_Report" "Mounting Menu[Wireless] TAB[Wireless Report] as $am_webui_page"
 	umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 	umount "/www/user/$am_webui_page" 2>/dev/null
 	mount -o bind "$RAM_PAGE" "/www/user/$am_webui_page"
@@ -315,7 +315,7 @@ do_uninstall() {
             fi
         fi
         if [ -n "$INSTALLED_PAGE" ]; then
-            logger -t "Wireless_Report" "Unmounting Wireless Report Tab."
+            logger -p user.info -t "Wireless_Report" "Unmounting Wireless Report Tab."
 			umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 			rm -f "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 			echo -e "${CYAN}[*] Removing Wireless Report Tab...${NC}"
@@ -823,7 +823,7 @@ set_log_kick() {
     local MSG="$1"
     local LOGTIME=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$LOGTIME] $MSG" >> "$BSS_LOG"
-    logger -t "Wireless_Report" "$MSG"
+    logger -p user.info -t "Wireless_Report" "$MSG"
 }
 
 run_report() {
@@ -943,7 +943,7 @@ for iface in $IFACE_LIST; do
 			if [ "$INVALID" = "true" ] || [ "$ROAM_THRESHOLD" -lt 60 ] || [ "$ROAM_THRESHOLD" -gt 85 ]; then
 				sed -i '/ROAM_THRESHOLD=/d' "$CONF_FILE"
 				ROAM_THRESHOLD=""
-				logger -t "Wireless_Report" "CRITICAL: Invalid Roaming Threshold detected. Feature DISABLED for safety."
+				logger -p user.info -t "Wireless_Report" "CRITICAL: Invalid Roaming Threshold detected. Feature DISABLED for safety."
 			fi
 		fi
 		if [ "$KICK_SAFETY" = "OFF" ] && [ -n "$ROAM_THRESHOLD" ] && [ "$rssi" -le -"$ROAM_THRESHOLD" ]; then
