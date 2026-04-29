@@ -27,7 +27,7 @@
 # amtm NoMD5check                                                               #
 #################################################################################
 
-SCRIPT_VERSION="1.5.8"
+SCRIPT_VERSION="1.5.9"
 INSTALL_DIR="/jffs/addons/wireless_report"; REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONF_FILE="$INSTALL_DIR/webui.conf"; [ -f "$CONF_FILE" ] && . "$CONF_FILE"
 USB_PATH=$(ls -d /tmp/mnt/*/wirelessreport 2>/dev/null | head -n 1); BUP=$(cut -d. -f1 /proc/uptime)
@@ -39,6 +39,7 @@ BSS_LOG="$USB_PATH/bssroam.log"; [ ! -d "$(dirname "$BSS_LOG")" ] && mkdir -p "$
 SKIP_DB="$USB_PATH/mac_skip.db"; [ ! -f "$SKIP_DB" ] && touch "$SKIP_DB"
 OUT_FILE="/tmp/wireless.asp"; NEW_HISTORY="/tmp/rssi_new.db"; SEEN_MACS="/tmp/seen_macs.txt"
 YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"; YAZ_CACHE="/tmp/yaz_cache.tmp"
+START_RUNTIME=$(cat /proc/uptime | awk '{print $1}')
 ARP_CACHE="/tmp/arp_cache.tmp"; Q_RELAY="/tmp/q_relay.tmp"; doScriptUpdateFromAMTM=true
 MAIN_ROWS="/tmp/main_rows.tmp"; NODE_ROWS="/tmp/node_rows.tmp"; ALL_ROWS="/tmp/all_rows.tmp"
 CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; NC='\033[0m'
@@ -1630,26 +1631,38 @@ cat <<HTML >> $OUT_FILE
 </html>
 HTML
 rm -f $SEEN_MACS $ARP_CACHE $YAZ_CACHE $MAIN_ROWS $NODE_ROWS $ALL_ROWS $Q_RELAY
+END_RUNTIME=$(cat /proc/uptime | awk '{print $1}'); RUNTIME=$(awk "BEGIN {print $END_RUNTIME - $START_RUNTIME}")
+logger -t "Wireless Report" "Report completed in $RUNTIME seconds."
 }
 
 case "$1" in
     install)
         # Install/Uninstall options
-        # Command: wirelessreport install
+        # Command: wirelessreport.sh install
         install_menu
         ;;
     inject)
         # Called by services-start to mount tab
-		# Command: wirelessreport inject
+		# Command: wirelessreport.sh inject
         inject_menu
         ;;
     amtmupdate)
         # Called by AMTM for autoupdates
-		# Command: wirelessreport amtmupdate
+		# Command: wirelessreport.sh amtmupdate
 		shift
         ScriptUpdateFromAMTM "$@"
         exit "$?"
         ;;
+	usb)
+        # Check USB
+		# Command: wirelessreport.sh usb
+        check_storage
+        ;;
+	ssh)
+        # Check ssh
+		# Command: wirelessreport.sh ssh
+        check_ssh
+        ;;		
     *)
         # Run (Scans)
 		run_report
