@@ -1632,7 +1632,7 @@ cat <<HTML >> $OUT_FILE
 HTML
 rm -f $SEEN_MACS $ARP_CACHE $YAZ_CACHE $MAIN_ROWS $NODE_ROWS $ALL_ROWS $Q_RELAY
 END_RUNTIME=$(cat /proc/uptime | awk '{print $1}'); RUNTIME=$(awk "BEGIN {print $END_RUNTIME - $START_RUNTIME}")
-logger -t "Wireless Report" "Report completed in $RUNTIME seconds."
+logger -p user.info -t "Wireless Report" "Report completed in $RUNTIME seconds."
 }
 
 case "$1" in
