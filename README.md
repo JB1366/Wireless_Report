@@ -154,7 +154,6 @@ If you have any questions, please feel free to post in this thread [Wireless Rep
 
 $\color{blue}{\text{CHANGELOG:}}$<br>
 ```
-v1.4.8-column state is saved on refresh, on side-by-side view, you have to wait 30 seconds and use webpage reload.
 v1.4.9-revert back to v1.4.7 code, new sorting hiccup.
 v1.5.0-saves current column state on all tables on refresh.
 v1.5.1-added new device detection-the entire device row 'pulses' on new device detected.
@@ -165,6 +164,7 @@ v1.5.5-minor updates.
 v1.5.6-minor updates.
 v1.5.7-minor setup changes & added support for Router only people.
 v1.5.8-minor adjustments to router only mode, you only see router table now, hid the stacked/all devices/popout buttons.
+V1.5.9-minor updates, added script runtime to syslog.
 ```
 
 Support the development of Wireless Report AiMesh [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/paypalme/JB1366) 
