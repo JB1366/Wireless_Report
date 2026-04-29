@@ -4,19 +4,22 @@
 **AMTM Release:** April 11, 2026<br>
 \
 \
-$\color{blue}{\text{WHAT IS IT FOR:}}$ Wireless Report AiMesh provides a comprehensive, sortable overview of your entire wireless network. It brings critical data to the forefront—such as real-time RSSI for node-connected devices—that is typically missing from the ASUS Network Map. Once installed, a dedicated tab is added to the Wireless menu in the ASUS WebGUI. This interface features interactive column headers for custom sorting and multi-view columns that allow you to toggle between data points like MAC/IP addresses and SSID/Wireless Interface.
+$\color{blue}{\text{WHAT IS THIS FOR:}}$<br>
+Wireless Report AiMesh provides a comprehensive, sortable overview of your entire wireless network. It brings critical data to the forefront—such as real-time RSSI for node-connected devices—that is typically missing from the ASUS Network Map. Once installed, a dedicated tab is added to the Wireless menu in the ASUS WebGUI. This interface features interactive column headers for custom sorting and multi-view columns that allow you to toggle between data points like MAC/IP addresses and SSID/Wireless Interface.
 
-$\color{blue}{\text{WHY:}}$ I created this script to solve a specific gap in the ASUS WebGUI: the lack of real-time AiMesh node data. The absence of RSSI parameters on nodes was the primary motivation for this addon. By consolidating all wireless devices into a single, unified table, this report allows you to monitor your entire network at a glance. Because ASUS firmware can be slow to roam devices to the optimal router or node, this report provides the visibility needed to manually tune and optimize client connectivity much faster and more accurately.
+$\color{blue}{\text{WHY:}}$<br>
+I created this script to solve a specific gap in the ASUS WebGUI: the lack of real-time AiMesh node data. The absence of RSSI parameters on nodes was the primary motivation for this addon. By consolidating all wireless devices into a single, unified table, this report allows you to monitor your entire network at a glance. Because ASUS firmware can be slow to roam devices to the optimal router or node, this report provides the visibility needed to manually tune and optimize client connectivity much faster and more accurately.
 
-$\color{blue}{\text{PREREQUISITES:}}$ To display data for AiMesh nodes, password-less SSH access must be configured for each node. This allows the script to securely retrieve remote connection details for the unified report. Please refer to the steps posted here at [Passwordless SSH @ SNB Forums](https://www.snbforums.com/threads/asus-merlin-router-to-aimesh-nodes-ssh-key-setup-password-19-passwordless-16-or-use-curl-30.96817/#post-985905) to configure access prior to installation. Note that this method applies to nodes running either stock or Merlin firmware, provided the main router is running Merlin.
+$\color{blue}{\text{PREREQUISITES:}}$<br>
+To display data for AiMesh nodes, password-less SSH access must be configured for each node. This allows the script to securely retrieve remote connection details for the unified report. Please refer to the steps posted here at [Passwordless SSH @ SNB Forums](https://www.snbforums.com/threads/asus-merlin-router-to-aimesh-nodes-ssh-key-setup-password-19-passwordless-16-or-use-curl-30.96817/#post-985905) to configure access prior to installation. Note that this method applies to nodes running either stock or Merlin firmware, provided the main router is running Merlin.
 
 $\color{blue}{\text{PRO-TIP: CUSTOMIZING HOSTNAMES}}$<br>
 To ensure your report shows clean Hostnames (e.g., "Living Room TV") rather than default MAC addresses, it is highly recommended to assign manual IP reservations for your frequent clients. You can do this in the LAN > DHCP Server tab, or within Guest Network Pro > Advanced Settings for your specific guest networks.
 
-$\color{blue}{\text{Recommendation:}}$ Since your main router is running Merlin, consider using YazDHCP (available via amtm option j7). It provides a much more intuitive interface for managing assignments, supports easy import/export, and—most importantly—combines both Main and GNP assignments into a single, unified view. While not required for this script to function, it significantly improves the readability of your report.
+$\color{blue}{\text{RECOMMENDATION:}}$<br>
+Since your main router is running Merlin, consider using YazDHCP (available via amtm option j7). It provides a much more intuitive interface for managing assignments, supports easy import/export, and—most importantly—combines both Main and GNP assignments into a single, unified view. While not required for this script to function, it significantly improves the readability of your report.
 
-$\color{blue}{\text{INSTALL:}}$
-
+$\color{blue}{\text{INSTALL:}}$<br>
 Setting up the addon is a two-step process: Initiation followed by Finalization.
 
 $\color{blue}{\text{Step 1:}}$ Initiate the Installation
@@ -35,7 +38,7 @@ Once the installer is active, you will be presented with the main configuration 
 
 ![Instructions1](https://github.com/user-attachments/assets/bf40bb1e-58c2-4a5d-863c-a374b87cb92c)
 
-$\color{blue}{\text{Step 2:}}$ Run the WR Installation (Option A)
+$\color{blue}{\text{Step 2:}}$ Run the WR Installation (Option A),
 You only need to perform this full step during the initial setup and subsequent updates. Select option (1) from the menu to begin. The script will automatically perform the following:
 
 * $\color{blue}{\text{Storage Check:}}$ Verifies the presence of a USB drive or JFFS for persistent storage.
@@ -45,8 +48,7 @@ You only need to perform this full step during the initial setup and subsequent 
 
 Note: At this stage, Wireless Report is active and ready to view in your WebGUI. However, it is highly recommended to explore the Optional Configuration items in the menu before exiting. For example, use option (4) to set custom nicknames for your router nodes to make the report easier to read.
 
-$\color{blue}{\text{OPTIONAL CONFIGURATION}}$ (in WR menu):
-
+$\color{blue}{\text{OPTIONAL CONFIGURATION:}}$<br>
 Once the core installation is complete, you can use options (3) through (5) to customize your experience:
 
 * $\color{blue}{\text{Option (3):}}$ Regional Settings Toggle between Fahrenheit (default) and Celsius. Selecting Celsius will also automatically adjust the date to a non-US format (DD/MM/YYYY).<br>
@@ -58,14 +60,14 @@ $\color{blue}{\text{Default:}}$ &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
 GT-BE98_PRO → GT-BE98_PRO &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; GT-BE98_PRO → OFFICE<br>
 RT-AX86U_PRO → RT-AX86U_PRO &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; RT-AX86U_PRO → BEDROOM<br>
 
-* $\color{blue}{\text{Option (5):}}$ RSSI Threshold / Kick Device Allows you to set a signal threshold to automatically kick weak clients. Note: This is disabled by default. $\color{blue}{\text{*** USE AT YOUR OWN RISK ***}}$<br>
+* $\color{blue}{\text{Option (5):}}$ RSSI Threshold/Kick Device, allows you to set a signal threshold to automatically kick weak clients.<br>
+$\color{blue}{\text{Note:}}$ This is disabled by default. $\color{blue}{\text{*** USE AT YOUR OWN RISK ***}}$<br>
 ![Instructions2.2](https://github.com/user-attachments/assets/b304d178-22a3-405e-b469-31071a820386)<br>
 
-$\color{blue}{\text{Viewing the Report:}}$
-
+$\color{blue}{\text{VIEWING THE REPORT:}}$<br>
 To access your data, navigate to Advanced Settings > Wireless in the ASUS WebGUI and select the Wireless Report tab on the far right.
 
-$\color{blue}{\text{Key Features + Navigation:}}$
+$\color{blue}{\text{KEY FEATURES + NAVIGATION:}}$
 
 * $\color{blue}{\text{Auto-Refresh:}}$ The table automatically refreshes every time you navigate to the tab. To ensure data integrity, please allow at least 30 seconds between manual refreshes.
 * $\color{blue}{\text{Unified Dashboard:}}$ View all connected clients across your entire mesh system in one place. The table includes Hostnames, IP/MAC Addresses, RSSI, RX/TX Rates, SSID/Interface, Band, and Client Uptime.
@@ -73,7 +75,7 @@ $\color{blue}{\text{Key Features + Navigation:}}$
 * $\color{blue}{\text{Device Summary:}}$ The header displays the Grand Total of connected devices, followed by a color-coded breakdown of exactly how many clients are on each specific Router or Node.
 * $\color{blue}{\text{Visual Health Cues:}}$ RSSI values are automatically graded and color-coded (Excellent, Good, Fair, or Poor) so you can identify connection issues at a glance.
 
-$\color{blue}{\text{Pro-Tip: Alternate Views}}$
+$\color{blue}{\text{PRO-TIP: ALTERNATE VIEWS}}$<br>
 Remember that your UI is interactive! You can toggle between IP vs. MAC and SSID vs. Interface by clicking the respective column headers to customize your view on the fly.
 
 ![Instructions3](https://github.com/user-attachments/assets/3cef10ac-12d5-45f2-b10b-b5c4658f5bfd)
@@ -82,8 +84,7 @@ Remember that your UI is interactive! You can toggle between IP vs. MAC and SSID
 
 ![Instructions5](https://github.com/user-attachments/assets/c38a2339-4ed8-440d-bd26-5e068c0fc736)
 
-$\color{blue}{\text{ADVANCED VIEWING + INTERACTIVE FEATURES:}}$
-
+$\color{blue}{\text{ADVANCED VIEWING + INTERACTIVE FEATURES:}}$<br>
 Wireless Report AiMesh is designed to be more than just a static table. Use these interactive elements to manage your network:
   * $\color{blue}{\text{Version + Update Alerts:}}$ Hover your mouse over the "WIRELESS REPORT" header to instantly check your current script version and see if a new update is available.
   * $\color{blue}{\text{Dynamic UI Modes:}}$ Choose how you view your data using the built-in button toggles:
@@ -101,8 +102,7 @@ $\color{blue}{\text{NEW:}}$ Router only view, for people without nodes.
 
 ![Instructions6](https://github.com/user-attachments/assets/b75d3047-4d5c-47e5-857c-f97eaddbbab3)
   
-$\color{blue}{\text{UPDATES:}}$
-
+$\color{blue}{\text{UPDATES:}}$<br>
 You can update Wireless Report AiMesh using one of the following two methods:
 
 $\color{blue}{\text{Method A:}}$ Via amtm (Recommended)
@@ -128,8 +128,7 @@ source /jffs/configs/profile.add
 Once configured, simply typing wr from any location in the SSH terminal will launch the installer.
 
 
-$\color{blue}{\text{UNINSTALL:}}$
-
+$\color{blue}{\text{UNINSTALL:}}$<br>
 If you need to remove Wireless Report AiMesh, you can do so through the installer menu. Both methods below will strip the script files and remove the WebGUI tab.
 
 $\color{blue}{\text{Method A:}}$ Via amtm<br>
