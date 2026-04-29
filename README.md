@@ -164,7 +164,7 @@ v1.5.5-minor updates.
 v1.5.6-minor updates.
 v1.5.7-minor setup changes & added support for Router only people.
 v1.5.8-minor adjustments to router only mode, you only see router table now, hid the stacked/all devices/popout buttons.
-V1.5.9-minor updates, added script runtime to syslog.
+v1.5.9-minor updates, added script runtime to syslog.
 ```
 
 Support the development of Wireless Report AiMesh [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/paypalme/JB1366) 
