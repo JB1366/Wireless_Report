@@ -108,9 +108,9 @@ install_menu() {
 }
 
 check_installed() {
-    if [ ! -f "$REPORT_SCRIPT" ]; then
-        echo -e "${RED}[!] ERROR: Wireless Report AiMesh not Installed.${NC}"
-        echo -e "${YELLOW}[i] You must successfully run [INSTALL] before changing settings.${NC}"
+	if [ ! -f "$REPORT_SCRIPT" ]; then
+        echo -e "\n${RED}[!] ERROR: Wireless Report AiMesh not Installed.${NC}\n"
+        echo -e "${YELLOW}[i] You must successfully run 'Install/Update' before changing settings.${NC}"
         pause
         return 1
     fi
@@ -122,7 +122,7 @@ do_install() {
 	mkdir -p "$INSTALL_DIR" 2>/dev/null
     if [ -f "$REPORT_SCRIPT" ]; then
         if [ "$LOCAL_VER" = "$REMOTE_VER" ] && [ -n "$REMOTE_VER" ]; then
-            echo -e "\n${GREEN}[i] You are already on the latest version (v$LOCAL_VER).${NC}"
+            echo -e "\n${YELLOW}[i] You are already on the latest version (v$LOCAL_VER).${NC}\n"
             printf " Do you want to reinstall/overwrite anyway? (y/n): "
             read -r confirm_reinstall
             if [ "$confirm_reinstall" != "y" ] && [ "$confirm_reinstall" != "Y" ]; then
@@ -158,7 +158,7 @@ do_install() {
     fi
     curl -sfL --retry 3 "$GITHUB" -o "$REPORT_SCRIPT"
 	if [ ! -s "$REPORT_SCRIPT" ]; then
-        echo -e "${YELLOW}[!] GitHub unreachable. Installing current local copy...${NC}"
+        echo -e "\n${YELLOW}[!] GitHub unreachable. Installing current local copy...${NC}\n"
         cp "$0" "$REPORT_SCRIPT"
     fi
     chmod +x "$REPORT_SCRIPT" 2>/dev/null
@@ -174,7 +174,7 @@ do_install() {
         chmod +x /jffs/scripts/service-event
         service restart_httpd >/dev/null 2>&1 || killall -HUP httpd >/dev/null 2>&1
         echo -e "\n${GREEN}SUCCESS: Installation complete!${NC}"
-        echo -e "${CYAN}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
+        echo -e "${YELLOW}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
     else
         echo -e "${RED}[!] ERROR: Download failed.${NC}"
     fi
@@ -193,7 +193,7 @@ check_storage() {
         echo -e "${GREEN}[+] USB Found: Using $USB_PATH for reports and history.${NC}"
 		echo -e ""
     else
-        echo -e "${YELLOW}[!] No USB detected: Using JFFS at $USB_PATH.${NC}"
+        echo -e "\n${YELLOW}[!] No USB detected: Using JFFS at $USB_PATH.${NC}"
     fi
     mkdir -p "$USB_PATH" 2>/dev/null
 	if [ -n "$USB_PATH" ]; then
@@ -207,16 +207,15 @@ check_ssh_environment() {
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
 	if [ ! -f "$SSH_KEY" ]; then
         echo -e "${YELLOW}[i] No SSH Key found. Skipping node authentication...${NC}"
-		echo -e "${YELLOW}[i] Proceeding with Router-only setup...${NC}"
-		echo -e ""
+		echo -e "\n${YELLOW}[i] Proceeding with Router-only setup...${NC}\n"
     else
         NODE_IPS=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
         if [ -z "$NODE_IPS" ]; then
-            echo -e "${YELLOW}[i] No nodes in Asus device list. Checking dhcp_staticlist...${NC}"
+            echo -e "\n${YELLOW}[i] No nodes in Asus device list. Checking dhcp_staticlist...${NC}\n"
             NODE_IPS=$(nvram get dhcp_staticlist | sed 's/</\n/g' | awk -F'>' '{print $3 "|" $2}' | grep -v "|^$")
         fi
         if [ -z "$NODE_IPS" ]; then
-            echo -e "${YELLOW}[i] No AiMesh Nodes detected. Proceeding with Router-only setup.${NC}"
+            echo -e "\n${YELLOW}[i] No AiMesh Nodes detected. Proceeding with Router-only setup.${NC}\n"
 			echo -e ""
         else
             any_success=0
@@ -296,11 +295,11 @@ inject_menu() {
 
 do_uninstall() {
     if [ ! -d "$INSTALL_DIR" ]; then
-        echo -e "\n${RED}[!] Wireless Report is not installed.${NC}"
+        echo -e "\n${YELLOW}[!] Wireless Report is not installed.${NC}"
         pause
         return
     fi
-    echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}"
+    echo -e "\n${RED}[!] WARNING: Removing Wireless Report...${NC}\n"
     printf " Are you sure? (y/n): "
     read confirm
     if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
@@ -361,7 +360,7 @@ set_temp_date() {
         sed -i '/REPORT_UNIT=/d' "$CONF_FILE"
         echo "REPORT_UNIT=\"$NEW_UNIT\"" >> "$CONF_FILE"
         REPORT_UNIT="$NEW_UNIT"
-        echo -e "${GREEN}[+] Settings updated to $NEW_UNIT${NC}"
+        echo -e "\n${GREEN}[+] Settings updated to $NEW_UNIT${NC}"
         sleep 1
     done
 }
@@ -389,7 +388,7 @@ set_nicknames() {
     if [ "$input_main" = "e" ] || [ "$input_main" = "E" ]; then
         return
     elif [ "$input_main" = "0" ]; then
-        echo -e "${YELLOW}[!] Resetting all nicknames to defaults...${NC}"
+        echo -e "\n${YELLOW}[!] Resetting all nicknames to defaults...${NC}\n"
         sed -i '/^MAIN_NICK=/d' "$CONF_FILE"
         sed -i '/^NODE_NICK_/d' "$CONF_FILE"
         unset MAIN_NICK
@@ -456,8 +455,14 @@ set_threshold() {
         read -r choice
         case "$choice" in
             "") return 0 ;;
-            1)
-                echo -e "\n Enter a value between 60 and 85 (or [0] to Disable):"
+            0)
+                sed -i '/ROAM_THRESHOLD=/d' "$CONF_FILE"
+                ROAM_THRESHOLD=""
+                echo -e "\n ${GREEN}RSSI Kick Threshold set to: Disabled${NC}"
+                sleep 2
+                ;;
+			1)
+                echo -e "\n Enter a value between 60 and 85:\n"
                 printf " Selection: "
                 read -r threshold_input
                 [ -z "$threshold_input" ] && continue
@@ -499,7 +504,7 @@ set_threshold() {
                     echo -e " [2] Remove Device"
                     echo -e " [3] Manual Add (Enter MAC)"
                     echo -e "${CYAN}==================================================${NC}"
-                    printf " Selection: "
+                    printf "\n Selection: "
                     read -r sub_choice
                     case "$sub_choice" in
                         "") break ;;
@@ -605,7 +610,7 @@ set_threshold() {
                         echo -e "\n          (No kick events logged yet)"
                         echo -e "${CYAN}==================================================${NC}"
                     fi
-                    printf " Selection: "
+                    printf "\n Selection: "
                     read -r log_choice
                     if [ "$log_choice" = "c" ] || [ "$log_choice" = "C" ]; then
                         > "$BSS_LOG"
