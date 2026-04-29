@@ -96,6 +96,7 @@ Wireless Report AiMesh is designed to be more than just a static table. Use thes
        * Uptime Alert: The uptime value will pulse for any device that has connected within the last 15 minutes, helping you spot recent roaming or reconnections.
   * $\color{blue}{\text{Custom Refresh Control:}}$ Use the built-in dropdown menu to adjust the Auto-Refresh Interval to suit your monitoring needs.
   * $\color{blue}{\text{Node-Hostname Sorting:}}$ Right-click the node hostnames to toggle numerical sorting (e.g., sorting nodes 1-3 vs. 3-1).
+  * $\color{blue}{\text{Column Sorting:}}$ Remembers column sort-state of all tables, between all refreshes.
   * $\color{blue}{\text{RSSI Device Kicking:}}$ Actively manage network health by setting thresholds to kick weak-signal devices. $\color{blue}{\text{*** USE AT YOUR OWN RISK ***}}$<br>
 
 $\color{blue}{\text{NEW:}}$ Router only view, for people without nodes.
