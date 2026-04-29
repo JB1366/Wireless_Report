@@ -142,7 +142,7 @@ do_install() {
 		return 1
     fi
     check_storage
-    check_ssh_environment || return 1
+    check_ssh || return 1
     echo -e "${CYAN}[*] Processing Wireless Report Files...${NC}"
 	echo -e ""
     if ! grep -q "REPORT_UNIT=" "$CONF_FILE" 2>/dev/null; then 
@@ -202,7 +202,7 @@ check_storage() {
     fi
 }
 
-check_ssh_environment() {
+check_ssh() {
 	[ ! -f "$CONF_FILE" ] && touch "$CONF_FILE"
     echo -e "${CYAN}[*] Verifying Passwordless SSH Environment...${NC}"
 	if [ ! -f "$SSH_KEY" ]; then
@@ -765,13 +765,13 @@ get_band() {
     echo "<td data-sort='$sort' style='text-align:center;'><span class='$class'>$Label$w_text</span></td>"
 }
 
-fmt_time() {
+fmt_uptime() {
     T=$1; [ -z "$T" ] || ! echo "$T" | grep -qE '^[0-9]+$' && echo "<span data-sort='0'>---</span>" && return
     local pulse=""; [ "$T" -lt 900 ] && pulse="pulse-blue"
     echo "$T" | awk -v p="$pulse" '{d=int($1/86400); h=int(($1%86400)/3600); m=int(($1%3600)/60); printf "<span class=\""p"\" data-sort=\"%s\">", $1; if(d>0) printf "%02dd %02dh", d, h; else if(h>0) printf "%02dh %02dm", h, m; else printf "00h %02dm", m; printf "</span>";}'
 }
 
-temp_cf() {
+get_temp_unit() {
     local raw_c=$1
     [ -z "$raw_c" ] || ! echo "$raw_c" | grep -qE '^-?[0-9]+$' && echo "--" && return
     if [ "$TEMP_UNIT" = "C" ]; then
@@ -818,7 +818,7 @@ get_mhz_width() {
     echo "$width"
 }
 
-log_kick() {
+set_log_kick() {
     local MSG="$1"
     local LOGTIME=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$LOGTIME] $MSG" >> "$BSS_LOG"
@@ -826,14 +826,13 @@ log_kick() {
 }
 
 run_report() {
-
 ###############
 #  Main Scan  #
 ###############
 update_time; grep "0x2" /proc/net/arp | awk '{print toupper($4)"|"$1}' > "$ARP_CACHE"
 [ -f "$YAZ_CLIENTS" ] && awk -F',' '{print toupper($1) "|" $2 "|" $3}' "$YAZ_CLIENTS" > $YAZ_CACHE || > $YAZ_CACHE
 M_T=$(($(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0) / 1000))
-M_TEMP=$(temp_cf "$M_T"); M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
+M_TEMP=$(get_temp_unit "$M_T"); M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
 MC_TEMP=$(get_temp_class "$M_TEMP"); MC_LOAD=$(get_load_class "$M_LOAD")
 M_UPTIME=$(awk -v s=$(cat /proc/uptime | cut -d. -f1) 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf "%dd %dh %dm", d, h, m; else if(h>0) printf "%dh %dm", h, m; else printf "%dm", m}')
 M_BOOT=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "$D_FMT")
@@ -947,7 +946,7 @@ for iface in $IFACE_LIST; do
 			fi
 		fi
 		if [ "$KICK_SAFETY" = "OFF" ] && [ -n "$ROAM_THRESHOLD" ] && [ "$rssi" -le -"$ROAM_THRESHOLD" ]; then
-			log_kick "[$M_NAME] Kicking $m_up on $iface ($rssi dBm)"
+			set_log_kick "[$M_NAME] Kicking $m_up on $iface ($rssi dBm)"
 			wl -i "$iface" deauthenticate "$m_up" >/dev/null 2>&1
 			hostapd_cli -i "$iface" disassociate "$m_up" >/dev/null 2>&1
 			iw dev "$iface" station del "$m_up" >/dev/null 2>&1
@@ -973,7 +972,7 @@ for iface in $IFACE_LIST; do
 		display_ssid="$SNAME"; [ ${#display_ssid} -gt 15 ] && display_ssid="${display_ssid:0:15}"
 		ip_s=$(ip_to_num "$ip"); band_td=$(get_band "$iface" "$mhz_width" "$M_ALIAS")
 		if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1)); elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1)); elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1)); else T_POOR=$((T_POOR+1)); fi
-		ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$display_ssid</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_time "$uptime")</td></tr>"
+		ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$display_ssid</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_uptime "$uptime")</td></tr>"
 		echo "$ROW_STR" >> $MAIN_ROWS; echo "$ROW_STR" >> $ALL_ROWS
 		M_TOTAL=$((M_TOTAL + 1))
 	done
@@ -1074,7 +1073,7 @@ for line in $TARGET_LIST; do
         [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES$PIPE$NODE_BRAND"
 		N_TEMP_RAW=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2)
         [ ${#N_TEMP_RAW} -gt 3 ] && N_TEMP_RAW=$((N_TEMP_RAW / 1000))
-        N_TEMP=$(temp_cf "$N_TEMP_RAW"); N_LOAD=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
+        N_TEMP=$(get_temp_unit "$N_TEMP_RAW"); N_LOAD=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
 		NC_TEMP=$(get_temp_class "$N_TEMP"); NC_LOAD=$(get_load_class "$N_LOAD")
         N_UPTIME_RAW=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2)
 		N_UPTIME=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
@@ -1113,7 +1112,7 @@ for line in $TARGET_LIST; do
 				IS_VIP=true
 			fi
 			if [ "$KICK_SAFETY" = "OFF" ] && [ "$IS_VIP" = "false" ] && [ -n "$ROAM_THRESHOLD" ] && [ "$r_raw" -le -"$ROAM_THRESHOLD" ]; then
-				log_kick "[$NODE_DISPLAY_NAME] Kicking $m_live on $i_raw ($r_raw dBm)"
+				set_log_kick "[$NODE_DISPLAY_NAME] Kicking $m_live on $i_raw ($r_raw dBm)"
 				ssh -p "$SSH_PORT" -i "$SSH_KEY" "${NODE_USER}@${IP}" "
 					if command -v service >/dev/null 2>&1; then
 						service \"kick_client $m_live $i_raw\" >/dev/null 2>&1
@@ -1169,7 +1168,7 @@ for line in $TARGET_LIST; do
 			bars_n=$(get_bars "$r_raw"); rssi_style_n=$(get_rssi_style "$r_raw")
             [ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
             ip_ns=$(ip_to_num "$n_ip"); band_td_n=$(get_band "$i_raw" "$w_raw" "$ALIAS")
-            N_ROW="<tr class='$is_new'><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$display_s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_time "$u_raw")</td></tr>"
+            N_ROW="<tr class='$is_new'><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$display_s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_uptime "$u_raw")</td></tr>"
             echo "$N_ROW" >> $NODE_ROWS; echo "$N_ROW" >> $ALL_ROWS
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
@@ -1528,11 +1527,11 @@ document.addEventListener('contextmenu', function(e) {
 			</div>
 HTML
 if [ "$ACTIVE_NODES" -gt 0 ]; then
-cat <<NODEBUTTONS >> $OUT_FILE			
+cat <<BUTTONSHTML >> $OUT_FILE			
 			<button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Stacked</button>
 			<button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
 			<button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
-NODEBUTTONS
+BUTTONSHTML
 fi
 cat <<HTML >> $OUT_FILE		
 		</div>
@@ -1635,17 +1634,24 @@ rm -f $SEEN_MACS $ARP_CACHE $YAZ_CACHE $MAIN_ROWS $NODE_ROWS $ALL_ROWS $Q_RELAY
 
 case "$1" in
     install)
+        # Install/Uninstall options
+        # Command: wirelessreport install
         install_menu
         ;;
     inject)
+        # Called by services-start to mount tab
+		# Command: wirelessreport inject
         inject_menu
         ;;
     amtmupdate)
+        # Called by AMTM for autoupdates
+		# Command: wirelessreport amtmupdate
 		shift
         ScriptUpdateFromAMTM "$@"
         exit "$?"
         ;;
     *)
+        # Run (Scans)
 		run_report
         ;;
 esac
