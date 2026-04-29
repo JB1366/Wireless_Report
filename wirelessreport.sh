@@ -41,7 +41,7 @@ OUT_FILE="/tmp/wireless.asp"; NEW_HISTORY="/tmp/rssi_new.db"; SEEN_MACS="/tmp/se
 YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"; YAZ_CACHE="/tmp/yaz_cache.tmp"
 ARP_CACHE="/tmp/arp_cache.tmp"; Q_RELAY="/tmp/q_relay.tmp"; doScriptUpdateFromAMTM=true
 MAIN_ROWS="/tmp/main_rows.tmp"; NODE_ROWS="/tmp/node_rows.tmp"; ALL_ROWS="/tmp/all_rows.tmp"
-CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
+CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; NC='\033[0m'
 [ -f "/tmp/home/root/.ssh/id_dropbear" ] && SSH_KEY="/tmp/home/root/.ssh/id_dropbear" || SSH_KEY="/jffs/.ssh/id_dropbear"
 SSH_PORT=$(nvram get sshd_port); [ -z "$SSH_PORT" ] && SSH_PORT=22; NODE_USER=$(nvram get http_username)
 GITHUB="https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh"
@@ -56,17 +56,17 @@ check_version() {
     if [ -f "$REPORT_SCRIPT" ]; then
         LOCAL_VER=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
     else
-        LOCAL_VER="NOT INSTALLED"
+        LOCAL_VER="Not Installed"
     fi
     echo -e "${CYAN}==================================================${NC}"
     echo -e "${CYAN}              Wireless Report AiMesh              ${NC}"
     echo -e "${CYAN}==================================================${NC}"
     if [ -z "$REMOTE_VER" ]; then
         echo -e " STATUS: ${RED}[Offline]${NC} Could not reach GitHub"
-    elif [ "$LOCAL_VER" = "NOT INSTALLED" ]; then
-        echo -e " STATUS: ${RED}[Not Installed]${NC} Latest available: ${GREEN}v$REMOTE_VER${NC}"
+    elif [ "$LOCAL_VER" = "Not Installed" ]; then
+        echo -e " STATUS: ${RED}[Not Installed]${NC} Latest Available: ${GREEN}v$REMOTE_VER${NC}"
     elif [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
-        echo -e " STATUS: ${RED}[UPDATE AVAILABLE] v$REMOTE_VER${NC} ${GREEN}(Current: v$LOCAL_VER)${NC}"
+        echo -e " STATUS: ${RED}[Update Available] v$REMOTE_VER${NC} ${GREEN}(Current: v$LOCAL_VER)${NC}"
     else
         echo -e " STATUS: [Up to date] ${GREEN}v$LOCAL_VER${NC}"
     fi
@@ -109,8 +109,8 @@ install_menu() {
 
 check_installed() {
     if [ ! -f "$REPORT_SCRIPT" ]; then
-        echo -e "${RED}[!] ERROR: Wireless Report script not found.${NC}"
-        echo -e "${YELLOW}[i] You must successfully run Option 1 (Install) before changing settings.${NC}"
+        echo -e "${RED}[!] ERROR: Wireless Report AiMesh not Installed.${NC}"
+        echo -e "${YELLOW}[i] You must successfully run [INSTALL] before changing settings.${NC}"
         pause
         return 1
     fi
@@ -1061,7 +1061,6 @@ for line in $TARGET_LIST; do
 		echo \"LOAD|\$(cat /proc/loadavg | awk '{print \$1}')\"
 		echo \"UPTIME_VAL|\$F_UP\"; echo \"UPTIME_RAW|\$UP_SEC\"; echo \"COUNT|\$NODE_COUNT\"
 	" 2>/dev/null)
-	
 		if [ -n "$NODE_OUT" ]; then
         ACTIVE_NODES=$((ACTIVE_NODES + 1)); COLOR_IDX=$((COLOR_IDX + 1))
         CUR_COLOR=$(echo $NODE_COLORS | cut -d' ' -f$((COLOR_IDX))); [ -z "$CUR_COLOR" ] && CUR_COLOR="#ffffff"
