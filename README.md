@@ -152,6 +152,51 @@ If you have any questions, please feel free to post in this thread [Wireless Rep
 
 $\color{blue}{\text{CHANGELOG:}}$<br>
 ```
+v1.0.1-Initial Release - passwordless-SSH to all nodes, are a prerequisite.
+v1.0.3-install script now autogets ssh port
+v1.0.6-install option for °F or °C
+v1.0.7-fix install
+v1.0.8-fix hex/backhaul on ssid scans
+v1.0.9-updated tri-quad band logic
+v1.1.0-fix hostnames for non-yazzies
+v1.1.1-updated fix for XT12
+v1.1.2-comparison view enhancements
+v1.1.3-better router detection
+v1.1.4-fix column widths
+v1.1.5-HOSTNAME is now reporting mac address instead of Unknown
+v1.1.6-fix issue where wired devices could creep through.
+v1.1.7-visual enhancements
+v1.1.8-added version#
+v1.1.9-updated version display, hover header for version, pulsating-header on new version available
+v1.2.0-added nickname option on script install.
+v1.2.1-change nickname max to 25
+v1.2.2-added more options for update frequency.
+v1.2.3-added more options for update frequency.
+v1.2.4-edit update check pulse
+v1.2.5-IP column, 4th octet alignment
+v1.2.6-reverted ssh adjustment
+v1.2.7-fixed LOAD/TEMP detection colors
+v1.2.8-fixed temp/load issue
+v1.2.9-removed pulse on new script update, wasn't working correctly.
+v1.3.0-script cleanup
+v1.3.1-script cleanup, update get_band_html function
+v1.3.2-fix column sorting (mac/uptime), fixed page refresh, adjust table width
+v1.3.3-page refresh adjustment
+v1.3.4-seems entware update screwed with USB mount somehow, find wasn't working, so I swapped in ls -d.
+v1.3.5-minor UI changes, combined all install/script files into one.
+v1.3.6-minor adjustments
+v1.3.7-minor adjustments
+v1.3.8-updated USB detection
+v1.3.9-updated main router-scan functionality.
+v1.4.0-fix Qualcomm Zenwifi BD4 detection
+v1.4.1-fix hostnames, i added custom clientlist that the web interface uses.
+v1.4.2-minor update to hostnames.
+v1.4.3-minor changes to router detection.
+v1.4.4-enhanced router detection.
+v1.4.5-enhanced router detection, added right-click sorting of node-hostnames, sorts numerically by node device (ex. 1-3, 3-1)
+v1.4.6-changed GitHub timeout to 30
+v1.4.7-minor updates.
+v1.4.8-column state is saved on refresh
 v1.4.9-revert back to v1.4.7 code, new sorting hiccup.
 v1.5.0-saves current column state on all tables on refresh.
 v1.5.1-added new device detection-the entire device row 'pulses' on new device detected.
