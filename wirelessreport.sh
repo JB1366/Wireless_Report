@@ -38,9 +38,8 @@ KNOWN_DB="$USB_PATH/known_macs.db"; HISTORY_DB="$USB_PATH/rssi_history.db"
 BSS_LOG="$USB_PATH/bssroam.log"; [ ! -d "$(dirname "$BSS_LOG")" ] && mkdir -p "$(dirname "$BSS_LOG")"
 SKIP_DB="$USB_PATH/mac_skip.db"; [ ! -f "$SKIP_DB" ] && touch "$SKIP_DB"
 OUT_FILE="/tmp/wireless.asp"; NEW_HISTORY="/tmp/rssi_new.db"; SEEN_MACS="/tmp/seen_macs.txt"
-YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"; YAZ_CACHE="/tmp/yaz_cache.tmp"
-START_RUNTIME=$(cat /proc/uptime | awk '{print $1}')
-ARP_CACHE="/tmp/arp_cache.tmp"; Q_RELAY="/tmp/q_relay.tmp"; doScriptUpdateFromAMTM=true
+YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"; YAZ_CACHE="/tmp/yaz_cache.tmp; "ARP_CACHE="/tmp/arp_cache.tmp"; 
+Q_RELAY="/tmp/q_relay.tmp"; doScriptUpdateFromAMTM=true; START_RUNTIME=$(cat /proc/uptime | awk '{print $1}')
 MAIN_ROWS="/tmp/main_rows.tmp"; NODE_ROWS="/tmp/node_rows.tmp"; ALL_ROWS="/tmp/all_rows.tmp"
 CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[0;33m'; NC='\033[0m'
 [ -f "/tmp/home/root/.ssh/id_dropbear" ] && SSH_KEY="/tmp/home/root/.ssh/id_dropbear" || SSH_KEY="/jffs/.ssh/id_dropbear"
@@ -283,10 +282,8 @@ inject_menu() {
 		cp "$SYSTEM_MENU" /tmp/
 		mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 	fi
-	sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ {/{url: \"NULL\", tabName: \"__INHERIT__\"}/i \\
-	{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},
-	}" "$TEMP_MENU"
-	logger -p user.info -t "Wireless_Report" "Mounting Menu[Wireless] TAB[Wireless Report] as $am_webui_page"
+	sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ s|{url: \"NULL\", tabName: \"__INHERIT__\"}|{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\n&|" "$TEMP_MENU"
+	logger -t "Wireless_Report" "Mounting Menu[Wireless] TAB[Wireless Report] as $am_webui_page"
 	umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 	umount "/www/user/$am_webui_page" 2>/dev/null
 	mount -o bind "$RAM_PAGE" "/www/user/$am_webui_page"
@@ -819,7 +816,7 @@ get_mhz_width() {
     echo "$width"
 }
 
-set_log_kick() {
+set_kick_log() {
     local MSG="$1"
     local LOGTIME=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$LOGTIME] $MSG" >> "$BSS_LOG"
@@ -842,7 +839,7 @@ NODE_PFX=$(nvram get cfg_relist | sed 's/[<>]/ /g' | tr ' ' '\n' | grep ":" | cu
 ROUTER_IP=$(nvram get lan_ipaddr); DEVICE_LIST=$(nvram get cfg_device_list)
 M_ALIAS=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 M_NAME="${MAIN_NICK:-${M_ALIAS:-"Main Router"}}"; [ ${#M_NAME} -gt 25 ] && M_NAME="${M_NAME:0:25}"
-MAIN_LABEL="<span class='router-branding'>$M_NAME<!--(MAIN)--></span>"
+MAIN_LABEL="<span class='router-branding'>$M_NAME</span>"
 RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
 MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
 MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
@@ -947,7 +944,7 @@ for iface in $IFACE_LIST; do
 			fi
 		fi
 		if [ "$KICK_SAFETY" = "OFF" ] && [ -n "$ROAM_THRESHOLD" ] && [ "$rssi" -le -"$ROAM_THRESHOLD" ]; then
-			set_log_kick "[$M_NAME] Kicking $m_up on $iface ($rssi dBm)"
+			set_kick_log "[$M_NAME] Kicking $m_up on $iface ($rssi dBm)"
 			wl -i "$iface" deauthenticate "$m_up" >/dev/null 2>&1
 			hostapd_cli -i "$iface" disassociate "$m_up" >/dev/null 2>&1
 			iw dev "$iface" station del "$m_up" >/dev/null 2>&1
@@ -956,20 +953,16 @@ for iface in $IFACE_LIST; do
 		[ -z "$raw_info" ] && raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null)
 		rx_raw=$(echo "$raw_info" | grep "rate of last rx pkt" | awk '{print $6/1000}')
 		tx_raw=$(echo "$raw_info" | grep "rate of last tx pkt" | awk -F': ' '{print $2}' | awk '{print $1/1000}')
-		max_raw=$(echo "$raw_info" | grep "Max Rate =" | awk '{print $4}')
-		mhz_width=$(get_mhz_width "$raw_info")
+		max_raw=$(echo "$raw_info" | grep "Max Rate =" | awk '{print $4}'); mhz_width=$(get_mhz_width "$raw_info")
 		[ -z "$rx_raw" ] || [ "$rx_raw" = "0" ] && rx_disp="?" || rx_disp="${rx_raw%.*}"
 		[ -z "$tx_raw" ] || [ "$tx_raw" = "0" ] && tx_disp="${max_raw:-?}" || tx_disp="${tx_raw%.*}"
-		[ "$rx_disp" = "?" ] && rx_disp="1"; [ "$tx_disp" = "?" ] && tx_disp="1"
-		l_rate_disp="${rx_disp} / ${tx_disp}"
+		[ "$rx_disp" = "?" ] && rx_disp="1"; [ "$tx_disp" = "?" ] && tx_disp="1"; l_rate_disp="${rx_disp} / ${tx_disp}"
 		V1=$(echo "$rx_disp" | tr -dc '0-9'); V2=$(echo "$tx_disp" | tr -dc '0-9')
 		[ -n "$V1" ] && [ -n "$V2" ] && [ "$V1" -gt "$V2" ] 2>/dev/null && { T=$rx_disp; rx_disp=$tx_disp; tx_disp=$T; l_rate_disp="$rx_disp / $tx_disp"; }
 		[ "$rx_disp" = "---" ] && [ "$tx_disp" = "---" ] && l_rate_disp="---"
-		l_rate_val=${tx_disp:-0}; is_new=$(check_new_mac "$m_up")
-		trend=$(get_trend "$m_up" "$rssi"); bars=$(get_bars "$rssi")
-		rssi_style=$(get_rssi_style "$rssi")
-		uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
-		[ ${#name} -gt 20 ] && name="${name:0:20}"
+		l_rate_val=${tx_disp:-0}; is_new=$(check_new_mac "$m_up"); trend=$(get_trend "$m_up" "$rssi")
+		bars=$(get_bars "$rssi"); rssi_style=$(get_rssi_style "$rssi")
+		uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}'); [ ${#name} -gt 20 ] && name="${name:0:20}"
 		display_ssid="$SNAME"; [ ${#display_ssid} -gt 15 ] && display_ssid="${display_ssid:0:15}"
 		ip_s=$(ip_to_num "$ip"); band_td=$(get_band "$iface" "$mhz_width" "$M_ALIAS")
 		if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1)); elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1)); elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1)); else T_POOR=$((T_POOR+1)); fi
@@ -989,7 +982,6 @@ CONSOLIDATED_B="<span class='val-blue'>${M_BOOT}</span>"
 [ -n "$SSH_NODES" ] && TARGET_LIST="$SSH_NODES" || TARGET_LIST=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $1"|"$2"|"$3}' | sort -t '|' -k 1,1 | awk -F '|' '{print $2"|"$3}')
 for line in $TARGET_LIST; do ALIAS="${line%|*}"; IP="${line#*|}"; done
 NODE_DATA="$TARGET_LIST"; NODE_COUNT_TOTAL=$(echo "$NODE_DATA" | grep -v "^$" | wc -l)
-# [ "$NODE_COUNT_TOTAL" -gt 1 ] && N_SUFFIX="(NODES)" || N_SUFFIX="(NODE)"
 NODE_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"; PIPE=" <span style='color:white;'>|</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""; N_SPLIT_COUNTS=""; COLOR_IDX=0; ACTIVE_NODES=0
 for line in $TARGET_LIST; do
@@ -1113,7 +1105,7 @@ for line in $TARGET_LIST; do
 				IS_VIP=true
 			fi
 			if [ "$KICK_SAFETY" = "OFF" ] && [ "$IS_VIP" = "false" ] && [ -n "$ROAM_THRESHOLD" ] && [ "$r_raw" -le -"$ROAM_THRESHOLD" ]; then
-				set_log_kick "[$NODE_DISPLAY_NAME] Kicking $m_live on $i_raw ($r_raw dBm)"
+				set_kick_log "[$NODE_DISPLAY_NAME] Kicking $m_live on $i_raw ($r_raw dBm)"
 				ssh -p "$SSH_PORT" -i "$SSH_KEY" "${NODE_USER}@${IP}" "
 					if command -v service >/dev/null 2>&1; then
 						service \"kick_client $m_live $i_raw\" >/dev/null 2>&1
