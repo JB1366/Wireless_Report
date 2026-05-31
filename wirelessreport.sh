@@ -463,14 +463,14 @@ node_auth() {
 			[ -z "$IP" ] && continue
 			[ -z "$ALIAS" ] && ALIAS="Node_$IP"
 			printf "[*] Testing ${GR}%-14s${NC} (%s) " "$ALIAS" "$IP"
-			#/usr/bin/ssh #true #false #[ "$IP" != "192.168.50.2" -a "$IP" != "192.168.50.4" ]
-            SSH_TEST_ERR="/tmp/wr_ssh_test_${IP}.err"
-            /usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "exit" >/dev/null 2>"$SSH_TEST_ERR"
-            SSH_RC=$?
-            while IFS= read -r line; do
-                ssh_error "$line"
-            done < "$SSH_TEST_ERR"
-            rm -f "$SSH_TEST_ERR"
+			#SSH_ERR #true #false #[ "$IP" != "192.168.50.2" -a "$IP" != "192.168.50.4" ]
+            SSH_ERR=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "exit" 2>&1 >/dev/null)
+			SSH_RC=$?
+			if [ -n "$SSH_ERR" ]; then
+				echo "$SSH_ERR" | while read -r line; do 
+					ssh_error "$line"
+				done
+			fi
 			if [ "$SSH_RC" -eq 0 ]; then
 				echo -e "${GR}[✓] AUTHENTICATED${NC}"
 				any_success=$((any_success + 1))
