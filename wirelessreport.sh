@@ -168,6 +168,12 @@ menu_vars() {
     else
         P_STAT="${GR}${PULSE_MINS} Mins${NC}"
     fi
+	[ -z "$PROFILE" ] && PROFILE="no"
+    if [ "$PROFILE" = "no" ]; then
+        PR_STAT="${RD}OFF${NC}"
+    else
+        PR_STAT="${GR}ON${NC}"
+    fi
 	if [ ! -f "$SSH_KEY" ]; then
 		KEY="${RD}NO KEY FOUND${NC}"
 	else
@@ -229,6 +235,7 @@ do_install() {
     grep -q "REPORT_UNIT=" "$CONFIG" 2>/dev/null || echo "REPORT_UNIT=F" >> "$CONFIG"
 	grep -q "BACKHAUL=" "$CONFIG" 2>/dev/null || echo 'BACKHAUL="no"' >> "$CONFIG"
 	grep -q "PULSE_MINS=" "$CONFIG" 2>/dev/null || echo 'PULSE_MINS="15"' >> "$CONFIG"
+	grep -q "PROFILE=" "$CONFIG" 2>/dev/null || echo 'PROFILE="no"' >> "$CONFIG"
     [ -f "$TEMP_MENU" ] && sed -i '/Wireless Report/d' "$TEMP_MENU" 2>/dev/null
     if [ -f "$CONFIG" ]; then
         OLD_PAGE=$(grep "INSTALLED_PAGE=" "$CONFIG" | cut -d'=' -f2)
@@ -842,7 +849,8 @@ set_toggle() {
         echo -e "  $N1  Show Runtime Tracking: ($R_STAT)                     "
         echo -e "  $N2  Show Wireless Backhaul: ($B_STAT)                    "
         echo -e "  $N3  Uptime Alert Pulse: ($P_STAT)                        "
-        echo -e "                                                            "
+        echo -e "  $N4  Profile Scan: ($PR_STAT)                             "
+		echo -e "                                                            "
         echo -e "  $NV  View CONFIG                                          "
 		echo -e "  $NE  Exit to main menu                                    "
         echo -e "                                                            "
@@ -890,7 +898,15 @@ set_toggle() {
                 fi
                 pause 
                 ;;
-            v|V) 
+            4) 
+                if grep -q "PROFILE=" "$CONFIG"; then
+                    [ "$PROFILE" = "yes" ] && sed -i 's/PROFILE=.*/PROFILE="no"/' "$CONFIG" || sed -i 's/PROFILE=.*/PROFILE="yes"/' "$CONFIG"
+                else
+                    echo 'PROFILE="yes"' >> "$CONFIG"
+                fi 
+                ;;
+				
+			v|V) 
                 echo -e "\n${BL}=========== Wireless Report CONFIG ===============${NC}\n"
                 if [ -f "$CONFIG" ]; then
                     cat "$CONFIG"
@@ -1327,8 +1343,7 @@ get_mhz_width() {
 }
 
 run_report() {
-# DEBUG_PROFILE: uncomment PROF_* lines and logger near end of run_report to profile scan phases.
-#PROF_START=$(profile_now)
+PROF_START=$(profile_now)
 
 #=================#
 #  Node Scan(s)   #
@@ -1519,7 +1534,7 @@ for line in $TARGET_LIST; do
 		" 2>/dev/null > "$TELEMETRY_DIR/${CLEAN_IP}.out"
 	) &
 done
-#PROF_NODE_LAUNCH_DONE=$(profile_now)
+PROF_NODE_LAUNCH_DONE=$(profile_now)
 
 #=============================#
 #  Main Scan/Device Assembly  #
@@ -1661,9 +1676,9 @@ for iface in $IFACE_LIST; do
 done
 CONSOLIDATED_T="<span class='${MC_TEMP}'>${M_TEMP}</span>"; CONSOLIDATED_L="<span class='${MC_LOAD}'>${M_LOAD}</span>"
 CONSOLIDATED_U="<span class='val-blue'>${M_UPTIME}</span>"; CONSOLIDATED_B="<span class='val-blue'>${M_BOOT}</span>"
-#PROF_MAIN_SCAN_DONE=$(profile_now)
+PROF_MAIN_SCAN_DONE=$(profile_now)
 wait
-#PROF_NODE_WAIT_DONE=$(profile_now)
+PROF_NODE_WAIT_DONE=$(profile_now)
 
 #========================#
 #  Node Device Assembly  #
@@ -1781,7 +1796,7 @@ GRAND_TOTAL=$((MD_TOTAL + ND_TOTAL)); BRAND_LINE_ALL="<span class='router-brandi
 [ "$ACTIVE_NODES" -ge 1 ] && FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MD_TOTAL</span> | $N_SPLIT_COUNTS" || FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$MD_TOTAL</span>"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 header_box; do_runtime; JS_DIFF="${DIFF:-5.00}"
-#PROF_ASSEMBLY_DONE=$(profile_now)
+PROF_ASSEMBLY_DONE=$(profile_now)
 
 #=================#
 #  Generate HTML  #
@@ -2238,8 +2253,12 @@ cat <<HTML >> "$WEB_PAGE"
 HTML
 rm -f "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$MAIN_ROWS" "$NODE_ROWS" "$ALL_ROWS" "$CUSTOM_CLIENTS_CACHE" "$NMP_CACHE" "$DEVICE_LIST_CACHE"
 rm -rf "$TELEMETRY_DIR" 2>/dev/null
-#PROF_DONE=$(profile_now)
-#logger -p user.info -t "Wireless_Report" "Profile: node_launch=$(profile_diff "$PROF_START" "$PROF_NODE_LAUNCH_DONE")s main_scan=$(profile_diff "$PROF_NODE_LAUNCH_DONE" "$PROF_MAIN_SCAN_DONE")s node_wait=$(profile_diff "$PROF_MAIN_SCAN_DONE" "$PROF_NODE_WAIT_DONE")s node_assembly=$(profile_diff "$PROF_NODE_WAIT_DONE" "$PROF_ASSEMBLY_DONE")s html=$(profile_diff "$PROF_ASSEMBLY_DONE" "$PROF_DONE")s total=$(profile_diff "$PROF_START" "$PROF_DONE")s"
+PROF_DONE=$(profile_now)
+
+if [ "$PROFILE" = "yes" ]; then
+	logger -p user.info -t "Wireless_Report" "Profile: node_launch=$(profile_diff "$PROF_START" "$PROF_NODE_LAUNCH_DONE")s main_scan=$(profile_diff "$PROF_NODE_LAUNCH_DONE" "$PROF_MAIN_SCAN_DONE")s node_wait=$(profile_diff "$PROF_MAIN_SCAN_DONE" "$PROF_NODE_WAIT_DONE")s node_assembly=$(profile_diff "$PROF_NODE_WAIT_DONE" "$PROF_ASSEMBLY_DONE")s html=$(profile_diff "$PROF_ASSEMBLY_DONE" "$PROF_DONE")s total=$(profile_diff "$PROF_START" "$PROF_DONE")s"
+fi
+
 }
 
 case "$1" in
