@@ -217,7 +217,7 @@ sh /jffs/addons/wireless_report/wirelessreport.sh install
 Wireless Report AiMesh is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0)  (GPL 3.0).<br>
 \
 \
-If you have any questions, please feel free to post in this thread [Wireless Report AiMesh @ SNB Forums](https://www.snbforums.com/posts/992647/)<br>
+If you have any questions, please feel free to post in this thread [Wireless Report AiMesh @ SNB Forums](https://www.snbforums.com/threads/96861/latest)<br>
 \
 \
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/paypalme/JB1366) [Support the development of Wireless Report AiMesh](https://www.paypal.com/paypalme/JB1366) [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/paypalme/JB1366)<br>
