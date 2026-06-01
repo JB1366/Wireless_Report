@@ -167,12 +167,6 @@ menu_vars() {
     else
         P_STAT="${GR}${PULSE_MINS} Mins${NC}"
     fi
-	[ -z "$PROFILE" ] && PROFILE="no"
-    if [ "$PROFILE" = "no" ]; then
-        PR_STAT="${RD}OFF${NC}"
-    else
-        PR_STAT="${GR}ON${NC}"
-    fi
 	if [ ! -f "$SSH_KEY" ]; then
 		KEY="${RD}NO KEY FOUND${NC}"
 	else
@@ -847,7 +841,6 @@ set_toggle() {
         echo -e "  $N1  Show Runtime Tracking: ($R_STAT)                     "
         echo -e "  $N2  Show Wireless Backhaul: ($B_STAT)                    "
         echo -e "  $N3  Uptime Alert Pulse: ($P_STAT)                        "
-        echo -e "  $N4  Profile Scan: ($PR_STAT)                             "
 		echo -e "                                                            "
         echo -e "  $NV  View CONFIG                                          "
 		echo -e "  $NE  Exit to main menu                                    "
@@ -897,15 +890,7 @@ set_toggle() {
                 fi
                 pause 
                 ;;
-            4) 
-                if grep -q "PROFILE=" "$CONFIG"; then
-                    [ "$PROFILE" = "yes" ] && NEW_PROF="no" || NEW_PROF="yes"
-                    sed -i "s/PROFILE=.*/PROFILE=\"$NEW_PROF\"/" "$CONFIG"
-                else
-                    echo 'PROFILE="yes"' >> "$CONFIG"
-                fi 
-                ;;
-				
+            
 			v|V) 
                 echo -e "\n${BL}=========== Wireless Report CONFIG ===============${NC}\n"
                 if [ -f "$CONFIG" ]; then
@@ -1570,9 +1555,6 @@ M_ALIAS=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>'
 M_NAME="${MAIN_NICK:-${M_ALIAS:-"Main Router"}}"
 [ ${#M_NAME} -gt 25 ] && M_NAME="${M_NAME:0:25}"
 MAIN_LABEL="<span class='router-branding'>$M_NAME</span>"
-RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
-MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
-MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
 > "$SEEN_MACS"; > "$MAIN_ROWS"; > "$NODE_ROWS"; > "$ALL_ROWS"; > "$NEW_HISTORY"
 T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MD_TOTAL=0; ND_TOTAL=0; BH_COUNTER=250
 WL_BASES=$(nvram get wl_ifnames)
@@ -1830,6 +1812,9 @@ GRAND_TOTAL=$((MD_TOTAL + ND_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 [ "$ACTIVE_NODES" -gt 0 ] && R_TITLE="Wireless Report AiMesh" || R_TITLE="Wireless Report"
 [ "$ACTIVE_NODES" -ge 1 ] && FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MD_TOTAL</span> | $N_SPLIT_COUNTS" || FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$MD_TOTAL</span>"
+RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
+MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
+MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 do_runtime
 PROFILE_ASSEMBLY_DONE=$(profile_now)
@@ -2291,9 +2276,8 @@ HTML
 rm -f "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$MAIN_ROWS" "$NODE_ROWS" "$ALL_ROWS" "$CUSTOM_CLIENTS_CACHE" "$NMP_CACHE" "$DEVICE_LIST_CACHE"
 rm -rf "$TELEMETRY_DIR" 2>/dev/null
 PROFILE_DONE=$(profile_now)
-if [ "$PROFILE" = "yes" ]; then
-	logger -p user.info -t "Wireless_Report" "Profile: node_launch=$(profile_diff "$PROFILE_START" "$PROFILE_NODE_LAUNCH_DONE")s main_scan=$(profile_diff "$PROFILE_NODE_LAUNCH_DONE" "$PROFILE_MAIN_SCAN_DONE")s node_wait=$(profile_diff "$PROFILE_MAIN_SCAN_DONE" "$PROFILE_NODE_WAIT_DONE")s node_assembly=$(profile_diff "$PROFILE_NODE_WAIT_DONE" "$PROFILE_ASSEMBLY_DONE")s html=$(profile_diff "$PROFILE_ASSEMBLY_DONE" "$PROFILE_DONE")s total=$(profile_diff "$PROFILE_START" "$PROFILE_DONE")s"
-fi
+# logger -p user.info -t "Wireless_Report" "Profile: node_launch=$(profile_diff "$PROFILE_START" "$PROFILE_NODE_LAUNCH_DONE")s main_scan=$(profile_diff "$PROFILE_NODE_LAUNCH_DONE" "$PROFILE_MAIN_SCAN_DONE")s node_wait=$(profile_diff "$PROFILE_MAIN_SCAN_DONE" "$PROFILE_NODE_WAIT_DONE")s node_assembly=$(profile_diff "$PROFILE_NODE_WAIT_DONE" "$PROFILE_ASSEMBLY_DONE")s html=$(profile_diff "$PROFILE_ASSEMBLY_DONE" "$PROFILE_DONE")s total=$(profile_diff "$PROFILE_START" "$PROFILE_DONE")s"
+
 }
 
 case "$1" in
