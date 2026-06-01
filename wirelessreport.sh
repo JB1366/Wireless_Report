@@ -1608,7 +1608,7 @@ for iface in $IFACE_LIST; do
 		[ -z "$mac" ] || [ "$mac" = "mac" ] && continue
 		m_live=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
 		m_prefix=$(echo "$m_live" | cut -c 3-14 | tr '[:lower:]' '[:upper:]')
-		if [ "$BACKHAUL" = "no" ]; then
+		if [ "$BACKHAUL" != "yes" ]; then
 			if [ "$m_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$m_prefix"; then
 				continue
 			fi
@@ -1721,7 +1721,7 @@ $dline
 ROW
 			m_live=$(echo "$m_live" | tr '[:lower:]' '[:upper:]')
 			m_prefix=$(echo "$m_live" | cut -c 3-14 | tr '[:lower:]' '[:upper:]')
-			if [ "$BACKHAUL" = "no" ]; then
+			if [ "$BACKHAUL" != "yes" ]; then
 				if [ "$m_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$m_prefix"; then
 					continue
 				fi
