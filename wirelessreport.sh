@@ -1096,6 +1096,9 @@ get_name() {
 					name="${entry#*\"name\":\"}"
 					name="${name%%\"*}"
 					name=$(echo "$name" | cut -d',' -f1 | tr -d '"{}')
+					if case "$name" in *mlo*|*rssi*) true ;; *) false ;; esac; then
+						name=""
+					fi
 				fi
 			fi
 		fi
@@ -1113,12 +1116,6 @@ get_name() {
 				name="${node_alias:-NODE}-BH"
 			fi
 		fi
-	fi
-	
-	# Arp Cache
-	if [ -z "$name" ] && [ -f "$ARP_CACHE" ]; then
-		local arp_entry=$(grep -i "^$mac|" "$ARP_CACHE")
-		name="${arp_entry#*|}"
 	fi
 	
 	# Not Found
