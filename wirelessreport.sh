@@ -30,7 +30,7 @@
 # shellcheck shell=sh disable=SC2086,SC2155,SC3043                              #                  
 #===============================================================================#
 
-SCRIPT_VERSION="1.8.2"
+SCRIPT_VERSION="1.8.3"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1095,6 +1095,7 @@ get_name() {
 				if case "$entry" in *\"name\":\"*) true ;; *) false ;; esac; then
 					name="${entry#*\"name\":\"}"
 					name="${name%%\"*}"
+					name=$(echo "$name" | cut -d',' -f1 | tr -d '"{}')
 				fi
 			fi
 		fi
