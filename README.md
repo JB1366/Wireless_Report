@@ -297,4 +297,5 @@ v1.8.0-minor adjustments, added toggle, enhanced runtime.
 v1.8.1-minor install updates, seperated SSH Key Setup from Node Authentication.
 V1.8.2-minor changes
 v1.8.3-minor update to fix mac-address bug.
+v1.8.4-minor fixes for mac address issues.
 ```
