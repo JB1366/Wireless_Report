@@ -1059,10 +1059,8 @@ get_trend() {
 }
 
 get_name() {
-	local clean_mac=$(echo "$1" | grep -oE '([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}' | head -n1)
-    [ -z "$clean_mac" ] && return
-    local mac="$clean_mac"
-    local name=""
+	local mac="$1"
+	local name=""
     
 	# YazDHCP
 	if [ -f "$YAZ_CACHE" ]; then
