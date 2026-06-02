@@ -1114,12 +1114,8 @@ get_name() {
 	fi
 	
 	# Not Found
-	name=$(echo "$name" | cut -d',' -f1 | tr -d '"{} ')
-	if [ -z "$name" ] || [ "$name" = "*" ] || [ ${#name} -gt 32 ]; then
-		echo "$mac"
-	else
-		echo "$name"
-	fi
+	[ -z "$name" ] || [ "$name" = "*" ] && name="$mac"
+    echo "$name"
 }
 
 check_new_mac() {
