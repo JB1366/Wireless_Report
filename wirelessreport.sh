@@ -302,7 +302,6 @@ get_usb() {
     fi
 	if [ "$FOUND" -eq 1 ] && [ -d "$INSTALL_DIR/data" ] && [ ! -L "$INSTALL_DIR/data" ]; then
 		if [ "$(ls -A "$INSTALL_DIR/data")" ]; then
-			echo "Found local data. Migrating to USB..."
 			cp -a "$INSTALL_DIR/data/." "$USB_PATH/"
 			rm -rf "$INSTALL_DIR/data"
 		else
