@@ -1657,7 +1657,23 @@ for iface in $IFACE_LIST; do
 		elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1))
 		elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1))
 		else T_POOR=$((T_POOR+1)); fi
-		ROW_STR="<tr class='$is_new'><td style='text-align:left;'>$name</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_s'>$ip</span></td><td data-sort='$rssi'>$bars <span style='$rssi_style'>$rssi</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td><td class='toggle-ssid'><span class='s-val' data-sort='$SNAME'>$display_ssid</span><span class='if-val' data-sort='$iface'>$iface</span></td>$band_td<td>$(fmt_uptime "$uptime")</td></tr>"
+		ROW_STR="<tr class='$is_new'>
+			<td style='text-align:left;'>$name</td>
+			<td class='toggle-cell'>
+				<span class='m-val' data-sort='$m_up'>$m_up</span>
+				<span class='i-val' data-sort='$ip_s'>$ip</span>
+			</td>
+			<td data-sort='$rssi'>
+				$bars <span style='$rssi_style'>$rssi</span> $trend
+			</td>
+			<td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td>
+			<td class='toggle-ssid'>
+				<span class='s-val' data-sort='$SNAME'>$display_ssid</span>
+				<span class='if-val' data-sort='$iface'>$iface</span>
+			</td>
+			$band_td
+			<td>$(fmt_uptime "$uptime")</td>
+		</tr>"
 		echo "$ROW_STR" >> "$MAIN_ROWS"; echo "$ROW_STR" >> "$ALL_ROWS"
 		MD_TOTAL=$((MD_TOTAL + 1))
 	done
@@ -1782,7 +1798,23 @@ ROW
             [ ${#n_name} -gt 25 ] && n_name="${n_name:0:25}"
 			ip_ns=$(ip_to_num "$n_ip")
 			band_td_n=$(get_band "$i_raw" "$w_raw" "$ALIAS")
-            N_ROW="<tr class='$is_new'><td style='text-align:left;'>$n_name$STAR_HTML</td><td class='toggle-cell'><span class='m-val' data-sort='$m_up'>$m_up</span><span class='i-val' data-sort='$ip_ns'>$n_ip</span></td><td data-sort='$r_raw'>$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend</td><td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td><td class='toggle-ssid'><span class='s-val' data-sort='$s_name'>$display_s_name</span><span class='if-val' data-sort='$i_raw'>$i_raw</span></td>$band_td_n<td>$(fmt_uptime "$u_raw")</td></tr>"
+            N_ROW="<tr class='$is_new'>
+				<td style='text-align:left;'>$n_name$STAR_HTML</td>
+				<td class='toggle-cell'>
+					<span class='m-val' data-sort='$m_up'>$m_up</span>
+					<span class='i-val' data-sort='$ip_ns'>$n_ip</span>
+				</td>
+				<td data-sort='$r_raw'>
+					$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend
+				</td>
+				<td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td>
+				<td class='toggle-ssid'>
+					<span class='s-val' data-sort='$s_name'>$display_s_name</span>
+					<span class='if-val' data-sort='$i_raw'>$i_raw</span>
+				</td>
+				$band_td_n
+				<td>$(fmt_uptime "$u_raw")</td>
+			</tr>"
             echo "$N_ROW" >> "$NODE_ROWS"; echo "$N_ROW" >> "$ALL_ROWS"
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
