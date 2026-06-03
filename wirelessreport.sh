@@ -300,6 +300,11 @@ get_usb() {
             fi
         done
     fi
+	if [ "$FOUND" -eq 1 ] && [ -d "$INSTALL_DIR/data" ]; then
+        if [ ! -L "$INSTALL_DIR/data" ]; then
+            rm -rf "$INSTALL_DIR/data"
+        fi
+    fi
     if [ "$FOUND" -eq 0 ]; then
         local ROOT_PATH=$(ls -d /tmp/mnt/*/ 2>/dev/null | grep -v "defaults" | head -n 1 | sed 's/\/$//')
         if [ -n "$ROOT_PATH" ]; then
@@ -1825,7 +1830,11 @@ done
 GRAND_TOTAL=$((MD_TOTAL + ND_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
 [ "$ACTIVE_NODES" -gt 0 ] && R_TITLE="Wireless Report AiMesh" || R_TITLE="Wireless Report"
-[ "$ACTIVE_NODES" -ge 1 ] && FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MD_TOTAL</span> | $N_SPLIT_COUNTS" || FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$MD_TOTAL</span>"
+if [ "$ACTIVE_NODES" -ge 1 ]; then
+    FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MD_TOTAL</span> | $N_SPLIT_COUNTS"
+else
+    FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$MD_TOTAL</span>"
+fi
 RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
 MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
 MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
