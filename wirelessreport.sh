@@ -226,7 +226,6 @@ do_install() {
     grep -q "REPORT_UNIT=" "$CONFIG" 2>/dev/null || echo "REPORT_UNIT=F" >> "$CONFIG"
 	grep -q "BACKHAUL=" "$CONFIG" 2>/dev/null || echo 'BACKHAUL="no"' >> "$CONFIG"
 	grep -q "PULSE_MINS=" "$CONFIG" 2>/dev/null || echo 'PULSE_MINS="15"' >> "$CONFIG"
-	grep -q "PROFILE=" "$CONFIG" 2>/dev/null || echo 'PROFILE="no"' >> "$CONFIG"
     [ -f "$TEMP_MENU" ] && sed -i '/Wireless Report/d' "$TEMP_MENU" 2>/dev/null
     if [ -f "$CONFIG" ]; then
         OLD_PAGE=$(grep "INSTALLED_PAGE=" "$CONFIG" | cut -d'=' -f2)
@@ -692,7 +691,6 @@ do_uninstall() {
 	rm -rf "$INSTALL_DIR" 2>/dev/null
 	rm -rf "$WEB_PAGE" 2>/dev/null
 	case "$USB_PATH" in *wirelessreport*) rm -rf "$USB_PATH" 2>/dev/null ;; esac
-	REPORT_UNIT=""; DISPLAY_UNIT="F"
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
 	pause
