@@ -371,10 +371,11 @@ check_ssh() {
                 continue
                 ;;
             2)
-                echo -e "\n${YL}[i] Setting Up Router-Only...${NC}\n"
+                echo -e "\n${YL}[i] Setting Up Router-Only...${NC}"
                 sed -i '/^SSH_NODES=/d' "$CONFIG"
                 echo 'SSH_NODES=" "' >> "$CONFIG"
-                pause
+                sleep 5
+				pause
                 continue
                 ;;
             3)
