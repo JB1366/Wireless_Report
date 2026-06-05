@@ -1085,7 +1085,7 @@ get_name() {
 		fi
 	fi
 	
-	# MLO/Random Phone Mac
+	# MLO/Random Phone Mac | Do not touch
 	if [ -z "$name" ] || [ "$name" = "*" ]; then
         if [ -f "/jffs/nmp_cl_json.js" ]; then
 			local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
@@ -1227,9 +1227,10 @@ get_band() {
     
     # Wireless Backhaul
     if [ -n "$width" ]; then
-        if [ "$width" -eq 320 ]; then
+        if [ "$width" -eq 320 ] && [ "$Label" = "Unknown" ]; then
             Label="6G"
         elif [ "$width" -ge 80 ] && [ "$width" -le 160 ]; then
+            # Only change to 5G if we don't have a specific identifier already
             if [ "$Label" = "2.4G" ] || [ "$Label" = "Unknown" ]; then
                 Label="5G"
             fi
