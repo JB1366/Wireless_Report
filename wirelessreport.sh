@@ -48,7 +48,6 @@ YAZ_CACHE="/tmp/yaz_cache.tmp"
 ARP_CACHE="/tmp/arp_cache.tmp"
 KNOWN_CACHE="/tmp/known_macs.cache"
 HISTORY_CACHE="/tmp/rssi_history.cache"
-LEASES_CACHE="/tmp/dnsmasq_leases.cache"
 DEVICE_LIST_CACHE="/tmp/asus_device_list.cache"
 CUSTOM_CLIENTS_CACHE="/tmp/custom_clients.cache"
 GITHUB="https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh"
@@ -1085,7 +1084,7 @@ get_name() {
 		fi
 	fi
 	
-	# MLO/Random Phone Mac | Do not touch
+	# Networkmap / MLO
 	if [ -z "$name" ] || [ "$name" = "*" ]; then
         if [ -f "/jffs/nmp_cl_json.js" ]; then
 			local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
@@ -1535,7 +1534,6 @@ YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"
 [ -f "$HISTORY_DB" ] && cp "$HISTORY_DB" "$HISTORY_CACHE" 2>/dev/null || > "$HISTORY_CACHE"
 [ -f "$KNOWN_DB" ] && cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null || > "$KNOWN_CACHE"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
-awk '{print toupper($2)"|"$3}' /var/lib/misc/dnsmasq*.leases > "$LEASES_CACHE" 2>/dev/null || > "$LEASES_CACHE"
 [ -f "$YAZ_CLIENTS" ] && awk -F',' 'NR>1 {print toupper($1) "|" $2 "|" $3}' "$YAZ_CLIENTS" > "$YAZ_CACHE" || > "$YAZ_CACHE"
 nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
 nvram get asus_device_list | sed 's/</\n/g' > "$DEVICE_LIST_CACHE" 2>/dev/null || > "$DEVICE_LIST_CACHE"
@@ -1609,7 +1607,7 @@ for iface in $IFACE_LIST; do
 		if grep -qi "$m_live" "$SEEN_MACS"; then
 			continue
 		fi
-		link_ip=$(grep -ih "^$mac|" "$LEASES_CACHE" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
+		link_ip=$(grep -ih "^$mac|" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$link_ip" ] && link_ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
 		lookup=$(get_name "$mac")
         if echo "$lookup" | grep -q "mlo_swap|"; then
@@ -1622,7 +1620,7 @@ for iface in $IFACE_LIST; do
         if [ -n "$link_ip" ] && [ "$link_ip" != "---" ]; then
             ip="$link_ip"
         else
-            ip=$(grep -ih "^$m_up|" "$LEASES_CACHE" "$ARP_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
+            ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
         fi
         case "$name" in *-BH*) ip="" ;; esac
 		if [ -z "$ip" ]; then
@@ -1756,7 +1754,7 @@ ROW
 			if grep -qi "$m_live" "$SEEN_MACS"; then
 				continue
 			fi
-			n_ip=$(grep -ih "^$m_live|" "$LEASES_CACHE" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
+			n_ip=$(grep -ih "^$m_live|" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
 			[ -z "$n_ip" ] && n_ip=$(arp -an | grep -i "$m_live" | awk '{print $2}' | tr -d '()' | head -n 1)
 			lookup=$(get_name "$m_live")
 			if echo "$lookup" | grep -q "mlo_swap|"; then
@@ -1774,7 +1772,7 @@ ROW
 					[ "$n_name" = "$m_target" ] && n_name=$(echo "$yaz_entry" | cut -d'|' -f3)
 				else
 					m_up="$m_target"
-					n_ip=$(grep -ih "^$m_up|" "$LEASES_CACHE" "$ARP_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
+					n_ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
 				fi
 			else
 				m_up="$m_target"
@@ -2307,7 +2305,7 @@ cat <<HTML >> "$WEB_PAGE"
 </body>
 </html>
 HTML
-rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$MAIN_ROWS" "$NODE_ROWS" "$ALL_ROWS" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$TELEMETRY_DIR" 2>/dev/null
+rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$YAZ_CACHE" "$MAIN_ROWS" "$NODE_ROWS" "$ALL_ROWS" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$TELEMETRY_DIR" 2>/dev/null
 }
 
 case "$1" in
