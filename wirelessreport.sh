@@ -1230,7 +1230,6 @@ get_band() {
         if [ "$width" -eq 320 ] && [ "$Label" = "Unknown" ]; then
             Label="6G"
         elif [ "$width" -ge 80 ] && [ "$width" -le 160 ]; then
-            # Only change to 5G if we don't have a specific identifier already
             if [ "$Label" = "2.4G" ] || [ "$Label" = "Unknown" ]; then
                 Label="5G"
             fi
