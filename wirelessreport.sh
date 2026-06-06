@@ -1795,13 +1795,13 @@ ROW
 					u_raw="0"
 				fi
 			fi
+			[ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
 			ssid_node="$s_name"
             [ ${#ssid_node} -gt 15 ] && ssid_node="${ssid_node:0:15}"
             is_new=$(check_new_mac "$m_up")
 			trend=$(get_trend "$m_up" "$r_raw")
 			bars_n=$(get_bars "$r_raw")
 			rssi_style_n=$(get_rssi_style "$r_raw")
-            [ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
 			ip_ns=$(ip_to_num "$n_ip")
 			band_node=$(get_band "$i_raw" "$w_raw" "$ALIAS")
             N_ROW="<tr class='$is_new'>
