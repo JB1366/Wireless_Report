@@ -1801,7 +1801,7 @@ ROW
 			trend=$(get_trend "$m_up" "$r_raw")
 			bars_n=$(get_bars "$r_raw")
 			rssi_style_n=$(get_rssi_style "$r_raw")
-            [ ${#n_name} -gt 25 ] && n_name="${n_name:0:25}"
+            [ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
 			ip_ns=$(ip_to_num "$n_ip")
 			band_node=$(get_band "$i_raw" "$w_raw" "$ALIAS")
             N_ROW="<tr class='$is_new'>
