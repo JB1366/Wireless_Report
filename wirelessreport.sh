@@ -41,9 +41,6 @@ SS_FILE="/jffs/scripts/services-start"
 SE_FILE="/jffs/scripts/service-event"
 NEW_HISTORY="/tmp/rssi_new.db"
 SEEN_MACS="/tmp/seen_macs.txt"
-MAIN_ROWS="/tmp/main_rows.tmp"
-NODE_ROWS="/tmp/node_rows.tmp"
-ALL_ROWS="/tmp/all_rows.tmp"
 YAZ_CACHE="/tmp/yaz_cache.tmp"
 ARP_CACHE="/tmp/arp_cache.tmp"
 KNOWN_CACHE="/tmp/known_macs.cache"
@@ -1554,7 +1551,8 @@ M_ALIAS=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>'
 M_NAME="${MAIN_NICK:-${M_ALIAS:-"Main Router"}}"
 [ ${#M_NAME} -gt 25 ] && M_NAME="${M_NAME:0:25}"
 MAIN_LABEL="<span class='router-branding'>$M_NAME</span>"
-> "$SEEN_MACS"; > "$MAIN_ROWS"; > "$NODE_ROWS"; > "$ALL_ROWS"; > "$NEW_HISTORY"
+> "$SEEN_MACS"; > "$NEW_HISTORY"
+NL=$'\n'; MAIN_ROWS=""; NODE_ROWS=""; ALL_ROWS=""
 T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MD_TOTAL=0; ND_TOTAL=0; BH_COUNTER=250
 WL_BASES=$(nvram get wl_ifnames)
 WL0_PHYS=$(echo "$WL_BASES" | awk '{print $1}')
@@ -1691,7 +1689,8 @@ for iface in $IFACE_LIST; do
 			$band_td
 			<td>$(fmt_uptime "$uptime")</td>
 		</tr>"
-		echo "$ROW_STR" >> "$MAIN_ROWS"; echo "$ROW_STR" >> "$ALL_ROWS"
+		MAIN_ROWS="${MAIN_ROWS}${ROW_STR}${NL}"
+		ALL_ROWS="${ALL_ROWS}${ROW_STR}${NL}"
 		MD_TOTAL=$((MD_TOTAL + 1))
 	done
 done
@@ -1832,7 +1831,8 @@ ROW
 				$band_td_n
 				<td>$(fmt_uptime "$u_raw")</td>
 			</tr>"
-            echo "$N_ROW" >> "$NODE_ROWS"; echo "$N_ROW" >> "$ALL_ROWS"
+            NODE_ROWS="${NODE_ROWS}${N_ROW}${NL}"
+            ALL_ROWS="${ALL_ROWS}${N_ROW}${NL}"
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
@@ -2232,7 +2232,7 @@ cat <<HTML >> "$WEB_PAGE"
                     <th onclick="sortTable(5, 'mainTable')">BAND</th>
                     <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
                   </tr></thead>
-                  <tbody>$(cat "$MAIN_ROWS")</tbody>
+                  <tbody>$MAIN_ROWS</tbody>
                   <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span> • Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
                 </table>
               </div>
@@ -2262,7 +2262,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                     <th onclick="sortTable(5, 'nodeTable')">BAND</th>
                     <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
                   </tr></thead>
-                  <tbody>$(cat "$NODE_ROWS")</tbody>
+                  <tbody>$NODE_ROWS</tbody>
                   <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES • Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
                 </table>
               </div>
@@ -2287,7 +2287,7 @@ cat <<HTML >> "$WEB_PAGE"
                 <th onclick="sortTable(5, 'allTable')">BAND</th>
                 <th onclick="sortTable(6, 'allTable')">UPTIME</th>
               </tr></thead>
-              <tbody>$(cat "$ALL_ROWS")</tbody>
+              <tbody>$ALL_ROWS</tbody>
               <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: $CONSOLIDATED_U • Reboot: $CONSOLIDATED_B</td></tr></tfoot>
             </table>
           </div>
@@ -2307,7 +2307,7 @@ cat <<HTML >> "$WEB_PAGE"
 </body>
 </html>
 HTML
-rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$MAIN_ROWS" "$NODE_ROWS" "$ALL_ROWS" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$TELEMETRY_DIR" 2>/dev/null
+rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$TELEMETRY_DIR" 2>/dev/null
 }
 
 case "$1" in
