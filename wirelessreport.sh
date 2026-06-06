@@ -1325,13 +1325,11 @@ run_report() {
 #  Node Scan(s)   #
 #=================#
 START_RUNTIME=$(awk '{print $1}' /proc/uptime)
-if [ -z "$SSH_NODES" ]; then
-    SSH_NODES=$(nvram get asus_device_list | \
-        sed 's/</\n/g' | \
-        grep '>2$' | \
-        awk -F '>' '{print $2"|"$3}' | \
-        sort)
-fi
+[ -z "$SSH_NODES" ] && SSH_NODES=$(nvram get asus_device_list | \
+    sed 's/</\n/g' | \
+    grep '>2$' | \
+    awk -F '>' '{print $2"|"$3}' | \
+    sort)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
 PIPE=" <span style='color:white;'>|</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
@@ -1733,7 +1731,6 @@ for line in $SSH_NODES; do
         N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$PIPE}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
 		N_BOOTS="${N_BOOTS}${N_BOOTS:+$PIPE}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
         NODE_DEVICES=0
-		UPTIME_QCA="/jffs/wlcnt.json"
 		while read -r dline; do
 			[ -z "$dline" ] && continue
 			IFS='|' read -r _ m_live r_raw i_raw u_raw s_name l_rate_val l_rate_disp_n w_raw hb_raw _ <<ROW
@@ -1790,7 +1787,7 @@ ROW
 			if [ "$u_raw" = "UP_QCA" ] && echo "$i_raw" | grep -q "ath"; then
 				NOW=$(date +%s)
 				CLEAN_MAC=$(echo "$dline" | cut -d'|' -f2 | tr -d '<> ' | awk '{print toupper($0)}')
-				START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "$UPTIME_QCA")
+				START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
 				if [ "$START_TS" -gt 0 ]; then
 					u_raw=$((NOW - START_TS))
 					[ "$u_raw" -lt 0 ] && u_raw=$((START_TS - NOW))
@@ -1798,8 +1795,8 @@ ROW
 					u_raw="0"
 				fi
 			fi
-			display_s_name="$s_name"
-            [ ${#display_s_name} -gt 15 ] && display_s_name="${display_s_name:0:15}"
+			ssid_node="$s_name"
+            [ ${#ssid_node} -gt 15 ] && ssid_node="${ssid_node:0:15}"
             is_new=$(check_new_mac "$m_up")
 			trend=$(get_trend "$m_up" "$r_raw")
 			bars_n=$(get_bars "$r_raw")
@@ -1818,7 +1815,7 @@ ROW
 				</td>
 				<td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td>
 				<td class='toggle-ssid'>
-					<span class='s-val' data-sort='$s_name'>$display_s_name</span>
+					<span class='s-val' data-sort='$s_name'>$ssid_node</span>
 					<span class='if-val' data-sort='$i_raw'>$i_raw</span>
 				</td>
 				$band_node
