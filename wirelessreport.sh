@@ -1325,25 +1325,21 @@ run_report() {
 #  Node Scan(s)   #
 #=================#
 START_RUNTIME=$(awk '{print $1}' /proc/uptime)
-if [ -n "$SSH_NODES" ]; then
-    NODE_LIST="$SSH_NODES"
-else
-    NODE_LIST=$(nvram get asus_device_list | \
+if [ -z "$SSH_NODES" ]; then
+    SSH_NODES=$(nvram get asus_device_list | \
         sed 's/</\n/g' | \
         grep '>2$' | \
         awk -F '>' '{print $2"|"$3}' | \
         sort)
 fi
-NODE_DATA="$NODE_LIST"
-NODE_COUNT_TOTAL=$(echo "$NODE_DATA" | grep -v "^$" | wc -l)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
 PIPE=" <span style='color:white;'>|</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
-TELEMETRY_DIR="/tmp/wr_telemetry"
-rm -rf "$TELEMETRY_DIR" 2>/dev/null
-mkdir -p "$TELEMETRY_DIR"
-for line in $NODE_LIST; do
+NODE_DATA_DIR="/tmp/node_data"
+rm -rf "$NODE_DATA_DIR" 2>/dev/null
+mkdir -p "$NODE_DATA_DIR"
+for line in $SSH_NODES; do
 	IP=$(echo "$line" | cut -d'|' -f2)
 	ALIAS=$(echo "$line" | cut -d'|' -f1)
 	[ -z "$IP" ] && continue
@@ -1520,7 +1516,7 @@ for line in $NODE_LIST; do
 			echo \"TEMP|\$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null | cut -c1-2)\"
 			echo \"LOAD|\$(cat /proc/loadavg | awk '{print \$1}')\"
 			echo \"UPTIME_VAL|\$F_UP\"; echo \"UPTIME_RAW|\$UP_SEC\"; echo \"COUNT|\$NODE_COUNT\"
-		" 2>/dev/null > "$TELEMETRY_DIR/${CLEAN_IP}.out"
+		" 2>/dev/null > "$NODE_DATA_DIR/${CLEAN_IP}.out"
 	) &
 done
 
@@ -1528,14 +1524,14 @@ done
 #  Main Scan/Device Assembly  #
 #=============================#
 update_time; get_usb
-YAZ_CLIENTS="/jffs/addons/YazDHCP.d/DHCP_clients"
+YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
 [ -f "$KNOWN_DB" ] && cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null || > "$KNOWN_CACHE"
 [ -f "$HISTORY_DB" ] && cp "$HISTORY_DB" "$HISTORY_CACHE" 2>/dev/null || > "$HISTORY_CACHE"
+[ -f "$YAZDHCP" ] && awk -F',' 'NR>1 {print toupper($1) "|" $2 "|" $3}' "$YAZDHCP" > "$YAZ_CACHE" || > "$YAZ_CACHE"
 awk '{print toupper($2)"|"$3}' /var/lib/misc/dnsmasq*.leases > "$LEASES_CACHE" 2>/dev/null || > "$LEASES_CACHE"
-[ -f "$YAZ_CLIENTS" ] && awk -F',' 'NR>1 {print toupper($1) "|" $2 "|" $3}' "$YAZ_CLIENTS" > "$YAZ_CACHE" || > "$YAZ_CACHE"
-nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
 nvram get asus_device_list | sed 's/</\n/g' > "$DEVICE_LIST_CACHE" 2>/dev/null || > "$DEVICE_LIST_CACHE"
+nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
 M_T=$(($(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0) / 1000))
 M_TEMP=$(get_temp_unit "$M_T")
 M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
@@ -1546,14 +1542,13 @@ M_BOOT=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "$D_FMT")
 MAIN_PFX=$(nvram get lan_hwaddr | cut -c 3-14 | tr '[:lower:]' '[:upper:]')
 NODE_PFX=$(nvram get cfg_relist | sed 's/[<>]/ /g' | tr ' ' '\n' | grep ":" | cut -c 3-14 | sort -u | tr '[:lower:]' '[:upper:]')
 ROUTER_IP=$(nvram get lan_ipaddr)
-DEVICE_LIST=$(nvram get cfg_device_list)
-M_ALIAS=$(echo "$DEVICE_LIST" | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
-M_NAME="${MAIN_NICK:-${M_ALIAS:-"Main Router"}}"
-[ ${#M_NAME} -gt 25 ] && M_NAME="${M_NAME:0:25}"
-MAIN_LABEL="<span class='router-branding'>$M_NAME</span>"
+M_ALIAS=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
+MAIN_NAME="${MAIN_NICK:-${M_ALIAS:-"Main Router"}}"
+[ ${#MAIN_NAME} -gt 25 ] && MAIN_NAME="${MAIN_NAME:0:25}"
+MAIN_LABEL="<span class='router-branding'>$MAIN_NAME</span>"
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 NL=$'\n'; MAIN_ROWS=""; NODE_ROWS=""; ALL_ROWS=""
-T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MD_TOTAL=0; ND_TOTAL=0; BH_COUNTER=250
+T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MAIN_DEVICE_TOTAL=0; NODE_DEVICE_TOTAL=0; BH_COUNTER=250
 WL_BASES=$(nvram get wl_ifnames)
 WL0_PHYS=$(echo "$WL_BASES" | awk '{print $1}')
 WL1_PHYS=$(echo "$WL_BASES" | awk '{print $2}')
@@ -1575,19 +1570,19 @@ for iface in $IFACE_LIST; do
 		"$WL3_PHYS"*) data_iface="wl3" ;;
 		*) data_iface="$iface" ;;
 	esac
-    ASSOC_OUT=$(wl -i "$iface" assoclist 2>/dev/null)
+    ASSOCLIST=$(wl -i "$iface" assoclist 2>/dev/null)
     WL_ALIVE=0
-    [ -n "$ASSOC_OUT" ] && WL_ALIVE=1
-    SNAME=$(nvram get "${iface}_ssid")
-	if [ -z "$SNAME" ] || echo "$SNAME" | grep -qE '^[0-9A-Fa-f]{16,}$'; then
+    [ -n "$ASSOCLIST" ] && WL_ALIVE=1
+    SSID_NAME=$(nvram get "${iface}_ssid")
+	if [ -z "$SSID_NAME" ] || echo "$SSID_NAME" | grep -qE '^[0-9A-Fa-f]{16,}$'; then
 		idx=${iface#*.}
-		[ "$idx" != "$iface" ] && SNAME=$(nvram get "gnp_name_$idx")
+		[ "$idx" != "$iface" ] && SSID_NAME=$(nvram get "gnp_name_$idx")
 	fi
-	[ -z "$SNAME" ] && [ -n "$data_iface" ] && SNAME=$(nvram get "${data_iface}_ssid")
-	[ -z "$SNAME" ] && SNAME=$(nvram get "${iface%.*}_ssid")
-	[ -z "$SNAME" ] && [ -n "$data_iface" ] && SNAME=$(nvram get "${data_iface%.*}_ssid")
-	[ -z "$SNAME" ] && SNAME="Wireless"
-	MAC_LIST=$(echo "$ASSOC_OUT" | awk '{print $2}')
+	[ -z "$SSID_NAME" ] && [ -n "$data_iface" ] && SSID_NAME=$(nvram get "${data_iface}_ssid")
+	[ -z "$SSID_NAME" ] && SSID_NAME=$(nvram get "${iface%.*}_ssid")
+	[ -z "$SSID_NAME" ] && [ -n "$data_iface" ] && SSID_NAME=$(nvram get "${data_iface%.*}_ssid")
+	[ -z "$SSID_NAME" ] && SSID_NAME="Wireless"
+	MAC_LIST=$(echo "$ASSOCLIST" | awk '{print $2}')
 	if [ -z "$MAC_LIST" ]; then
 		BRIDGE=$(brctl show 2>/dev/null | grep "$iface" | awk '{print $1}')
 		[ -z "$BRIDGE" ] && BRIDGE=$(brctl show 2>/dev/null | grep -B1 "$iface" | grep -v "\-\-" | head -n1 | awk '{print $1}')
@@ -1623,11 +1618,10 @@ for iface in $IFACE_LIST; do
             ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
         fi
         case "$name" in *-BH*) ip="" ;; esac
-		if [ -z "$ip" ]; then
-            lan_base=$(nvram get lan_ipaddr)
-            ip="${lan_base%.*}.$BH_COUNTER"
-            BH_COUNTER=$((BH_COUNTER + 1)) 
-        fi
+		if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
+			n_ip="${ROUTER_IP%.*}.$BH_COUNTER"
+			BH_COUNTER=$((BH_COUNTER + 1))
+		fi
 		ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
 		ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
 		{ [ -z "$name" ] || [ "$name" = "*" ]; } && name="$m_up"
@@ -1664,15 +1658,15 @@ for iface in $IFACE_LIST; do
 		rssi_style=$(get_rssi_style "$rssi")
 		uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
 		[ ${#name} -gt 20 ] && name="${name:0:20}"
-		display_ssid="$SNAME"
-		[ ${#display_ssid} -gt 15 ] && display_ssid="${display_ssid:0:15}"
+		main_ssid="$SSID_NAME"
+		[ ${#main_ssid} -gt 15 ] && main_ssid="${main_ssid:0:15}"
 		ip_s=$(ip_to_num "$ip"); ip="${ip%% *}"; ip="${ip%%<*}"
-		band_td=$(get_band "$iface" "$mhz_width" "$M_ALIAS")
+		band_main=$(get_band "$iface" "$mhz_width" "$M_ALIAS")
 		if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1))
 		elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1))
 		elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1))
 		else T_POOR=$((T_POOR+1)); fi
-		ROW_STR="<tr class='$is_new'>
+		M_ROW="<tr class='$is_new'>
 			<td style='text-align:left;'>$name</td>
 			<td class='toggle-cell'>
 				<span class='m-val' data-sort='$m_up'>$m_up</span>
@@ -1683,27 +1677,27 @@ for iface in $IFACE_LIST; do
 			</td>
 			<td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td>
 			<td class='toggle-ssid'>
-				<span class='s-val' data-sort='$SNAME'>$display_ssid</span>
+				<span class='s-val' data-sort='$SSID_NAME'>$main_ssid</span>
 				<span class='if-val' data-sort='$iface'>$iface</span>
 			</td>
-			$band_td
+			$band_main
 			<td>$(fmt_uptime "$uptime")</td>
 		</tr>"
-		MAIN_ROWS="${MAIN_ROWS}${ROW_STR}${NL}"
-		ALL_ROWS="${ALL_ROWS}${ROW_STR}${NL}"
-		MD_TOTAL=$((MD_TOTAL + 1))
+		MAIN_ROWS="${MAIN_ROWS}${M_ROW}${NL}"
+		ALL_ROWS="${ALL_ROWS}${M_ROW}${NL}"
+		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
 	done
 done
-CONSOLIDATED_T="<span class='${MC_TEMP}'>${M_TEMP}</span>"
-CONSOLIDATED_L="<span class='${MC_LOAD}'>${M_LOAD}</span>"
-CONSOLIDATED_U="<span class='val-blue'>${M_UPTIME}</span>"
-CONSOLIDATED_B="<span class='val-blue'>${M_BOOT}</span>"
+TOTAL_TEMP="<span class='${MC_TEMP}'>${M_TEMP}</span>"
+TOTAL_LOAD="<span class='${MC_LOAD}'>${M_LOAD}</span>"
+TOTAL_UPTIME="<span class='val-blue'>${M_UPTIME}</span>"
+TOTAL_BOOTTIME="<span class='val-blue'>${M_BOOT}</span>"
 wait
 
 #========================#
 #  Node Device Assembly  #
 #========================#
-for line in $NODE_LIST; do
+for line in $SSH_NODES; do
 	NODE_OUT=""
 	IP=$(echo "$line" | cut -d'|' -f2)
 	ALIAS=$(echo "$line" | cut -d'|' -f1)
@@ -1712,7 +1706,7 @@ for line in $NODE_LIST; do
 	eval CUSTOM_NICK=\$NODE_NICK_$CLEAN_IP
 	NODE_NAME="${CUSTOM_NICK:-${ALIAS:-$IP}}"
 	[ ${#NODE_NAME} -gt 25 ] && NODE_NAME="${NODE_NAME:0:25}"
-	[ -f "$TELEMETRY_DIR/${CLEAN_IP}.out" ] && NODE_OUT=$(cat "$TELEMETRY_DIR/${CLEAN_IP}.out")
+	[ -f "$NODE_DATA_DIR/${CLEAN_IP}.out" ] && NODE_OUT=$(cat "$NODE_DATA_DIR/${CLEAN_IP}.out")
 	if [ -n "$NODE_OUT" ]; then
         NUMBERED_NODE=$((NUMBERED_NODE + 1))
 		COLOR_INDEX=$((COLOR_INDEX + 1))
@@ -1730,10 +1724,10 @@ for line in $NODE_LIST; do
         N_UPTIME_RAW=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2)
 		N_UPTIME=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
-		CONSOLIDATED_T="$CONSOLIDATED_T | <span class='${NC_TEMP}'>${N_TEMP}</span>"
-        CONSOLIDATED_L="$CONSOLIDATED_L | <span class='${NC_LOAD}'>${N_LOAD}</span>"
-        CONSOLIDATED_U="$CONSOLIDATED_U | <span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
-        CONSOLIDATED_B="$CONSOLIDATED_B | <span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
+		TOTAL_TEMP="$TOTAL_TEMP | <span class='${NC_TEMP}'>${N_TEMP}</span>"
+        TOTAL_LOAD="$TOTAL_LOAD | <span class='${NC_LOAD}'>${N_LOAD}</span>"
+        TOTAL_UPTIME="$TOTAL_UPTIME | <span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
+        TOTAL_BOOTTIME="$TOTAL_BOOTTIME | <span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
 		N_TEMPS="${N_TEMPS}${N_TEMPS:+$PIPE}<span class='${NC_TEMP}'>$N_TEMP</span>"
 		N_LOADS="${N_LOADS}${N_LOADS:+$PIPE}<span class='${NC_LOAD}'>$N_LOAD</span>"
         N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$PIPE}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
@@ -1780,15 +1774,14 @@ ROW
 			fi
 			case "$n_name" in *-BH*) n_ip="" ;; esac
 			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
-				lan_base=$(nvram get lan_ipaddr)
-				n_ip="${lan_base%.*}.$BH_COUNTER"
+				n_ip="${ROUTER_IP%.*}.$BH_COUNTER"
 				BH_COUNTER=$((BH_COUNTER + 1))
 			fi
 			n_ip=$(echo "$n_ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
 			n_ip=$(printf "%s.%03d" "${n_ip%.*}" "${n_ip##*.}")
 			{ [ -z "$n_name" ] || [ "$n_name" = "*" ]; } && n_name="$m_up"
 			case "$m_live" in ??:??:??:??:??:??) echo "$m_live" >> "$SEEN_MACS" ;; esac
-			ND_TOTAL=$((ND_TOTAL + 1))
+			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
 			NODE_DEVICES=$((NODE_DEVICES + 1))
 			if [ "$r_raw" -ge -50 ]; then T_EXC=$((T_EXC+1))
             elif [ "$r_raw" -ge -60 ]; then T_GOOD=$((T_GOOD+1))
@@ -1813,7 +1806,7 @@ ROW
 			rssi_style_n=$(get_rssi_style "$r_raw")
             [ ${#n_name} -gt 25 ] && n_name="${n_name:0:25}"
 			ip_ns=$(ip_to_num "$n_ip")
-			band_td_n=$(get_band "$i_raw" "$w_raw" "$ALIAS")
+			band_node=$(get_band "$i_raw" "$w_raw" "$ALIAS")
             N_ROW="<tr class='$is_new'>
 				<td style='text-align:left;'>$n_name$NODE_NUM</td>
 				<td class='toggle-cell'>
@@ -1828,7 +1821,7 @@ ROW
 					<span class='s-val' data-sort='$s_name'>$display_s_name</span>
 					<span class='if-val' data-sort='$i_raw'>$i_raw</span>
 				</td>
-				$band_td_n
+				$band_node
 				<td>$(fmt_uptime "$u_raw")</td>
 			</tr>"
             NODE_ROWS="${NODE_ROWS}${N_ROW}${NL}"
@@ -1839,13 +1832,13 @@ EOF
 NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$PIPE}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
-GRAND_TOTAL=$((MD_TOTAL + ND_TOTAL))
-BRAND_LINE_ALL="<span class='router-branding'>$M_NAME</span> | $N_NAMES"
+GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
+BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span> | $N_NAMES"
 [ "$NUMBERED_NODE" -gt 0 ] && R_TITLE="Wireless Report AiMesh" || R_TITLE="Wireless Report"
 if [ "$NUMBERED_NODE" -ge 1 ]; then
-    FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MD_TOTAL</span> | $NODE_TOTALS"
+    ALL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span> | $NODE_TOTALS"
 else
-    FULL_DEVICE_BREAKDOWN="Devices: <span class='val-blue'>$MD_TOTAL</span>"
+    ALL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
 fi
 RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
 MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
@@ -1863,7 +1856,7 @@ cat <<HTML >> "$WEB_PAGE"
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>ASUS Wireless Router $M_NAME - Wireless Report</title>
+<title>ASUS Wireless Router $MAIN_NAME - Wireless Report</title>
 <link rel="shortcut icon" href="images/favicon.png">
 <link rel="icon" href="images/favicon.png">
 <link rel="stylesheet" href="index_style.css" />
@@ -2220,7 +2213,7 @@ cat <<HTML >> "$WEB_PAGE"
                   $MAIN_LABEL<br>
                   <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span> • Load: <span class="$MC_LOAD">$M_LOAD</span> • Devices: <span class="val-blue">$MD_TOTAL</span></div>
+                  <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span> • Load: <span class="$MC_LOAD">$M_LOAD</span> • Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
                 </div>
                 <table id="mainTable" class="report_table show-ip">
                   <thead><tr>
@@ -2250,7 +2243,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                   $N_NAMES <span class="router-branding"></span><br>
                   <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span> • Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span> • Devices: <span class="val-blue">$ND_TOTAL</span> <span class="dash-sep">—›</span> $NODE_TOTALS</div>
+                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span> • Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span> • Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> <span class="dash-sep">—›</span> $NODE_TOTALS</div>
                 </div>
                 <table id="nodeTable" class="report_table show-ip">
                   <thead><tr>
@@ -2275,7 +2268,7 @@ cat <<HTML >> "$WEB_PAGE"
               $BRAND_LINE_ALL<br>
               <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
               <hr class="sep-line">
-              <div class="header-stats-row">Temp: $CONSOLIDATED_T • Load: $CONSOLIDATED_L • $FULL_DEVICE_BREAKDOWN</div>
+              <div class="header-stats-row">Temp: $TOTAL_TEMP • Load: $TOTAL_LOAD • $ALL_DEVICES</div>
             </div>
             <table id="allTable" class="report_table show-ip">
               <thead><tr>
@@ -2288,7 +2281,7 @@ cat <<HTML >> "$WEB_PAGE"
                 <th onclick="sortTable(6, 'allTable')">UPTIME</th>
               </tr></thead>
               <tbody>$ALL_ROWS</tbody>
-              <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: $CONSOLIDATED_U • Reboot: $CONSOLIDATED_B</td></tr></tfoot>
+              <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: $TOTAL_UPTIME • Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
             </table>
           </div>
         </div>
@@ -2307,7 +2300,7 @@ cat <<HTML >> "$WEB_PAGE"
 </body>
 </html>
 HTML
-rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$TELEMETRY_DIR" 2>/dev/null
+rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$NODE_DATA_DIR" 2>/dev/null
 }
 
 case "$1" in
