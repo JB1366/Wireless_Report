@@ -1616,8 +1616,8 @@ for iface in $IFACE_LIST; do
             ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
         fi
         case "$name" in *-BH*) ip="" ;; esac
-		if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
-			n_ip="${ROUTER_IP%.*}.$BH_COUNTER"
+		if [ -z "$ip" ] || [ "$ip" = "---" ]; then
+			ip="${ROUTER_IP%.*}.$BH_COUNTER"
 			BH_COUNTER=$((BH_COUNTER + 1))
 		fi
 		ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
@@ -1655,15 +1655,17 @@ for iface in $IFACE_LIST; do
 		bars=$(get_bars "$rssi")
 		rssi_style=$(get_rssi_style "$rssi")
 		uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
-		[ ${#name} -gt 20 ] && name="${name:0:20}"
-		main_ssid="$SSID_NAME"
-		[ ${#main_ssid} -gt 15 ] && main_ssid="${main_ssid:0:15}"
-		ip_s=$(ip_to_num "$ip"); ip="${ip%% *}"; ip="${ip%%<*}"
 		band_main=$(get_band "$iface" "$mhz_width" "$M_ALIAS")
+		ip_s=$(ip_to_num "$ip"); ip="${ip%% *}"; ip="${ip%%<*}"
+		main_ssid="$SSID_NAME"
 		if [ "$rssi" -ge -50 ]; then T_EXC=$((T_EXC+1))
 		elif [ "$rssi" -ge -60 ]; then T_GOOD=$((T_GOOD+1))
 		elif [ "$rssi" -ge -70 ]; then T_FAIR=$((T_FAIR+1))
 		else T_POOR=$((T_POOR+1)); fi
+		[ ${#name} -gt 20 ] && name="${name:0:20}"
+		[ ${#m_up} -gt 17 ] && m_up="${m_up:0:17}"
+		[ ${#ip} -gt 15 ] && ip="${ip:0:15}"
+		[ ${#main_ssid} -gt 15 ] && main_ssid="${main_ssid:0:15}"
 		M_ROW="<tr class='$is_new'>
 			<td style='text-align:left;'>$name</td>
 			<td class='toggle-cell'>
@@ -1780,10 +1782,6 @@ ROW
 			case "$m_live" in ??:??:??:??:??:??) echo "$m_live" >> "$SEEN_MACS" ;; esac
 			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
 			NODE_DEVICES=$((NODE_DEVICES + 1))
-			if [ "$r_raw" -ge -50 ]; then T_EXC=$((T_EXC+1))
-            elif [ "$r_raw" -ge -60 ]; then T_GOOD=$((T_GOOD+1))
-            elif [ "$r_raw" -ge -70 ]; then T_FAIR=$((T_FAIR+1))
-            else T_POOR=$((T_POOR+1)); fi
 			if [ "$u_raw" = "UP_QCA" ] && echo "$i_raw" | grep -q "ath"; then
 				NOW=$(date +%s)
 				CLEAN_MAC=$(echo "$dline" | cut -d'|' -f2 | tr -d '<> ' | awk '{print toupper($0)}')
@@ -1795,15 +1793,21 @@ ROW
 					u_raw="0"
 				fi
 			fi
-			[ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
 			ssid_node="$s_name"
-            [ ${#ssid_node} -gt 15 ] && ssid_node="${ssid_node:0:15}"
             is_new=$(check_new_mac "$m_up")
 			trend=$(get_trend "$m_up" "$r_raw")
 			bars_n=$(get_bars "$r_raw")
 			rssi_style_n=$(get_rssi_style "$r_raw")
 			ip_ns=$(ip_to_num "$n_ip")
 			band_node=$(get_band "$i_raw" "$w_raw" "$ALIAS")
+			if [ "$r_raw" -ge -50 ]; then T_EXC=$((T_EXC+1))
+            elif [ "$r_raw" -ge -60 ]; then T_GOOD=$((T_GOOD+1))
+            elif [ "$r_raw" -ge -70 ]; then T_FAIR=$((T_FAIR+1))
+            else T_POOR=$((T_POOR+1)); fi
+			[ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
+			[ ${#m_up} -gt 17 ] && m_up="${m_up:0:17}"
+			[ ${#n_ip} -gt 15 ] && n_ip="${n_ip:0:15}"
+			[ ${#ssid_node} -gt 15 ] && ssid_node="${ssid_node:0:15}"
             N_ROW="<tr class='$is_new'>
 				<td style='text-align:left;'>$n_name$NODE_NUM</td>
 				<td class='toggle-cell'>
