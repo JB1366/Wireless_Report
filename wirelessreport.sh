@@ -30,7 +30,7 @@
 # shellcheck shell=sh disable=SC2086,SC2155,SC3043                              #                  
 #===============================================================================#
 
-SCRIPT_VERSION="1.8.4"
+SCRIPT_VERSION="1.8.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -98,7 +98,7 @@ install_menu() {
 		echo -e "  $N2  Uninstall                                            "
 		echo -e "  $N3  Temp/Date ($DU) ($CT)                                "
 		echo -e "  $N4  Router/Node Nicknames                                "
-		echo -e "  $N5  Set Toggles  RT:($R_STAT) BH:($B_STAT) UP:($P_STAT)  "
+		echo -e "  $N5  Set Toggles  RT:($R_STAT) BH:($B_STAT) RH:($RH_STAT) "
 		echo -e "  $N6  Node Authentication                                  "
 		echo -e "  $N7  Setup SSH Enviroment ($KEY)                          "
 		echo -e "  $NE  Exit                                                 "
@@ -168,6 +168,12 @@ menu_vars() {
 	else
 		KEY="${GR}SSH KEY FOUND${NC}"
 	fi
+	[ -z "$RS_HIST" ] && RS_HIST="1"
+    if [ "$RS_HIST" = "1" ]; then
+        RH_STAT="${GR}ON${NC}"
+    else
+        RH_STAT="${RD}OFF${NC}"
+    fi
 	N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"
 	N7="${BL}(7)${NC}"; N8="${BL}(8)${NC}"; N9="${BL}(9)${NC}"
@@ -223,6 +229,7 @@ do_install() {
     grep -q "REPORT_UNIT=" "$CONFIG" 2>/dev/null || echo "REPORT_UNIT=F" >> "$CONFIG"
 	grep -q "BACKHAUL=" "$CONFIG" 2>/dev/null || echo 'BACKHAUL="no"' >> "$CONFIG"
 	grep -q "PULSE_MINS=" "$CONFIG" 2>/dev/null || echo 'PULSE_MINS="15"' >> "$CONFIG"
+	grep -q "RS_HIST=" "$CONFIG" 2>/dev/null || echo 'RS_HIST="0"' >> "$CONFIG"
     [ -f "$TEMP_MENU" ] && sed -i '/Wireless Report/d' "$TEMP_MENU" 2>/dev/null
     if [ -f "$CONFIG" ]; then
         OLD_PAGE=$(grep "INSTALLED_PAGE=" "$CONFIG" | cut -d'=' -f2)
@@ -845,6 +852,7 @@ set_toggle() {
         echo -e "  $N1  Show Runtime Tracking: ($R_STAT)                     "
         echo -e "  $N2  Show Wireless Backhaul: ($B_STAT)                    "
         echo -e "  $N3  Uptime Alert Pulse: ($P_STAT)                        "
+		echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
 		echo -e "                                                            "
 		echo -e "                                                            "
 		echo -e "  $NU  USB Check                                            "
@@ -896,7 +904,18 @@ set_toggle() {
                 fi
                 pause 
                 ;;
-            
+            4) 
+                if grep -q "RS_HIST=" "$CONFIG"; then
+                    [ "$RS_HIST" = "1" ] && NEW_TOOL="0" || NEW_TOOL="1"
+                    sed -i "s/RS_HIST=.*/RS_HIST=\"$NEW_TOOL\"/" "$CONFIG"
+                else
+                    echo 'RS_HIST="1"' >> "$CONFIG"
+					NEW_TOOL="1"
+                fi
+				rm -f "$HISTORY_DB"
+                RS_HIST="$NEW_TOOL"
+                ;;
+				
 			u|U) 
                 echo -e "\n${BL}================= USB Check ======================${NC}"
                 check_storage
@@ -1054,14 +1073,63 @@ get_bars() {
 }
 
 get_trend() {
-    local mac="$1" local current=$2
-    local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
-    local old="${entry##*|}"
-    echo "$mac|$current" >> "$NEW_HISTORY"
-    if [ -z "$old" ] || [ "$old" -eq 0 ]; then echo "<span class='trend-box'>•</span>"; return; fi
-    if [ "$current" -gt "$old" ]; then echo "<span class='trend-box trend-up sig-exc'>↑</span>"
-    elif [ "$current" -lt "$old" ]; then echo "<span class='trend-box trend-down sig-poor'>↓</span>"
-    else echo "<span class='trend-box'>•</span>"; fi
+    local mac="$1"
+    local current_rssi="$2"
+    local rssi_name="${3:-""}"
+	if [ "$RS_HIST" = "1" ]; then
+		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
+		local history_str="${entry##*|}"
+		local prev_entry="${history_str##*,}"
+		local prev_rssi="${prev_entry%%:*}"
+		local trend_icon=""
+		if [ -z "$prev_rssi" ]; then
+			trend_icon="<span class='trend-box'>•</span>"
+		elif [ "$current_rssi" -gt "$prev_rssi" ]; then
+			trend_icon="<span class='trend-box trend-up sig-exc'>↑</span>"
+		elif [ "$current_rssi" -lt "$prev_rssi" ]; then
+			trend_icon="<span class='trend-box trend-down sig-poor'>↓</span>"
+		else
+			trend_icon="<span class='trend-box'>•</span>"
+		fi
+		local new_entry="$current_rssi:$rssi_name"
+		local new_history="${history_str:+$history_str,}$new_entry"
+		local final_history="$new_history"
+		while [ "${final_history#*,}" != "$final_history" ]; do
+			local rest="${final_history#*,}"
+			[ "${rest#*,*,*,*,}" = "$rest" ] && break
+			final_history="$rest"
+		done
+		echo "$mac|$final_history" >> "$NEW_HISTORY"
+		local rssi_history=""
+		local IFS=','
+		for entry in $final_history; do
+			local r="${entry%%:*}"
+			local n="${entry#*:}"
+			local style=""
+			if [ "$r" -ge -50 ]; then style="color: #30d158; font-weight: bold;"
+			elif [ "$r" -ge -60 ]; then style="color: #64d2ff; font-weight: bold;"
+			elif [ "$r" -ge -70 ]; then style="color: #ffd60a; font-weight: bold;"
+			else style="color: #ff453a; font-weight: bold;"; fi
+			rssi_history="${rssi_history}${rssi_history:+<br>}<span style='$style'>$r $n</span>"
+		done
+		unset IFS
+		echo -n "$trend_icon<span class='rssi-tooltip'>$rssi_history</span>"
+	else
+		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
+		local old="${entry##*|}"
+		echo "$mac|$current_rssi" >> "$NEW_HISTORY"
+		if [ -z "$old" ] || [ "$old" -eq 0 ]; then
+            echo "<span class='trend-box'>•</span>"
+            return
+        fi
+        if [ "$current_rssi" -gt "$old" ]; then
+            echo "<span class='trend-box trend-up sig-exc'>↑</span>"
+        elif [ "$current_rssi" -lt "$old" ]; then
+            echo "<span class='trend-box trend-down sig-poor'>↓</span>"
+        else
+            echo "<span class='trend-box'>•</span>"
+        fi
+	fi
 }
 
 get_name() {
@@ -1082,7 +1150,7 @@ get_name() {
 		fi
 	fi
 	
-	# Networkmap / MLO
+	# Networkmap Client / MLO
 	if [ -z "$name" ] || [ "$name" = "*" ]; then
         if [ -f "/jffs/nmp_cl_json.js" ]; then
 			local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
@@ -1104,7 +1172,7 @@ get_name() {
 			local node_match=""
 			[ -f "$DEVICE_LIST_CACHE" ] && node_match=$(grep -i "$mid_mac" "$DEVICE_LIST_CACHE")
 			if [ -n "$node_match" ]; then
-				local node_alias="${node_match%%>*}"
+				node_alias=$(echo "$node_match" | cut -d'>' -f2)
 				name="${node_alias:-NODE}-BH"
 			fi
 		fi
@@ -1651,7 +1719,7 @@ for iface in $IFACE_LIST; do
 		[ "$rx_disp" = "---" ] && [ "$tx_disp" = "---" ] && l_rate_disp="---"
 		l_rate_val=${tx_disp:-0}
 		is_new=$(check_new_mac "$m_up")
-		trend=$(get_trend "$m_up" "$rssi")
+		trend=$(get_trend "$m_up" "$rssi" "$MAIN_NAME")
 		bars=$(get_bars "$rssi")
 		rssi_style=$(get_rssi_style "$rssi")
 		uptime=$(echo "$raw_info" | grep 'in network' | awk '{print $3}')
@@ -1668,15 +1736,15 @@ for iface in $IFACE_LIST; do
 		[ ${#main_ssid} -gt 15 ] && main_ssid="${main_ssid:0:15}"
 		M_ROW="<tr class='$is_new'>
 			<td style='text-align:left;'>$name</td>
-			<td class='toggle-cell'>
+			<td>
 				<span class='m-val' data-sort='$m_up'>$m_up</span>
 				<span class='i-val' data-sort='$ip_s'>$ip</span>
 			</td>
-			<td data-sort='$rssi'>
+			<td data-sort='$rssi' class='rssi-container'>
 				$bars <span style='$rssi_style'>$rssi</span> $trend
 			</td>
 			<td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td>
-			<td class='toggle-ssid'>
+			<td>
 				<span class='s-val' data-sort='$SSID_NAME'>$main_ssid</span>
 				<span class='if-val' data-sort='$iface'>$iface</span>
 			</td>
@@ -1795,7 +1863,7 @@ ROW
 			fi
 			ssid_node="$s_name"
             is_new=$(check_new_mac "$m_up")
-			trend=$(get_trend "$m_up" "$r_raw")
+			trend=$(get_trend "$m_up" "$r_raw" "$NODE_NAME")
 			bars_n=$(get_bars "$r_raw")
 			rssi_style_n=$(get_rssi_style "$r_raw")
 			ip_ns=$(ip_to_num "$n_ip")
@@ -1810,15 +1878,15 @@ ROW
 			[ ${#ssid_node} -gt 15 ] && ssid_node="${ssid_node:0:15}"
             N_ROW="<tr class='$is_new'>
 				<td style='text-align:left;'>$n_name$NODE_NUM</td>
-				<td class='toggle-cell'>
+				<td>
 					<span class='m-val' data-sort='$m_up'>$m_up</span>
 					<span class='i-val' data-sort='$ip_ns'>$n_ip</span>
 				</td>
-				<td data-sort='$r_raw'>
+				<td data-sort='$r_raw' class='rssi-container'>
 					$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend
 				</td>
 				<td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td>
-				<td class='toggle-ssid'>
+				<td>
 					<span class='s-val' data-sort='$s_name'>$ssid_node</span>
 					<span class='if-val' data-sort='$i_raw'>$i_raw</span>
 				</td>
@@ -1833,17 +1901,17 @@ EOF
 NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$PIPE}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
+RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
+MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
+MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
 GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span> | $N_NAMES"
 [ "$NUMBERED_NODE" -gt 0 ] && R_TITLE="Wireless Report AiMesh" || R_TITLE="Wireless Report"
 if [ "$NUMBERED_NODE" -ge 1 ]; then
-    ALL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span> | $NODE_TOTALS"
+    TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span> | $NODE_TOTALS"
 else
-    ALL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
+    TOTAL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
 fi
-RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
-MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
-MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 do_runtime
 
@@ -1882,10 +1950,11 @@ cat <<HTML >> "$WEB_PAGE"
 	.header-tip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
 	.quality-bar { display: flex; justify-content: center; gap: 12px; align-items: center; width: 100%; margin: -5px auto -5px auto; padding: 0; background: transparent; border: none; height: auto; }
 	.quality-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
-	.quality-box#:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); cursor: pointer; }
+	.quality-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); cursor: pointer; }
 	.refresh-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
 	.refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); cursor: pointer; }
 	${RUNTIME_CSS}
+	${RSSI_CSS}
 	.btn-black-blue { background: rgba(0,0,0,0.6); border: 1px solid #475a68; color: #0096ff; cursor: pointer; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
 	.btn-black-blue:hover, .btn-black-blue.active { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); color: #0096ff; }
 	.btn-black-blue.active { background: rgba(0,150,255,0.15); }
@@ -1911,12 +1980,12 @@ cat <<HTML >> "$WEB_PAGE"
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
 	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 	.new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
-	.val-blue { color: #0096ff; !important; font-weight: bold; }
+	.val-blue { color: #0096ff !important; font-weight: bold; }
 	.sig-exc { color: #30d158; } .sig-good { color: #64d2ff; } 
 	.sig-fair { color: #ffd60a; } .sig-poor { color: #ff453a; }
 	.stat-warm { color: #ffa500 !important; font-weight: bold; }
 	.stat-hot { color: #ff453a !important; font-weight: bold; }
-	.stat-cool { color: #0096ff; !important; font-weight: bold; }
+	.stat-cool { color: #0096ff !important; font-weight: bold; }
 	.bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
 	.section-header { background: linear-gradient(to bottom, #171b1f, #354961); color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
 	.router-branding { color: #0096ff; font-size: 1.4em; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
@@ -1937,6 +2006,11 @@ cat <<HTML >> "$WEB_PAGE"
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
 	.row-break { flex-basis: 100%; height: 0; margin: 0; }
 	sup { font-size: 0.6em; margin-left: 2px; }
+	/* RSSI History Tooltip */
+	.rssi-container { position: relative; cursor: help; }
+	.rssi-tooltip { visibility: hidden; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; text-align: left; }
+	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
+	/* RSSI History Tooltip */
 </style>
 <script>
 function initial() {
@@ -2269,7 +2343,7 @@ cat <<HTML >> "$WEB_PAGE"
               $BRAND_LINE_ALL<br>
               <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
               <hr class="sep-line">
-              <div class="header-stats-row">Temp: $TOTAL_TEMP • Load: $TOTAL_LOAD • $ALL_DEVICES</div>
+              <div class="header-stats-row">Temp: $TOTAL_TEMP • Load: $TOTAL_LOAD • $TOTAL_DEVICES</div>
             </div>
             <table id="allTable" class="report_table show-ip">
               <thead><tr>
