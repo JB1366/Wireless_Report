@@ -1399,7 +1399,7 @@ START_RUNTIME=$(awk '{print $1}' /proc/uptime)
     awk -F '>' '{print $2"|"$3}' | \
     sort)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
-PIPE=" <span style='color:white;'>•</span> "
+DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
 NODE_DATA_DIR="/tmp/node_data"
@@ -1785,14 +1785,14 @@ for line in $SSH_NODES; do
         N_UPTIME_RAW=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2)
 		N_UPTIME=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
-		TOTAL_TEMP="$TOTAL_TEMP$PIPE<span class='${NC_TEMP}'>${N_TEMP}</span>"
-        TOTAL_LOAD="$TOTAL_LOAD$PIPE<span class='${NC_LOAD}'>${N_LOAD}</span>"
-        TOTAL_UPTIME="$TOTAL_UPTIME$PIPE<span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
-        TOTAL_BOOTTIME="$TOTAL_BOOTTIME$PIPE<span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
-		N_TEMPS="${N_TEMPS}${N_TEMPS:+$PIPE}<span class='${NC_TEMP}'>$N_TEMP</span>"
-		N_LOADS="${N_LOADS}${N_LOADS:+$PIPE}<span class='${NC_LOAD}'>$N_LOAD</span>"
-        N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$PIPE}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
-		N_BOOTS="${N_BOOTS}${N_BOOTS:+$PIPE}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
+		TOTAL_TEMP="$TOTAL_TEMP$DOT<span class='${NC_TEMP}'>${N_TEMP}</span>"
+        TOTAL_LOAD="$TOTAL_LOAD$DOT<span class='${NC_LOAD}'>${N_LOAD}</span>"
+        TOTAL_UPTIME="$TOTAL_UPTIME$DOT<span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
+        TOTAL_BOOTTIME="$TOTAL_BOOTTIME$DOT<span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
+		N_TEMPS="${N_TEMPS}${N_TEMPS:+$DOT}<span class='${NC_TEMP}'>$N_TEMP</span>"
+		N_LOADS="${N_LOADS}${N_LOADS:+$DOT}<span class='${NC_LOAD}'>$N_LOAD</span>"
+        N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$DOT}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
+		N_BOOTS="${N_BOOTS}${N_BOOTS:+$DOT}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
         NODE_DEVICES=0
 		while read -r dline; do
 			[ -z "$dline" ] && continue
@@ -1891,7 +1891,7 @@ ROW
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
-NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$PIPE}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
+NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$DOT}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
 RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
@@ -1901,7 +1901,7 @@ GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>&ensp;$N_NAMES"
 [ "$NUMBERED_NODE" -gt 0 ] && R_TITLE="Wireless Report AiMesh" || R_TITLE="Wireless Report"
 if [ "$NUMBERED_NODE" -ge 1 ]; then
-    TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$PIPE$NODE_TOTALS"
+    TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$DOT$NODE_TOTALS"
 else
     TOTAL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
 fi
