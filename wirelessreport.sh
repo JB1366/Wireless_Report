@@ -1711,8 +1711,8 @@ for iface in $IFACE_LIST; do
 		if grep -qi "$m_live" "$SEEN_MACS"; then
 			continue
 		fi
-		ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
-        [ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
+		link_ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
+        [ -z "$link_ip" ] && link_ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
 		lookup=$(get_name "$mac")
         case "$lookup" in
         mlo_swap\|*)
@@ -1724,7 +1724,9 @@ for iface in $IFACE_LIST; do
             name="$lookup"
             ;;
         esac
-        if [ -z "$ip" ] || [ "$ip" = "---" ]; then
+        if [ -n "$link_ip" ] && [ "$link_ip" != "---" ]; then
+            ip="$link_ip"
+        else
             ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
         fi
         case "$name" in *-BH*) ip="" ;; esac
@@ -1880,7 +1882,18 @@ ROW
 				;;
 			esac
 			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
-				n_ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
+				yaz_entry=$(grep -i "^$m_target|" "$YAZ_CACHE" | head -n 1)
+				if [ -n "$yaz_entry" ]; then
+					m_up="${yaz_entry%%|*}"
+					yaz_rest="${yaz_entry#*|}"
+					n_ip="${yaz_rest%%|*}"
+					[ "$n_name" = "$m_target" ] && n_name="${yaz_rest#*|}"
+				else
+					m_up="$m_target"
+					n_ip=$(grep -ih "^$m_up|" "$ARP_CACHE" "$YAZ_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
+				fi
+			else
+				m_up="$m_target"
 			fi
 			case "$n_name" in *-BH*) n_ip="" ;; esac
 			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
