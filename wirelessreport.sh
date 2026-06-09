@@ -1714,7 +1714,9 @@ for iface in $IFACE_LIST; do
 		link_ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
         [ -z "$link_ip" ] && link_ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
 		lookup=$(get_name "$mac")
-        case "$lookup" in
+        
+		##### MLO Important #####
+		case "$lookup" in
 		mlo_swap\|*)
 			m_up="${lookup#*|}"
 			name=$(get_name "$m_up")
@@ -1728,6 +1730,8 @@ for iface in $IFACE_LIST; do
 			continue
 		fi
 		echo "$m_up" >> "$SEEN_MACS"
+		##### MLO Important #####
+		
         if [ -n "$link_ip" ] && [ "$link_ip" != "---" ]; then
             ip="$link_ip"
         else
@@ -1875,6 +1879,8 @@ ROW
 			n_ip=$(grep -ih "^$m_live|" "$ARP_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
 			[ -z "$n_ip" ] && n_ip=$(arp -an | grep -i "$m_live" | awk '{print $2}' | tr -d '()' | head -n 1)
 			lookup=$(get_name "$m_live")
+			
+			##### MLO Important #####
 			case "$lookup" in
 			mlo_swap\|*)
 				m_target="${lookup#*|}"
@@ -1885,6 +1891,12 @@ ROW
 				n_name="$lookup"
 				;;
 			esac
+			if grep -qi "$m_target" "$SEEN_MACS"; then
+			continue
+			fi
+			echo "$m_target" >> "$SEEN_MACS"
+			##### MLO Important #####
+			
 			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
 				yaz_entry=$(grep -i "^$m_target|" "$YAZ_CACHE" | head -n 1)
 				if [ -n "$yaz_entry" ]; then
