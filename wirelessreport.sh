@@ -1399,7 +1399,7 @@ START_RUNTIME=$(awk '{print $1}' /proc/uptime)
     awk -F '>' '{print $2"|"$3}' | \
     sort)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
-PIPE=" <span style='color:white;'>|</span> "
+PIPE=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
 NODE_DATA_DIR="/tmp/node_data"
@@ -1466,6 +1466,7 @@ for line in $SSH_NODES; do
 									*) W=\"20\" ;; 
 								esac
 							fi
+							UP=\$(echo \"\$RAW\" | grep \"in network\" | awk '{print \$3}')
 							RX=\$(echo \"\$RAW\" | grep \"rate of last rx pkt\" | awk '{print \$6/1000}')
 							TX=\$(echo \"\$RAW\" | grep \"rate of last tx pkt\" | awk -F': ' '{print \$2}' | awk '{print \$1/1000}')
 							MX=\$(echo \"\$RAW\" | grep \"Max Rate =\" | awk '{print \$4}')
@@ -1474,7 +1475,7 @@ for line in $SSH_NODES; do
 							[ \"\$RXD\" = \"1\" ] && [ \"\$TXD\" = \"1\" ] && LRD=\"1 / 72\" || LRD=\"\${RXD} / \${TXD}\"
 							V1=\$(echo \"\$RXD\" | tr -dc '0-9'); V2=\$(echo \"\$TXD\" | tr -dc '0-9')
 							[ -n \"\$V1\" ] && [ -n \"\$V2\" ] && [ \"\$V1\" -gt \"\$V2\" ] 2>/dev/null && { T=\$RXD; RXD=\$TXD; TXD=\$T; LRD=\"\$RXD / \$TXD\"; }
-							echo \"DATA|\$mac|\$RSSI|\$iface|\$(echo \"\$RAW\" | grep \"in network\" | awk '{print \$3}')|\$SN|\$TX|\$LRD|\$W|\$HB\"
+							echo \"DATA|\$mac|\$RSSI|\$iface|\$UP|\$SN|\$TX|\$LRD|\$W|\$HB\"
 							NODE_COUNT=\$((NODE_COUNT + 1))
 						done
 						;;
@@ -1695,14 +1696,6 @@ for iface in $IFACE_LIST; do
 		[ -z "$raw_info" ] && raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null)
 		rssi=$(echo "$raw_info" | awk -F': ' '/smoothed rssi:/ {print $2; exit}')
 		[ -z "$rssi" ] && rssi=$(wl -i "$iface" rssi "$mac" 2>/dev/null | awk '{print $1}')
-		if [ -z "$rssi" ] || case "$rssi" in -[0-9]*) false ;; *) true ;; esac; then
-			rssi=$(wl -i "$data_iface" rssi "$mac" 2>/dev/null | awk '{print $1}')
-		fi
-		if case "$rssi" in -[0-9]*) false ;; *) true ;; esac; then
-			[ "$WL_ALIVE" -eq 1 ] && continue
-			rssi="-99"
-		fi
-		[ "$rssi" -ge -20 ] || [ "$rssi" -le -100 ] || grep -qi "$m_up" "$SEEN_MACS" && continue
 		case "$m_up" in ??:??:??:??:??:??) echo "$m_up" >> "$SEEN_MACS" ;; esac
 		rx_raw=$(echo "$raw_info" | grep "rate of last rx pkt" | awk '{print $6/1000}')
 		tx_raw=$(echo "$raw_info" | grep "rate of last tx pkt" | awk -F': ' '{print $2}' | awk '{print $1/1000}')
@@ -1782,7 +1775,7 @@ for line in $SSH_NODES; do
 		[ -z "$NODE_COLOR" ] && NODE_COLOR="#ffffff"
         NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
         NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
-        [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES$PIPE$NODE_BRAND"
+        [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES $NODE_BRAND"
 		N_TEMP_RAW=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2)
         [ ${#N_TEMP_RAW} -gt 3 ] && N_TEMP_RAW=$((N_TEMP_RAW / 1000))
         N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
@@ -2287,7 +2280,7 @@ cat <<HTML >> "$WEB_PAGE"
                   $MAIN_LABEL<br>
                   <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span> • Load: <span class="$MC_LOAD">$M_LOAD</span> • Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
+                  <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
                 </div>
                 <table id="mainTable" class="report_table show-ip">
                   <thead><tr>
@@ -2300,7 +2293,7 @@ cat <<HTML >> "$WEB_PAGE"
                     <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
                   </tr></thead>
                   <tbody>$MAIN_ROWS</tbody>
-                  <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span> • Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
+                  <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span>&ensp;Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
                 </table>
               </div>
 			  <div class="quality-bar">
@@ -2317,7 +2310,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                   $N_NAMES <span class="router-branding"></span><br>
                   <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span> • Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span> • Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> <span class="dash-sep">—›</span> $NODE_TOTALS</div>
+                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> <span class="dash-sep">—›</span> $NODE_TOTALS</div>
                 </div>
                 <table id="nodeTable" class="report_table show-ip">
                   <thead><tr>
@@ -2330,7 +2323,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                     <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
                   </tr></thead>
                   <tbody>$NODE_ROWS</tbody>
-                  <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES • Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
+                  <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
                 </table>
               </div>
 NODEHTML
