@@ -98,7 +98,7 @@ install_menu() {
 		echo -e "  $N2  Uninstall                                            "
 		echo -e "  $N3  Temp/Date ($DU) ($CT)                                "
 		echo -e "  $N4  Router/Node Nicknames                                "
-		echo -e "  $N5  Set Toggles  RT:($R_STAT) BH:($B_STAT) RH:($RH_STAT) "
+		echo -e "  $N5  Set Options  RT:($R_STAT) BH:($B_STAT) RH:($RH_STAT) "
 		echo -e "  $N6  Node Authentication                                  "
 		echo -e "  $N7  Setup SSH Enviroment ($KEY)                          "
 		echo -e "  $NE  Exit                                                 "
@@ -111,7 +111,7 @@ install_menu() {
             2) do_uninstall ;;
             3) set_temp_date ;;
             4) set_nicknames ;;
-            5) set_toggle ;;
+            5) set_options ;;
             6) node_auth "pause" ;;
             7) check_ssh "pause" ;;
             e|E) clear; hasta; exit 0 ;;
@@ -841,12 +841,12 @@ set_nicknames() {
     done
 }
 
-set_toggle() {
+set_options() {
     check_installed || return 1
     while true; do
         clear; menu_vars; get_usb
         echo -e "${BL}==================================================${NC}"
-        echo -e "${BL}                    Set Toggles                   ${NC}"
+        echo -e "${BL}                    Set Options                   ${NC}"
         echo -e "${BL}==================================================${NC}"
         echo -e "                                                            "
         echo -e "  $N1  Show Runtime Tracking: ($R_STAT)                     "
