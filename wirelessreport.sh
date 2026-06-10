@@ -1056,22 +1056,6 @@ update_time() {
     CUR_TIME=$(date "$T_FMT")
 }
 
-get_rssi_style() {
-    local r=$1
-    if [ "$r" -ge -50 ]; then echo "color: #30d158; font-weight: bold;"
-    elif [ "$r" -ge -60 ]; then echo "color: #64d2ff; font-weight: bold;"
-    elif [ "$r" -ge -70 ]; then echo "color: #ffd60a; font-weight: bold;"
-    else echo "color: #ff453a; font-weight: bold;"; fi
-}
-
-get_bars() {
-    local r=$1
-    if [ "$r" -ge -50 ]; then echo "<span class='bar-box sig-exc'>||||</span>"
-    elif [ "$r" -ge -60 ]; then echo "<span class='bar-box sig-good'>|||</span>"
-    elif [ "$r" -ge -70 ]; then echo "<span class='bar-box sig-fair'>||</span>"
-    else echo "<span class='bar-box sig-poor'>|</span>"; fi
-}
-
 get_trend() {
     local mac="$1"
     local current_rssi="$2"
@@ -1365,28 +1349,6 @@ get_temp_class() {
 get_load_class() {
     local l=$1; [ "$l" = "--" ] && { echo "stat-cool"; return; }
     awk -v l="$l" 'BEGIN { print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) }'
-}
-
-get_mhz_width() {
-    local raw_info="$1"
-    printf "%s\n" "$raw_info" | awk '
-        /chanspec/ && width == "" {
-            if (match($0, /\/[0-9]+/)) width = substr($0, RSTART + 1, RLENGTH - 1)
-        }
-        hex == "" {
-            if (match($0, /0x[0-9a-fA-F]+/)) hex = substr($0, RSTART, RLENGTH)
-        }
-        END {
-            if (width == "") {
-                if (hex ~ /^0x10/ || hex ~ /^0xd0/) width = "20"
-                else if (hex ~ /^0x11/ || hex ~ /^0xd1/) width = "40"
-                else if (hex ~ /^0xe0/) width = "80"
-                else if (hex ~ /^0xe8/ || hex ~ /^0xe9/) width = "160"
-                else if (hex ~ /^0xf0/) width = "320"
-                else width = "20"
-            }
-            print width
-        }'
 }
 
 parse_main_sta() {
