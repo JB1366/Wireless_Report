@@ -1830,12 +1830,18 @@ ROW
 			m_live=$(echo "$m_live" | tr '[:lower:]' '[:upper:]')
 			m_prefix="${m_live#??}"
 			m_prefix="${m_prefix%???}"
+			seen_live_key="$m_live"
+			if [ "$BACKHAUL" = "yes" ]; then
+				if [ "$m_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$m_prefix"; then
+					seen_live_key="${CLEAN_IP}_${i_raw}_${m_live}"
+				fi
+			fi
 			if [ "$BACKHAUL" != "yes" ]; then
 				if [ "$m_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$m_prefix"; then
 					continue
 				fi
 			fi
-			if grep -qi "$m_live" "$SEEN_MACS"; then
+			if grep -Fqi "$seen_live_key" "$SEEN_MACS"; then
 				continue
 			fi
 			n_ip=$(grep -ih "^$m_live|" "$ARP_CACHE" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
@@ -1853,10 +1859,16 @@ ROW
 				n_name="$lookup"
 				;;
 			esac
-			if grep -qi "$m_target" "$SEEN_MACS"; then
+			seen_target_key="$m_target"
+			if [ "$BACKHAUL" = "yes" ]; then
+				if [ "$m_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$m_prefix"; then
+					seen_target_key="${CLEAN_IP}_${i_raw}_${m_target}"
+				fi
+			fi
+			if grep -Fqi "$seen_target_key" "$SEEN_MACS"; then
 			continue
 			fi
-			echo "$m_target" >> "$SEEN_MACS"
+			echo "$seen_target_key" >> "$SEEN_MACS"
 			##### MLO Important #####
 			
 			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
@@ -1881,7 +1893,7 @@ ROW
 			n_ip=$(echo "$n_ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
 			n_ip=$(printf "%s.%03d" "${n_ip%.*}" "${n_ip##*.}")
 			{ [ -z "$n_name" ] || [ "$n_name" = "*" ]; } && n_name="$m_up"
-			case "$m_live" in ??:??:??:??:??:??) echo "$m_live" >> "$SEEN_MACS" ;; esac
+			case "$m_live" in ??:??:??:??:??:??) echo "$seen_live_key" >> "$SEEN_MACS" ;; esac
 			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
 			NODE_DEVICES=$((NODE_DEVICES + 1))
 			if [ "$u_raw" = "UP_QCA" ]; then case "$i_raw" in *ath*)
