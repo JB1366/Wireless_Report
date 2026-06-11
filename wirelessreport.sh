@@ -1456,7 +1456,6 @@ for line in $SSH_NODES; do
 				if echo \"\$SN\" | grep -qE '^[0-9A-Fa-f]{16,}\$'; then SN=\"\"; fi
 				case \"\$HW_ENGINE\" in
 					BRCM)
-						HB=\$(wl -i \"\$iface\" band | awk '{print \$1}')
 						for mac in \$(wl -i \"\$iface\" assoclist 2>/dev/null | awk '{print \$2}'); do
 							RAW=\$(wl -i \"\$iface\" sta_info \"\$mac\" 2>/dev/null)
 							RSSI=\$(echo \"\$RAW\" | awk -F': ' '/smoothed rssi:/ {print \$2; exit}')
@@ -1483,7 +1482,7 @@ for line in $SSH_NODES; do
 							[ \"\$RXD\" = \"1\" ] && [ \"\$TXD\" = \"1\" ] && LRD=\"1 / 72\" || LRD=\"\${RXD} / \${TXD}\"
 							V1=\$(echo \"\$RXD\" | tr -dc '0-9'); V2=\$(echo \"\$TXD\" | tr -dc '0-9')
 							[ -n \"\$V1\" ] && [ -n \"\$V2\" ] && [ \"\$V1\" -gt \"\$V2\" ] 2>/dev/null && { T=\$RXD; RXD=\$TXD; TXD=\$T; LRD=\"\$RXD / \$TXD\"; }
-							echo \"DATA|\$mac|\$RSSI|\$iface|\$UP|\$SN|\$TX|\$LRD|\$W|\$HB\"
+							echo \"DATA|\$mac|\$RSSI|\$iface|\$UP|\$SN|\$TX|\$LRD|\$W|\"
 							NODE_COUNT=\$((NODE_COUNT + 1))
 						done
 						;;
@@ -1509,17 +1508,14 @@ for line in $SSH_NODES; do
 								DISPLAY_SSID=\$(nvram get \"\${PREFIX}_ssid\")
 							fi
 						fi
-						HB=\"2.4GHz\"; W=\"20\"
-						if echo \"\$IFACE_INFO\" | grep -q \"6GHz\" || echo \"\$IFACE_INFO\" | grep -q \"width:\"; then
-							echo \"\$IFACE_INFO\" | grep -q \"320 MHz\" && W=\"320\" && HB=\"6GHz\"
-							echo \"\$IFACE_INFO\" | grep -q \"160 MHz\" && W=\"160\" && HB=\"6GHz\"
-							echo \"\$IFACE_INFO\" | grep -q \"80 MHz\" && W=\"80\" && HB=\"6GHz\"
-							if [ \"\$HB\" = \"2.4GHz\" ] && [ -n \"\$LIVE_CHAN\" ] && [ \"\$(echo \"\$LIVE_CHAN\" | tr -d ',')\" -gt 14 ]; then
-								HB=\"5GHz\"
-							fi
-						elif [ -n \"\$LIVE_CHAN\" ] && [ \"\$(echo \"\$LIVE_CHAN\" | tr -d ',')\" -gt 14 ]; then
-							HB=\"5GHz\"; W=\"80\"
-							echo \"\$IFACE_INFO\" | grep -q \"160\" && W=\"160\"
+						W="20"
+						if echo "$IFACE_INFO" | grep -q "6GHz" || echo "$IFACE_INFO" | grep -q "width:"; then
+							echo "$IFACE_INFO" | grep -q "320 MHz" && W="320"
+							echo "$IFACE_INFO" | grep -q "160 MHz" && W="160"
+							echo "$IFACE_INFO" | grep -q "80 MHz" && W="80"
+						elif [ -n "$LIVE_CHAN" ] && [ "$(echo "$LIVE_CHAN" | tr -d ',')" -gt 14 ]; then
+							W="80"
+							echo "$IFACE_INFO" | grep -q "160" && W="160"
 						fi
 						RAW_STAS=\$(iw dev \"\$iface\" station dump 2>/dev/null)
 						if [ -n \"\$RAW_STAS\" ]; then
@@ -1565,7 +1561,7 @@ for line in $SSH_NODES; do
 										LRD=\"\$RX_INT / \$TX_INT\"
 									fi
 								fi
-								echo \"DATA|\$c_mac|\$c_rssi|\$iface|\$c_uptime|\$DISPLAY_SSID|\$TX_INT|\$LRD|\$c_width|\$HB\"
+								echo \"DATA|\$c_mac|\$c_rssi|\$iface|\$c_uptime|\$DISPLAY_SSID|\$TX_INT|\$LRD|\$c_width|\"
 								NODE_COUNT=\$((NODE_COUNT + 1))
 							done
 						fi
@@ -1579,10 +1575,9 @@ for line in $SSH_NODES; do
 							RSSI=\$(echo \"\$ROW\" | awk '{print \$7}')
 							TX=\$(echo \"\$ROW\" | awk '{print \$5}' | tr -dc '0-9')
 							RX=\$(echo \"\$ROW\" | awk '{print \$6}' | tr -dc '0-9')
-							HB=\"2.4GHz\"; echo \"\$iface\" | grep -q \"ath1\" && HB=\"5GHz\"
 							W=\"20\"; echo \"\$iface\" | grep -q \"ath1\" && W=\"80\"
 							LRD=\"\${RX} / \${TX}\"
-							echo \"DATA|\$mac|\$RSSI|\$iface|UP_QCA|\$SN|\$TX|\$LRD|\$W|\$HB\"
+							echo \"DATA|\$mac|\$RSSI|\$iface|UP_QCA|\$SN|\$TX|\$LRD|\$W|\"
 							NODE_COUNT=\$((NODE_COUNT + 1))
 						done
 						;;
@@ -1693,12 +1688,12 @@ for iface in $IFACE_LIST; do
 			name="$lookup"
 			;;
 		esac
+		##### MLO Important #####
+		
 		if grep -qi "$m_up" "$SEEN_MACS"; then
 			continue
 		fi
 		echo "$m_up" >> "$SEEN_MACS"
-		##### MLO Important #####
-		
         if [ -n "$link_ip" ] && [ "$link_ip" != "---" ]; then
             ip="$link_ip"
         else
@@ -1829,7 +1824,7 @@ for line in $SSH_NODES; do
         NODE_DEVICES=0
 		while read -r dline; do
 			[ -z "$dline" ] && continue
-			IFS='|' read -r _ m_live r_raw i_raw u_raw s_name l_rate_val l_rate_disp_n w_raw hb_raw _ <<ROW
+			IFS='|' read -r _ m_live r_raw i_raw u_raw s_name l_rate_val l_rate_disp_n w_raw _ <<ROW
 $dline
 ROW
 			m_live=$(echo "$m_live" | tr '[:lower:]' '[:upper:]')
@@ -1861,13 +1856,13 @@ ROW
 					n_name="$lookup"
 					;;
 			esac
+			##### MLO Important #####
+			
 			seen_target_key=$([ "$IS_BH" = "yes" ] && echo "${CLEAN_IP}_${i_raw}_${m_target}" || echo "$m_target")
 			if grep -Fqi "$seen_target_key" "$SEEN_MACS"; then
 				continue
 			fi
 			echo "$seen_target_key" >> "$SEEN_MACS"
-			##### MLO Important #####
-			
 			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
 				yaz_entry=$(grep -i "^$m_target|" "$YAZ_CACHE" | head -n 1)
 				if [ -n "$yaz_entry" ]; then
