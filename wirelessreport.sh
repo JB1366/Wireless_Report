@@ -1482,6 +1482,7 @@ for line in $SSH_NODES; do
 							[ \"\$RXD\" = \"1\" ] && [ \"\$TXD\" = \"1\" ] && LRD=\"1 / 72\" || LRD=\"\${RXD} / \${TXD}\"
 							V1=\$(echo \"\$RXD\" | tr -dc '0-9'); V2=\$(echo \"\$TXD\" | tr -dc '0-9')
 							[ -n \"\$V1\" ] && [ -n \"\$V2\" ] && [ \"\$V1\" -gt \"\$V2\" ] 2>/dev/null && { T=\$RXD; RXD=\$TXD; TXD=\$T; LRD=\"\$RXD / \$TXD\"; }
+							TX=\$(printf \"%04d\" \"\${TXD:-0}\")
 							echo \"DATA|\$mac|\$RSSI|\$iface|\$UP|\$SN|\$TX|\$LRD|\$W|\"
 							NODE_COUNT=\$((NODE_COUNT + 1))
 						done
@@ -1561,7 +1562,9 @@ for line in $SSH_NODES; do
 										LRD=\"\$RX_INT / \$TX_INT\"
 									fi
 								fi
-								echo \"DATA|\$c_mac|\$c_rssi|\$iface|\$c_uptime|\$DISPLAY_SSID|\$TX_INT|\$LRD|\$c_width|\"
+								echo
+								TX=\$(printf \"%04d\" \"\${TX_INT:-0}\")
+								\"DATA|\$c_mac|\$c_rssi|\$iface|\$c_uptime|\$DISPLAY_SSID|\$TX|\$LRD|\$c_width|\"
 								NODE_COUNT=\$((NODE_COUNT + 1))
 							done
 						fi
@@ -1577,7 +1580,8 @@ for line in $SSH_NODES; do
 							RX=\$(echo \"\$ROW\" | awk '{print \$6}' | tr -dc '0-9')
 							W=\"20\"; echo \"\$iface\" | grep -q \"ath1\" && W=\"80\"
 							LRD=\"\${RX} / \${TX}\"
-							echo \"DATA|\$mac|\$RSSI|\$iface|UP_QCA|\$SN|\$TX|\$LRD|\$W|\"
+							TXV=\$(printf \"%04d\" \"\${TX:-0}\")
+							echo \"DATA|\$mac|\$RSSI|\$iface|UP_QCA|\$SN|\$TXV|\$LRD|\$W|\"
 							NODE_COUNT=\$((NODE_COUNT + 1))
 						done
 						;;
@@ -1727,7 +1731,7 @@ ROW
 		case "$tx_disp" in *[!0-9]*|"") V2="" ;; *) V2="$tx_disp" ;; esac
 		[ -n "$V1" ] && [ -n "$V2" ] && [ "$V1" -gt "$V2" ] 2>/dev/null && { T=$rx_disp; rx_disp=$tx_disp; tx_disp=$T; l_rate_disp="$rx_disp / $tx_disp"; }
 		[ "$rx_disp" = "---" ] && [ "$tx_disp" = "---" ] && l_rate_disp="---"
-		l_rate_val=${tx_disp:-0}
+		lrd_val=$(printf "%04d" "${tx_disp:-0}")
 		is_new=$(check_new_mac "$m_up")
 		trend=$(get_trend "$m_up" "$rssi" "$MAIN_NAME")
 		band_main=$(get_band "$iface" "$mhz_width" "$M_ALIAS")
@@ -1764,7 +1768,7 @@ ROW
 			<td data-sort='$rssi' class='rssi-container'>
 				$bars <span style='$rssi_style'>$rssi</span> $trend
 			</td>
-			<td data-sort='$l_rate_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td>
+			<td data-sort='$lrd_val' style='$rssi_style; text-align:center;'>$l_rate_disp</td>
 			<td>
 				<span class='s-val' data-sort='$SSID_NAME'>$main_ssid</span>
 				<span class='if-val' data-sort='$iface'>$iface</span>
@@ -1824,7 +1828,7 @@ for line in $SSH_NODES; do
         NODE_DEVICES=0
 		while read -r dline; do
 			[ -z "$dline" ] && continue
-			IFS='|' read -r _ m_live r_raw i_raw u_raw s_name l_rate_val l_rate_disp_n w_raw _ <<ROW
+			IFS='|' read -r _ m_live rssi_n iface_n uptime_n ssid_n lrd_val_n lrd_n width_n _ <<ROW
 $dline
 ROW
 			m_live=$(echo "$m_live" | tr '[:lower:]' '[:upper:]')
@@ -1837,7 +1841,7 @@ ROW
 			if [ "$BACKHAUL" != "yes" ] && ([ "$m_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$m_prefix"); then
 				continue
 			fi
-			seen_live_key=$([ "$IS_BH" = "yes" ] && echo "${CLEAN_IP}_${i_raw}_${m_live}" || echo "$m_live")
+			seen_live_key=$([ "$IS_BH" = "yes" ] && echo "${CLEAN_IP}_${iface_n}_${m_live}" || echo "$m_live")
 			if grep -Fqi "$seen_live_key" "$SEEN_MACS"; then
 				continue
 			fi
@@ -1858,7 +1862,7 @@ ROW
 			esac
 			##### MLO Important #####
 			
-			seen_target_key=$([ "$IS_BH" = "yes" ] && echo "${CLEAN_IP}_${i_raw}_${m_target}" || echo "$m_target")
+			seen_target_key=$([ "$IS_BH" = "yes" ] && echo "${CLEAN_IP}_${iface_n}_${m_target}" || echo "$m_target")
 			if grep -Fqi "$seen_target_key" "$SEEN_MACS"; then
 				continue
 			fi
@@ -1888,33 +1892,33 @@ ROW
 			case "$m_live" in ??:??:??:??:??:??) echo "$seen_live_key" >> "$SEEN_MACS" ;; esac
 			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
 			NODE_DEVICES=$((NODE_DEVICES + 1))
-			if [ "$u_raw" = "UP_QCA" ]; then case "$i_raw" in *ath*)
+			if [ "$uptime_n" = "UP_QCA" ]; then case "$iface_n" in *ath*)
 				NOW=$(date +%s)
 				CLEAN_MAC="$m_live"
 				START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
 				if [ "$START_TS" -gt 0 ]; then
-					u_raw=$((NOW - START_TS))
-					[ "$u_raw" -lt 0 ] && u_raw=$((START_TS - NOW))
+					uptime_n=$((NOW - START_TS))
+					[ "$uptime_n" -lt 0 ] && uptime_n=$((START_TS - NOW))
 				else
-					u_raw="0"
+					uptime_n="0"
 				fi
 				;;
 			esac; fi
-			ssid_node="$s_name"
+			ssid_node="$ssid_n"
             is_new=$(check_new_mac "$m_up")
-			trend=$(get_trend "$m_up" "$r_raw" "$NODE_NAME")
+			trend=$(get_trend "$m_up" "$rssi_n" "$NODE_NAME")
 			ip_ns=$(ip_to_num "$n_ip")
-			band_node=$(get_band "$i_raw" "$w_raw" "$ALIAS")
-			uptime_fmt_n=$(fmt_uptime "$u_raw")
-			if [ "$r_raw" -ge -50 ]; then
+			band_node=$(get_band "$iface_n" "$width_n" "$ALIAS")
+			uptime_fmt_n=$(fmt_uptime "$uptime_n")
+			if [ "$rssi_n" -ge -50 ]; then
 				bars_n="<span class='bar-box sig-exc'>||||</span>"
 				rssi_style_n="color: #30d158; font-weight: bold;"
 				T_EXC=$((T_EXC+1))
-            elif [ "$r_raw" -ge -60 ]; then
+            elif [ "$rssi_n" -ge -60 ]; then
 				bars_n="<span class='bar-box sig-good'>|||</span>"
 				rssi_style_n="color: #64d2ff; font-weight: bold;"
 				T_GOOD=$((T_GOOD+1))
-            elif [ "$r_raw" -ge -70 ]; then
+            elif [ "$rssi_n" -ge -70 ]; then
 				bars_n="<span class='bar-box sig-fair'>||</span>"
 				rssi_style_n="color: #ffd60a; font-weight: bold;"
 				T_FAIR=$((T_FAIR+1))
@@ -1933,13 +1937,13 @@ ROW
 					<span class='m-val' data-sort='$m_up'>$m_up</span>
 					<span class='i-val' data-sort='$ip_ns'>$n_ip</span>
 				</td>
-				<td data-sort='$r_raw' class='rssi-container'>
-					$bars_n <span style='$rssi_style_n'>$r_raw</span> $trend
+				<td data-sort='$rssi_n' class='rssi-container'>
+					$bars_n <span style='$rssi_style_n'>$rssi_n</span> $trend
 				</td>
-				<td data-sort='$l_rate_val' style='$rssi_style_n; text-align:center;'>$l_rate_disp_n</td>
+				<td data-sort='$lrd_val_n' style='$rssi_style_n; text-align:center;'>$lrd_n</td>
 				<td>
-					<span class='s-val' data-sort='$s_name'>$ssid_node</span>
-					<span class='if-val' data-sort='$i_raw'>$i_raw</span>
+					<span class='s-val' data-sort='$ssid_n'>$ssid_node</span>
+					<span class='if-val' data-sort='$iface_n'>$iface_n</span>
 				</td>
 				$band_node
 				<td>$uptime_fmt_n</td>
