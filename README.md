@@ -23,7 +23,7 @@ Since your main router is running Merlin, consider using YazDHCP (available via 
 \
 \
 $\color{blue}{\Large\text{INSTALL:}}$<br>
-Setting up the addon is a two-step process: Initiation followed by Finalization.
+Setting up the addon is a two-step process:
 
 $\color{blue}{\text{Step 1:}}$ Initiate the Installation.<br>
 You can launch the installer using either of the following methods:
