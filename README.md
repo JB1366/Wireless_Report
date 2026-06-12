@@ -61,7 +61,7 @@ $\color{green}{\text{Option (3):}}$ Regional Settings: Toggle between Fahrenheit
 
 ![Instructions3](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions2.png)<br>
 
-$\color{green}{\text{Option (4):}}$ Router & Node Nicknames: By default, the report uses your device model numbers (e.g., GT-BE98_PRO). Use this option to give your hardware friendly names (up to 24 characters). This is especially helpful in the header, where multiple nodes are displayed on a single line separated by a |.<br>
+$\color{green}{\text{Option (4):}}$ Router & Node Nicknames: By default, the report uses your device model numbers (e.g., GT-BE98_PRO). Use this option to give your hardware friendly names (up to 25 characters).<br>
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions3.png)<br>
 
