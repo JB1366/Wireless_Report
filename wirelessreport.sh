@@ -30,7 +30,7 @@
 # shellcheck shell=sh disable=SC2086,SC2155,SC3043                              #                  
 #===============================================================================#
 
-SCRIPT_VERSION="1.8.9"
+SCRIPT_VERSION="1.9.0"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1142,9 +1142,10 @@ get_name() {
 			local raw_parent=$(echo "$entry" | sed -n 's/.*"mlo_all_mac":"<\([^"]*\)".*/\1/p' | tr '[:lower:]' '[:upper:]')
 			local parent_mac=$(echo "$raw_parent" | cut -d'<' -f1)
 			if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then
-				echo "mlo_swap|$parent_mac"
-				return
-			fi
+                mac_swap="$parent_mac"
+			else
+                mac_swap="$mac"
+            fi
 			name=$(echo "$entry" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
 		fi
     fi
@@ -1167,7 +1168,7 @@ get_name() {
 	if [ -z "$name" ] || [ "$name" = "*" ]; then
 		name="$mac"
 	fi
-	echo "$name"
+	echo "${name}|${mac_swap}"
 }
 
 check_new_mac() {
@@ -1362,6 +1363,24 @@ parse_main_sta() {
         /in network/ { uptime = $3 }
         /link bandwidth/ { for(i=1; i<=NF; i++) { if($i == "bandwidth") { if ($(i+1) == "=") width = $(i+2); else width = substr($(i+1), 2) } } }
         END { print rssi "|" rx "|" tx "|" max "|" width "|" uptime }'
+}
+
+parse_main() {
+    IFS='|' read -r rssi rx tx max width uptime <<ROW
+$1
+ROW
+}
+
+parse_node() {
+    IFS='|' read -r _ mac rssi iface uptime SSID_NODE lrd_val lrd width _ <<ROW
+$1
+ROW
+}
+
+parse_mlo() {
+    IFS='|' read -r name mac_swap <<EOF
+$(get_name "$1")
+EOF
 }
 
 run_report() {
@@ -1576,8 +1595,8 @@ nvram get asus_device_list | sed 's/</\n/g' > "$DEVICE_LIST_CACHE" 2>/dev/null |
 nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
 M_T=$(($(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0) / 1000))
 M_TEMP=$(get_temp_unit "$M_T")
-M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
 MC_TEMP=$(get_temp_class "$M_TEMP")
+M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
 MC_LOAD=$(get_load_class "$M_LOAD")
 M_UPTIME=$(awk -v s=$(cat /proc/uptime | cut -d. -f1) 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf "%dd %dh %dm", d, h, m; else if(h>0) printf "%dh %dm", h, m; else printf "%dm", m}')
 M_BOOT=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "$D_FMT")
@@ -1646,23 +1665,15 @@ for iface in $IFACE_LIST; do
 		if grep -qi "$mac_address" "$SEEN_MACS"; then
 			continue
 		fi
-		getname=$(get_name "$mac_address")
-		case "$getname" in
-		mlo_swap\|*)
-			mac_main="${getname#*|}"
-			name=$(get_name "$mac_main")
-			;;
-		*)
-			mac_main="$mac_address"
-			name="$getname"
-			;;
-		esac
-		if grep -qi "$mac_main" "$SEEN_MACS"; then
+		mac_swap="$mac_address"
+		parse_mlo "$mac_address"
+		mac="$mac_swap"
+		if grep -qi "$mac" "$SEEN_MACS"; then
 			continue
 		fi
-		echo "$mac_main" >> "$SEEN_MACS"
-        ip=$(grep -ih "^$mac_main|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
-		[ -z "$ip" ] && ip=$(arp -an | grep -i "$mac_main" | awk '{print $2}' | tr -d '()' | head -n 1)
+		echo "$mac" >> "$SEEN_MACS"
+        ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
+		[ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
         case "$name" in *-BH*) ip="" ;; esac
 		if [ -z "$ip" ] || [ "$ip" = "---" ]; then
 			ip="${ROUTER_IP%.*}.$BH_COUNTER"
@@ -1670,17 +1681,16 @@ for iface in $IFACE_LIST; do
 		fi
 		ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
 		ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
-		{ [ -z "$name" ] || [ "$name" = "*" ]; } && name="$mac_main"
-		raw_info=$(wl -i "$iface" sta_info "$mac_address" 2>/dev/null)
-		[ -z "$raw_info" ] && raw_info=$(wl -i "$data_iface" sta_info "$mac_address" 2>/dev/null)
+		{ [ -z "$name" ] || [ "$name" = "*" ]; } && name="$mac"
+		raw_info=$(wl -i "$iface" sta_info "$mac" 2>/dev/null)
+		[ -z "$raw_info" ] && raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null)
 		sta_parsed=$(parse_main_sta "$raw_info")
-		IFS='|' read -r rssi rx tx max width uptime <<ROW
-$sta_parsed
-ROW
+		parse_main "$sta_parsed"
 		if [ -z "$rssi" ]; then
 			rssi=$(wl -i "$iface" rssi "$mac_address" 2>/dev/null)
 			rssi="${rssi%% *}"
 		fi
+		[ -z "$rssi" ] || [ "$rssi" -eq 0 ] && rssi=-54
 		if [ -z "$width" ]; then
 			local hex=$(echo "$raw_info" | grep -o '0x[0-9a-fA-F]*' | head -n 1)
 			case "$hex" in
@@ -1692,7 +1702,6 @@ ROW
 				*)           width="20" ;;
 			esac
 		fi
-		case "$mac_main" in ??:??:??:??:??:??) echo "$mac_main" >> "$SEEN_MACS" ;; esac
 		[ -z "$rx" ] || [ "$rx" = "0" ] && rx_disp="?" || rx_disp="${rx%.*}"
 		[ -z "$tx" ] || [ "$tx" = "0" ] && tx_disp="${max:-?}" || tx_disp="${tx%.*}"
 		[ "$rx_disp" = "?" ] && rx_disp="1"
@@ -1703,10 +1712,10 @@ ROW
 		[ -n "$V1" ] && [ -n "$V2" ] && [ "$V1" -gt "$V2" ] 2>/dev/null && { T=$rx_disp; rx_disp=$tx_disp; tx_disp=$T; lrd="$rx_disp / $tx_disp"; }
 		[ "$rx_disp" = "---" ] && [ "$tx_disp" = "---" ] && lrd="---"
 		lrd_val=$(printf "%04d" "${tx_disp:-0}")
-		is_mac_new=$(check_new_mac "$mac_main")
-		trend=$(get_trend "$mac_main" "$rssi" "$MAIN_NAME")
-		band_main=$(get_band "$iface" "$width" "$M_ALIAS")
-		uptime_fmt=$(fmt_uptime "$uptime")
+		is_mac_new=$(check_new_mac "$mac")
+		trend=$(get_trend "$mac" "$rssi" "$MAIN_NAME")
+		band=$(get_band "$iface" "$width" "$M_ALIAS")
+		uptime=$(fmt_uptime "$uptime")
 		ip_s=$(ip_to_num "$ip"); ip="${ip%% *}"; ip="${ip%%<*}"
 		if [ "$rssi" -ge -50 ]; then
 			bars="<span class='bar-box sig-exc'>||||</span>"
@@ -1726,13 +1735,13 @@ ROW
 			T_POOR=$((T_POOR+1))
 		fi
 		[ ${#name} -gt 20 ] && name="${name:0:20}"
-		[ ${#mac_main} -gt 17 ] && mac_main="${mac_main:0:17}"
+		[ ${#mac} -gt 17 ] && mac="${mac:0:17}"
 		[ ${#ip} -gt 15 ] && ip="${ip:0:15}"
 		[ ${#SSID_NAME} -gt 15 ] && SSID_NAME="${SSID_NAME:0:15}"
 		M_ROW="<tr class='$is_mac_new'>
 			<td style='text-align:left;'>$name</td>
 			<td>
-				<span class='m-val' data-sort='$mac_main'>$mac_main</span>
+				<span class='m-val' data-sort='$mac'>$mac</span>
 				<span class='i-val' data-sort='$ip_s'>$ip</span>
 			</td>
 			<td data-sort='$rssi' class='rssi-container'>
@@ -1743,8 +1752,8 @@ ROW
 				<span class='s-val' data-sort='$SSID_NAME'>$SSID_NAME</span>
 				<span class='if-val' data-sort='$iface'>$iface</span>
 			</td>
-			$band_main
-			<td>$uptime_fmt</td>
+			$band
+			<td>$uptime</td>
 		</tr>"
 		MAIN_ROWS="${MAIN_ROWS}${M_ROW}${NL}"
 		ALL_ROWS="${ALL_ROWS}${M_ROW}${NL}"
@@ -1798,10 +1807,8 @@ for line in $SSH_NODES; do
         NODE_DEVICES=0
 		while read -r dline; do
 			[ -z "$dline" ] && continue
-			IFS='|' read -r _ mac_n rssi_n iface_n uptime_n SSID_NODE lrd_val_n lrd_n width_n _ <<ROW
-$dline
-ROW
-			mac_address=$(echo "$mac_n" | tr '[:lower:]' '[:upper:]')
+			parse_node "$dline"
+			mac_address=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
 			mac_prefix="${mac_address#??}"
 			mac_prefix="${mac_prefix%???}"
 			is_backhaul="no"
@@ -1811,67 +1818,59 @@ ROW
 			if [ "$BACKHAUL" != "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
 				continue
 			fi
-			mac_check=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface_n}_${mac_address}" || echo "$mac_address")
+			mac_check=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac_address}" || echo "$mac_address")
 			if grep -Fqi "$mac_check" "$SEEN_MACS"; then
 				continue
 			fi
-			getname=$(get_name "$mac_address")
-			case "$getname" in
-				mlo_swap\|*)
-					mac_node="${getname#*|}"
-					n_name=$(get_name "$mac_node")
-					;;
-				*)
-					mac_node="$mac_address"
-					n_name="$getname"
-					;;
-			esac
-			mac_final=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface_n}_${mac_node}" || echo "$mac_node")
+			mac_swap="$mac_address"
+			parse_mlo "$mac_address"
+			mac="$mac_swap"
+			mac_final=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac}" || echo "$mac")
 			if grep -Fqi "$mac_final" "$SEEN_MACS"; then
 				continue
 			fi
 			echo "$mac_final" >> "$SEEN_MACS"
-			n_ip=$(grep -ih "^$mac_node|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
-			[ -z "$n_ip" ] && n_ip=$(arp -an | grep -i "$mac_node" | awk '{print $2}' | tr -d '()' | head -n 1)
-			case "$n_name" in *-BH*) n_ip="" ;; esac
-			if [ -z "$n_ip" ] || [ "$n_ip" = "---" ]; then
-				n_ip="${ROUTER_IP%.*}.$BH_COUNTER"
+			ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
+			[ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
+			case "$name" in *-BH*) ip="" ;; esac
+			if [ -z "$ip" ] || [ "$ip" = "---" ]; then
+				ip="${ROUTER_IP%.*}.$BH_COUNTER"
 				BH_COUNTER=$((BH_COUNTER + 1))
 			fi
-			n_ip=$(echo "$n_ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
-			n_ip=$(printf "%s.%03d" "${n_ip%.*}" "${n_ip##*.}")
-			{ [ -z "$n_name" ] || [ "$n_name" = "*" ]; } && n_name="$mac_node"
-			case "$mac_address" in ??:??:??:??:??:??) echo "$mac_check" >> "$SEEN_MACS" ;; esac
+			ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
+			ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
+			{ [ -z "$name" ] || [ "$name" = "*" ]; } && name="$mac"
 			[ "${#SSID_NODE}" -eq 32 ] && SSID_NODE="BACKHAUL"
 			[ -z "$SSID_NODE" ] && SSID_NODE="Wireless"
+			[ -z "$rssi" ] || [ "$rssi" -eq 0 ] && rssi=-54
 			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
 			NODE_DEVICES=$((NODE_DEVICES + 1))
-			if [ "$uptime_n" = "UP_QCA" ]; then case "$iface_n" in *ath*)
+			if [ "$uptime" = "UP_QCA" ]; then case "$iface" in *ath*)
 				NOW=$(date +%s)
 				CLEAN_MAC="$mac_address"
 				START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
 				if [ "$START_TS" -gt 0 ]; then
-					uptime_n=$((NOW - START_TS))
-					[ "$uptime_n" -lt 0 ] && uptime_n=$((START_TS - NOW))
+					uptime=$((NOW - START_TS))
+					[ "$uptime" -lt 0 ] && uptime=$((START_TS - NOW))
 				else
-					uptime_n="0"
+					uptime="0"
 				fi
 				;;
 			esac; fi
-            is_mac_new=$(check_new_mac "$mac_node")
-			trend=$(get_trend "$mac_node" "$rssi_n" "$NODE_NAME")
-			ip_ns=$(ip_to_num "$n_ip")
-			band_node=$(get_band "$iface_n" "$width_n" "$ALIAS")
-			uptime_fmt=$(fmt_uptime "$uptime_n")
-			if [ "$rssi_n" -ge -50 ]; then
+            is_mac_new=$(check_new_mac "$mac")
+			trend=$(get_trend "$mac" "$rssi" "$NODE_NAME")
+			ip_s=$(ip_to_num "$ip")
+			band=$(get_band "$iface" "$width" "$ALIAS")
+			uptime=$(fmt_uptime "$uptime")
+			if [ "$rssi" -ge -50 ]; then
 				bars_n="<span class='bar-box sig-exc'>||||</span>"
 				rssi_style_n="color: #30d158; font-weight: bold;"
 				T_EXC=$((T_EXC+1))
-            elif [ "$rssi_n" -ge -60 ]; then
+            elif [ "$rssi" -ge -60 ]; then
 				bars_n="<span class='bar-box sig-good'>|||</span>"
 				rssi_style_n="color: #64d2ff; font-weight: bold;"
 				T_GOOD=$((T_GOOD+1))
-            elif [ "$rssi_n" -ge -70 ]; then
+            elif [ "$rssi" -ge -70 ]; then
 				bars_n="<span class='bar-box sig-fair'>||</span>"
 				rssi_style_n="color: #ffd60a; font-weight: bold;"
 				T_FAIR=$((T_FAIR+1))
@@ -1880,26 +1879,26 @@ ROW
 				rssi_style_n="color: #ff453a; font-weight: bold;"
 				T_POOR=$((T_POOR+1))
 			fi
-			[ ${#n_name} -gt 20 ] && n_name="${n_name:0:20}"
-			[ ${#mac_node} -gt 17 ] && mac_node="${mac_node:0:17}"
-			[ ${#n_ip} -gt 15 ] && n_ip="${n_ip:0:15}"
+			[ ${#name} -gt 20 ] && name="${name:0:20}"
+			[ ${#mac} -gt 17 ] && mac="${mac:0:17}"
+			[ ${#ip} -gt 15 ] && ip="${ip:0:15}"
 			[ ${#SSID_NODE} -gt 15 ] && SSID_NODE="${SSID_NODE:0:15}"
             N_ROW="<tr class='$is_mac_new'>
-				<td style='text-align:left;'>$n_name$NODE_NUM</td>
+				<td style='text-align:left;'>$name$NODE_NUM</td>
 				<td>
-					<span class='m-val' data-sort='$mac_node'>$mac_node</span>
-					<span class='i-val' data-sort='$ip_ns'>$n_ip</span>
+					<span class='m-val' data-sort='$mac'>$mac</span>
+					<span class='i-val' data-sort='$ip_s'>$ip</span>
 				</td>
-				<td data-sort='$rssi_n' class='rssi-container'>
-					$bars_n <span style='$rssi_style_n'>$rssi_n</span> $trend
+				<td data-sort='$rssi' class='rssi-container'>
+					$bars_n <span style='$rssi_style_n'>$rssi</span> $trend
 				</td>
-				<td data-sort='$lrd_val_n' style='$rssi_style_n; text-align:center;'>$lrd_n</td>
+				<td data-sort='$lrd_val' style='$rssi_style_n; text-align:center;'>$lrd</td>
 				<td>
 					<span class='s-val' data-sort='$SSID_NODE'>$SSID_NODE</span>
-					<span class='if-val' data-sort='$iface_n'>$iface_n</span>
+					<span class='if-val' data-sort='$iface'>$iface</span>
 				</td>
-				$band_node
-				<td>$uptime_fmt</td>
+				$band
+				<td>$uptime</td>
 			</tr>"
             NODE_ROWS="${NODE_ROWS}${N_ROW}${NL}"
             ALL_ROWS="${ALL_ROWS}${N_ROW}${NL}"

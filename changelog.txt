@@ -2,6 +2,7 @@
 Wireless Report AiMesh - Changelog
 ----------------------------------
 
+v1.9.0-code cleanup.
 v1.8.9-minor updates.
 v1.8.8-minor updates.
 v1.8.7-fix name resolution error.
