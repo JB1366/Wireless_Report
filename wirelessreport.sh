@@ -1394,6 +1394,26 @@ get_rssi_bars_style() {
 	[ ${#ssid} -gt 15 ] && ssid="${ssid:0:15}"
 }
 
+get_row() {
+	ROW="<tr class='$is_mac_new'>
+		<td style='text-align:left;'>$name</td>
+		<td>
+			<span class='m-val' data-sort='$mac'>$mac</span>
+			<span class='i-val' data-sort='$ip_sort'>$ip</span>
+		</td>
+		<td data-sort='$rssi' class='rssi-container'>
+			$bars <span style='$rssi_style'>$rssi</span> $trend
+		</td>
+		<td data-sort='$lrd_val' style='$rssi_style; text-align:center;'>$lrd</td>
+		<td>
+			<span class='s-val' data-sort='$ssid'>$ssid</span>
+			<span class='if-val' data-sort='$iface'>$iface</span>
+		</td>
+		$band
+		<td>$uptime</td>
+	</tr>"
+}
+
 parse_main_sta() {
     local raw_info="$1"
     printf "%s\n" "$raw_info" | awk '
@@ -1750,25 +1770,9 @@ for iface in $IFACE_LIST; do
 		band=$(get_band "$iface" "$width" "$M_ALIAS")
 		uptime=$(fmt_uptime "$uptime")
 		get_rssi_bars_style
-		M_ROW="<tr class='$is_mac_new'>
-			<td style='text-align:left;'>$name</td>
-			<td>
-				<span class='m-val' data-sort='$mac'>$mac</span>
-				<span class='i-val' data-sort='$ip_sort'>$ip</span>
-			</td>
-			<td data-sort='$rssi' class='rssi-container'>
-				$bars <span style='$rssi_style'>$rssi</span> $trend
-			</td>
-			<td data-sort='$lrd_val' style='$rssi_style; text-align:center;'>$lrd</td>
-			<td>
-				<span class='s-val' data-sort='$ssid'>$ssid</span>
-				<span class='if-val' data-sort='$iface'>$iface</span>
-			</td>
-			$band
-			<td>$uptime</td>
-		</tr>"
-		MAIN_ROWS="${MAIN_ROWS}${M_ROW}${NL}"
-		ALL_ROWS="${ALL_ROWS}${M_ROW}${NL}"
+		get_row
+		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
+		ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
 	done
 done
@@ -1866,25 +1870,10 @@ for line in $SSH_NODES; do
 			band=$(get_band "$iface" "$width" "$ALIAS")
 			uptime=$(fmt_uptime "$uptime")
 			get_rssi_bars_style
-            N_ROW="<tr class='$is_mac_new'>
-				<td style='text-align:left;'>$name$NODE_NUM</td>
-				<td>
-					<span class='m-val' data-sort='$mac'>$mac</span>
-					<span class='i-val' data-sort='$ip_sort'>$ip</span>
-				</td>
-				<td data-sort='$rssi' class='rssi-container'>
-					$bars <span style='$rssi_style'>$rssi</span> $trend
-				</td>
-				<td data-sort='$lrd_val' style='$rssi_style; text-align:center;'>$lrd</td>
-				<td>
-					<span class='s-val' data-sort='$ssid'>$ssid</span>
-					<span class='if-val' data-sort='$iface'>$iface</span>
-				</td>
-				$band
-				<td>$uptime</td>
-			</tr>"
-            NODE_ROWS="${NODE_ROWS}${N_ROW}${NL}"
-            ALL_ROWS="${ALL_ROWS}${N_ROW}${NL}"
+			name="$name$NODE_NUM"
+            get_row
+            NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
+            ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
