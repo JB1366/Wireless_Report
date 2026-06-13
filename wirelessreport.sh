@@ -1384,7 +1384,9 @@ get_rssi_bars_style() {
 		rssi_style="color: #ff453a; font-weight: bold;"
 		T_POOR=$((T_POOR+1))
 	fi
-	
+}
+
+get_max_column() {
 	# Maximum Column Characters
 	[ ${#name} -gt 20 ] && name="${name:0:20}"
 	[ ${#mac} -gt 17 ] && mac="${mac:0:17}"
@@ -1410,6 +1412,21 @@ get_row() {
 		$band
 		<td>$uptime</td>
 	</tr>"
+}
+
+check_qca_up() {
+	if [ "$uptime" = "UP_QCA" ]; then case "$iface" in *ath*)
+		NOW=$(date +%s)
+		CLEAN_MAC="$mac_address"
+		START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
+		if [ "$START_TS" -gt 0 ]; then
+			uptime=$((NOW - START_TS))
+			[ "$uptime" -lt 0 ] && uptime=$((START_TS - NOW))
+		else
+			uptime="0"
+		fi
+		;;
+	esac; fi
 }
 
 parse_main_sta() {
@@ -1768,6 +1785,7 @@ for iface in $IFACE_LIST; do
 		band=$(get_band "$iface" "$width" "$M_ALIAS")
 		uptime=$(fmt_uptime "$uptime")
 		get_rssi_bars_style
+		get_max_column
 		get_row
 		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
 		ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
@@ -1851,23 +1869,13 @@ for line in $SSH_NODES; do
 			[ -z "$rssi" ] || [ "$rssi" -eq 0 ] && rssi=-54
 			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
 			NODE_DEVICES=$((NODE_DEVICES + 1))
-			if [ "$uptime" = "UP_QCA" ]; then case "$iface" in *ath*)
-				NOW=$(date +%s)
-				CLEAN_MAC="$mac_address"
-				START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
-				if [ "$START_TS" -gt 0 ]; then
-					uptime=$((NOW - START_TS))
-					[ "$uptime" -lt 0 ] && uptime=$((START_TS - NOW))
-				else
-					uptime="0"
-				fi
-				;;
-			esac; fi
             is_mac_new=$(check_new_mac "$mac")
 			trend=$(get_trend "$mac" "$rssi" "$NODE_NAME")
 			band=$(get_band "$iface" "$width" "$ALIAS")
+			check_qca_up
 			uptime=$(fmt_uptime "$uptime")
 			get_rssi_bars_style
+			get_max_column
 			name="$name$NODE_NUM"
             get_row
             NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
