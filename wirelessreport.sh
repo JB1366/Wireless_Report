@@ -1137,17 +1137,15 @@ get_name() {
 	
 	# Networkmap Client / MLO
 	if [ -z "$name" ] || [ "$name" = "*" ]; then
-        if [ -f "/jffs/nmp_cl_json.js" ]; then
-			local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
-			local raw_parent=$(echo "$entry" | sed -n 's/.*"mlo_all_mac":"<\([^"]*\)".*/\1/p' | tr '[:lower:]' '[:upper:]')
-			local parent_mac=$(echo "$raw_parent" | cut -d'<' -f1)
-			if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then
-                mac_swap="$parent_mac"
-			else
-                mac_swap="$mac"
-            fi
-			name=$(echo "$entry" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
+		local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
+		local raw_parent=$(echo "$entry" | sed -n 's/.*"mlo_all_mac":"<\([^"]*\)".*/\1/p' | tr '[:lower:]' '[:upper:]')
+		local parent_mac=$(echo "$raw_parent" | cut -d'<' -f1)
+		if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then
+			mac_swap="$parent_mac"
+		else
+			mac_swap="$mac"
 		fi
+		name=$(echo "$entry" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
     fi
 	
 	# Wireless Backhaul
