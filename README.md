@@ -228,4 +228,4 @@ If you have any questions, please feel free to post in this thread [Wireless Rep
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/paypalme/JB1366) [Support the development of Wireless Report AiMesh](https://www.paypal.com/paypalme/JB1366) [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/paypalme/JB1366)<br>
 \
 \
-[CHANGELOG:](https://github.com/JB1366/Wireless_Report/tree/main/changelog.txt)
+[View Changelog](changelog.txt)
