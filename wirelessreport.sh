@@ -1117,10 +1117,33 @@ get_trend() {
 	fi
 }
 
+get_mac_address() {
+	mac_address=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
+	mac_prefix="${mac_address#??}"
+	mac_prefix="${mac_prefix%???}"
+	is_backhaul="no"
+	if [ "$BACKHAUL" = "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
+		is_backhaul="yes"
+	fi
+	if [ "$BACKHAUL" != "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
+		continue
+	fi
+	mac_check=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac_address}" || echo "$mac_address")
+	if grep -Fqi "$mac_check" "$SEEN_MACS"; then
+		continue
+	fi
+	mac_swap="$mac_address"
+	get_name "$mac"
+	mac="$mac_swap"
+	mac_final=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac}" || echo "$mac")
+	if grep -Fqi "$mac_final" "$SEEN_MACS"; then
+		continue
+	fi
+	echo "$mac_final" >> "$SEEN_MACS"
+	return 0
+}
+
 get_name() {
-	local mac="$1"
-	local name=""
-	
 	# YazDHCP
 	if [ -f "$YAZ_CACHE" ]; then
 		local entry=$(grep -i "^$mac|" "$YAZ_CACHE")
@@ -1166,7 +1189,22 @@ get_name() {
 	if [ -z "$name" ] || [ "$name" = "*" ]; then
 		name="$mac"
 	fi
-	echo "${name}|${mac_swap}"
+}
+
+get_ip() {
+	ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
+	[ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
+	case "$name" in *-BH*) ip="" ;; esac
+	if [ -z "$ip" ] || [ "$ip" = "---" ]; then
+		ip="${ROUTER_IP%.*}.$BH_COUNTER"
+		BH_COUNTER=$((BH_COUNTER + 1))
+	fi
+	ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
+	ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
+	ip="${ip%% *}"
+    ip="${ip%%<*}"
+    ip_sort=$(ip_to_num "$ip")
+	# N=$((N + 1)); echo "[$N] DEBUG: IP $ip -> MAC $mac" >&2
 }
 
 check_new_mac() {
@@ -1296,48 +1334,6 @@ get_band() {
     esac
     echo "<td data-sort='$sort' style='text-align:center;'><span class='$class'>$Label$w_text</span></td>"
 }
-
-get_mac_address() {
-	mac_address=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
-	mac_prefix="${mac_address#??}"
-	mac_prefix="${mac_prefix%???}"
-	is_backhaul="no"
-	if [ "$BACKHAUL" = "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
-		is_backhaul="yes"
-	fi
-	if [ "$BACKHAUL" != "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
-		continue
-	fi
-	mac_check=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac_address}" || echo "$mac_address")
-	if grep -Fqi "$mac_check" "$SEEN_MACS"; then
-		continue
-	fi
-	mac_swap="$mac_address"
-	parse_name "$mac_address"
-	mac="$mac_swap"
-	mac_final=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac}" || echo "$mac")
-	if grep -Fqi "$mac_final" "$SEEN_MACS"; then
-		continue
-	fi
-	echo "$mac_final" >> "$SEEN_MACS"
-	return 0
-}
-
-get_ip() {
-	ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
-	[ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
-	case "$name" in *-BH*) ip="" ;; esac
-	if [ -z "$ip" ] || [ "$ip" = "---" ]; then
-		ip="${ROUTER_IP%.*}.$BH_COUNTER"
-		BH_COUNTER=$((BH_COUNTER + 1))
-	fi
-	ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
-	ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
-	ip="${ip%% *}"
-    ip="${ip%%<*}"
-    ip_sort=$(ip_to_num "$ip")
-	# N=$((N + 1)); echo "[$N] DEBUG: IP $ip -> MAC $mac" >&2
-}		
 		
 fmt_uptime() {
     local T=$1
@@ -1393,7 +1389,7 @@ get_load_class() {
     awk -v l="$l" 'BEGIN { print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) }'
 }
 
-get_rssi_bars_style() {
+get_bars_rssi_style() {
 	if [ "$rssi" -ge -50 ]; then
 		bars="<span class='bar-box sig-exc'>||||</span>"
 		rssi_style="color: #30d158; font-weight: bold;"
@@ -1479,12 +1475,6 @@ parse_node() {
     IFS='|' read -r _ mac rssi iface uptime ssid lrd_val lrd width _ <<ROW
 $1
 ROW
-}
-
-parse_name() {
-    IFS='|' read -r name mac_swap <<EOF
-$(get_name "$1")
-EOF
 }
 
 run_report() {
@@ -1793,7 +1783,7 @@ for iface in $IFACE_LIST; do
 		trend=$(get_trend "$mac" "$rssi" "$MAIN_NAME")
 		band=$(get_band "$iface" "$width" "$M_ALIAS")
 		uptime=$(fmt_uptime "$uptime")
-		get_rssi_bars_style
+		get_bars_rssi_style
 		get_max_column
 		get_row
 		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
@@ -1857,7 +1847,7 @@ for line in $SSH_NODES; do
 			band=$(get_band "$iface" "$width" "$ALIAS")
 			check_qca_up
 			uptime=$(fmt_uptime "$uptime")
-			get_rssi_bars_style
+			get_bars_rssi_style
 			get_max_column
 			name="$name$NODE_NUM"
             get_row
