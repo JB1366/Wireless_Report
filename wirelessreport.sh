@@ -1297,6 +1297,32 @@ get_band() {
     echo "<td data-sort='$sort' style='text-align:center;'><span class='$class'>$Label$w_text</span></td>"
 }
 
+get_mac_address() {
+	mac_address=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
+	mac_prefix="${mac_address#??}"
+	mac_prefix="${mac_prefix%???}"
+	is_backhaul="no"
+	if [ "$BACKHAUL" = "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
+		is_backhaul="yes"
+	fi
+	if [ "$BACKHAUL" != "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
+		continue
+	fi
+	mac_check=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac_address}" || echo "$mac_address")
+	if grep -Fqi "$mac_check" "$SEEN_MACS"; then
+		continue
+	fi
+	mac_swap="$mac_address"
+	parse_name "$mac_address"
+	mac="$mac_swap"
+	mac_final=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac}" || echo "$mac")
+	if grep -Fqi "$mac_final" "$SEEN_MACS"; then
+		continue
+	fi
+	echo "$mac_final" >> "$SEEN_MACS"
+	return 0
+}
+
 get_ip() {
 	ip=$(grep -ih "^$mac|" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
 	[ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
@@ -1310,6 +1336,7 @@ get_ip() {
 	ip="${ip%% *}"
     ip="${ip%%<*}"
     ip_sort=$(ip_to_num "$ip")
+	# N=$((N + 1)); echo "[$N] DEBUG: IP $ip -> MAC $mac" >&2
 }		
 		
 fmt_uptime() {
@@ -1412,6 +1439,7 @@ get_row() {
 		$band
 		<td>$uptime</td>
 	</tr>"
+	ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 }
 
 check_qca_up() {
@@ -1730,26 +1758,8 @@ for iface in $IFACE_LIST; do
 	fi
 	for mac in $MAC_LIST; do
 		[ -z "$mac" ] || [ "$mac" = "mac" ] && continue
-		mac_address=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
-		mac_prefix="${mac_address#??}"
-		mac_prefix="${mac_prefix%???}"
-		if [ "$BACKHAUL" != "yes" ]; then
-			if [ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"; then
-				continue
-			fi
-		fi
-		if grep -qi "$mac_address" "$SEEN_MACS"; then
-			continue
-		fi
-		mac_swap="$mac_address"
-		parse_name "$mac_address"
-		mac="$mac_swap"
-		if grep -qi "$mac" "$SEEN_MACS"; then
-			continue
-		fi
-		echo "$mac" >> "$SEEN_MACS"
-        get_ip
-		{ [ -z "$name" ] || [ "$name" = "*" ]; } && name="$mac"
+		get_mac_address
+		get_ip
 		raw_info=$(wl -i "$iface" sta_info "$mac" 2>/dev/null)
 		[ -z "$raw_info" ] && raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null)
 		sta_parsed=$(parse_main_sta "$raw_info")
@@ -1758,7 +1768,6 @@ for iface in $IFACE_LIST; do
 			rssi=$(wl -i "$iface" rssi "$mac_address" 2>/dev/null)
 			rssi="${rssi%% *}"
 		fi
-		[ -z "$rssi" ] || [ "$rssi" -eq 0 ] && rssi=-54
 		if [ -z "$width" ]; then
 			local hex=$(echo "$raw_info" | grep -o '0x[0-9a-fA-F]*' | head -n 1)
 			case "$hex" in
@@ -1788,7 +1797,6 @@ for iface in $IFACE_LIST; do
 		get_max_column
 		get_row
 		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
-		ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
 	done
 done
@@ -1840,35 +1848,10 @@ for line in $SSH_NODES; do
 		while read -r dline; do
 			[ -z "$dline" ] && continue
 			parse_node "$dline"
-			mac_address=$(echo "$mac" | tr '[:lower:]' '[:upper:]')
-			mac_prefix="${mac_address#??}"
-			mac_prefix="${mac_prefix%???}"
-			is_backhaul="no"
-			if [ "$BACKHAUL" = "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
-				is_backhaul="yes"
-			fi
-			if [ "$BACKHAUL" != "yes" ] && ([ "$mac_prefix" = "$MAIN_PFX" ] || echo "$NODE_PFX" | grep -q "$mac_prefix"); then
-				continue
-			fi
-			mac_check=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac_address}" || echo "$mac_address")
-			if grep -Fqi "$mac_check" "$SEEN_MACS"; then
-				continue
-			fi
-			mac_swap="$mac_address"
-			parse_name "$mac_address"
-			mac="$mac_swap"
-			mac_final=$([ "$is_backhaul" = "yes" ] && echo "${CLEAN_IP}_${iface}_${mac}" || echo "$mac")
-			if grep -Fqi "$mac_final" "$SEEN_MACS"; then
-				continue
-			fi
-			echo "$mac_final" >> "$SEEN_MACS"
-			get_ip
-			{ [ -z "$name" ] || [ "$name" = "*" ]; } && name="$mac"
 			[ "${#ssid}" -eq 32 ] && ssid="BACKHAUL"
 			[ -z "$ssid" ] && ssid="Wireless"
-			[ -z "$rssi" ] || [ "$rssi" -eq 0 ] && rssi=-54
-			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
-			NODE_DEVICES=$((NODE_DEVICES + 1))
+			get_mac_address
+			get_ip
             is_mac_new=$(check_new_mac "$mac")
 			trend=$(get_trend "$mac" "$rssi" "$NODE_NAME")
 			band=$(get_band "$iface" "$width" "$ALIAS")
@@ -1879,7 +1862,8 @@ for line in $SSH_NODES; do
 			name="$name$NODE_NUM"
             get_row
             NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
-            ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
+			NODE_DEVICES=$((NODE_DEVICES + 1))
+			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
