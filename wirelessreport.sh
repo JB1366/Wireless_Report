@@ -1166,7 +1166,7 @@ get_name() {
 		if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then
 			mac_swap="$parent_mac"
 		else
-			mac_swap="$mac"
+			mac_swap="$mac_address"
 		fi
 		name=$(echo "$entry" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
     fi
