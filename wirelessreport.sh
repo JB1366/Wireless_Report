@@ -1904,9 +1904,6 @@ EOF
 NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$DOT}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
-RSSI_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>"
-MBPS_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>"
-MHZ_UNIT="<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>"
 GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>&ensp;$N_NAMES"
 [ "$NUMBERED_NODE" -gt 0 ] && R_TITLE="Wireless Report AiMesh" || R_TITLE="Wireless Report"
@@ -2148,11 +2145,11 @@ function sortTable(n, tId, keepDir, forceDesc) {
         if (idx === 1) {
             h.innerHTML = table.classList.contains('show-ip') ? "IP ADDRESS ⇵" : "MAC ADDRESS ⇵";
         } else if (txt.includes("RSSI")) {
-            h.innerHTML = "RSSI" + "${RSSI_UNIT}";
+            h.innerHTML = "RSSI<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>";
         } else if (txt.includes("RX/TX")) {
-            h.innerHTML = "RX/TX" + "${MBPS_UNIT}";
+            h.innerHTML = "RX/TX<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>";
         } else if (txt.includes("BAND")) {
-            h.innerHTML = "BAND" + "${MHZ_UNIT}";
+            h.innerHTML = "BAND<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>";
         } else if (idx === 4) {
             h.innerHTML = table.classList.contains('show-iface') ? "IFACE ⇵" : "SSID ⇵";
         } else {
