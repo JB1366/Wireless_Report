@@ -915,14 +915,14 @@ set_options() {
 				if [ "$RS_HIST" = "1" ]; then
 					RS_HIST_DAYS=${RS_HIST_DAYS:-5}; RS_HIST_DATE=${RS_HIST_DATE:-0}
 					OLD_RS_HIST_DAYS=$RS_HIST_DAYS; OLD_RS_HIST_DATE=$RS_HIST_DATE
-					echo -ne "\nEnter history depth (5-15 days)  ${GR}[Current: $RS_HIST_DAYS]:${NC} "
+					echo -ne "\nEnter history depth (5-15)    ${GR}[Current: $RS_HIST_DAYS]:${NC} "
 					read -r NEW_RS_HIST_DAYS
 					RS_HIST_DAYS=${NEW_RS_HIST_DAYS:-$RS_HIST_DAYS}
 					case "$RS_HIST_DAYS" in
 						[5-9] | 1[0-5]) ;;
 						*) RS_HIST_DAYS=5 ;;          
 					esac
-					echo -ne "Show timestamps (0=Off, 1=On)    ${GR}[Current: $RS_HIST_DATE]:${NC} "
+					echo -ne "Show timestamps (0=Off, 1=On) ${GR}[Current: $RS_HIST_DATE]:${NC} "
 					read -r NEW_RS_HIST_DATE
 					RS_HIST_DATE=${NEW_RS_HIST_DATE:-$RS_HIST_DATE}
 					TEMP_DATE=${NEW_RS_HIST_DATE:-$RS_HIST_DATE}
