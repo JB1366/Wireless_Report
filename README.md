@@ -166,12 +166,12 @@ $\color{blue}{\Large\text{ADVANCED VIEWING + INTERACTIVE FEATURES}}$<br>
 Wireless Report is designed to be more than just a static table. Use these interactive elements to manage your network:
   * $\color{green}{\text{Version, Hash + Update Alerts:}}$ Hover your mouse over the "Wireless Report" header to instantly check your current script version and view file hash updates. Additionally, the browser tab title displays the active Wireless Report version, dynamically appending an alert only if a version or hash update becomes available.
   * $\color{green}{\text{Dynamic UI Modes:}}$ Choose how you view your data using the built-in button toggles:<br>
-    * Stacked: A clean, vertical list of router and nodes.<br>
-    * All Devices: A consolidated view of every wireless client on the network.<br>
-    * Side-by-Side (Pop-out): Launches a separate window for easier comparison between the Router and Nodes.
+    * $\color{blue}{\text{Stacked:}}$ A clean, vertical list of router and nodes.<br>
+    * $\color{blue}{\text{All Devices:}}$ A consolidated view of every wireless client on the network.<br>
+    * $\color{blue}{\text{Side-by-Side (Pop-out):}}$ Launches a separate window for easier comparison between the Router and Nodes.
   * $\color{green}{\text{Visual Notifications:}}$<br>
-    * New Device Pulse: The entire row will pulse when a new device is first detected on the network.<br>
-    * Uptime Alert: Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).
+    * $\color{blue}{\text{New Device Pulse:}}$ The entire row will pulse when a new device is first detected on the network.<br>
+    * $\color{blue}{\text{Uptime Alert:}}$ Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).
   * $\color{green}{\text{Custom Refresh Control:}}$ Use the built-in dropdown menu to adjust the Auto-Refresh Interval to suit your monitoring needs.
   * $\color{green}{\text{Node-Hostname|All Devices Sorting:}}$ Right-click the node|All Devices hostnames header to toggle numerical sorting (e.g., sorting nodes 1-3 vs. 3-1) (sorting All-Devices 1-3(router) vs. (router) 3-1.
   * $\color{green}{\text{Column Sorting:}}$ Remembers column sort-state of all tables, between all refreshes.
