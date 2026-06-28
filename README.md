@@ -163,15 +163,15 @@ $\color{blue}{\Large\text{ROUTER ONLY VIEW - DEFAULT MODE}}$
 \
 \
 $\color{blue}{\Large\text{ADVANCED VIEWING + INTERACTIVE FEATURES}}$<br>
-Wireless Report AiMesh is designed to be more than just a static table. Use these interactive elements to manage your network:
-  * $\color{green}{\text{Version + Update Alerts:}}$ Hover your mouse over the "Wireless Report AiMesh" header to instantly check your current script version and see if a new update is available.
+Wireless Report is designed to be more than just a static table. Use these interactive elements to manage your network:
+  * $\color{green}{\text{Version, Hash + Update Alerts:}}$ Hover your mouse over the "Wireless Report" header to instantly check your current script version and view file hash updates. Additionally, the browser tab title dynamically displays the active Wireless Report version along with your current file hash status and update availability at a glance.
   * $\color{green}{\text{Dynamic UI Modes:}}$ Choose how you view your data using the built-in button toggles:<br>
-    :sparkles: Stacked: A clean, vertical list of router and nodes.<br>
-    :sparkles: All Devices: A consolidated view of every wireless client on the network.<br>
-    :sparkles: Side-by-Side (Pop-out): Launches a separate window for easier comparison between the Router and Nodes.
+    * Stacked: A clean, vertical list of router and nodes.<br>
+    * All Devices: A consolidated view of every wireless client on the network.<br>
+    * Side-by-Side (Pop-out): Launches a separate window for easier comparison between the Router and Nodes.
   * $\color{green}{\text{Visual Notifications:}}$<br>
-    :satellite: New Device Pulse: The entire row will pulse when a new device is first detected on the network.<br>
-    :rotating_light: Uptime Alert: Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).
+    * New Device Pulse: The entire row will pulse when a new device is first detected on the network.<br>
+    * Uptime Alert: Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).
   * $\color{green}{\text{Custom Refresh Control:}}$ Use the built-in dropdown menu to adjust the Auto-Refresh Interval to suit your monitoring needs.
   * $\color{green}{\text{Node-Hostname|All Devices Sorting:}}$ Right-click the node|All Devices hostnames header to toggle numerical sorting (e.g., sorting nodes 1-3 vs. 3-1) (sorting All-Devices 1-3(router) vs. (router) 3-1.
   * $\color{green}{\text{Column Sorting:}}$ Remembers column sort-state of all tables, between all refreshes.
@@ -180,7 +180,7 @@ Wireless Report AiMesh is designed to be more than just a static table. Use thes
 \
 \
 $\color{blue}{\Large\text{UPDATES}}$<br>
-You can update Wireless Report AiMesh using one of the following two methods:
+You can update Wireless Report using one of the following two methods:
 
 $\color{green}{\text{Method A:}}$ Via amtm (Recommended)
    * Open the amtm menu.
