@@ -285,7 +285,7 @@ do_install() {
 
 do_update() {
     local prefix="\n"
-    if [ "$amtm" -eq 1 ] 2>/dev/null; then
+    if [ "$amtm" = "1" ]; then
         prefix="\n${BG} wr${NC} "
     fi
     echo -e "${prefix}${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
