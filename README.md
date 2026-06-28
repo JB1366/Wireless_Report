@@ -15,7 +15,7 @@ To display data for AiMesh nodes, the script now includes an automated Password-
 \
 \
 $\color{blue}{\Large\text{PRO-TIP: CUSTOMIZING HOSTNAMES}}$<br>
-To ensure your report shows clean Hostnames (e.g., "Living Room TV") rather than default device names, it is highly recommended to assign manual IP reservations for your frequent clients. You can do this in the LAN > DHCP Server tab, or within Guest Network Pro > Advanced Settings for your specific guest networks.
+To ensure your report shows clean Hostnames (e.g., "Living Room TV") rather than default device names, it is highly recommended to assign manual Hostnames for your frequent clients. You can do this in the LAN > DHCP Server tab, or within Guest Network Pro > Advanced Settings for your specific guest networks.
 \
 \
 $\color{blue}{\Large\text{RECOMMENDATION}}$<br>
