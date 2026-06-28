@@ -1,0 +1,89 @@
+#===============================#
+#  Wireless Report - Changelog  #
+#===============================#
+
+
+v1.9.5-minor updates
+v1.9.4-added Dark Mode, hash version checking.
+v1.9.3-added Robust RSSI History Management.
+v1.9.2-add band to RSSI Tooltip.
+v1.9.1-enhanced RSSI History.
+v1.9.0-code refactoring & cleanup.
+v1.8.9-minor updates.
+v1.8.8-minor updates.
+v1.8.7-fix name resolution.
+v1.8.6-visual & speed enhancements.
+v1.8.5-minor updates. added RSSI History Tooltip.
+v1.8.4-minor fixes for mac address issue.
+v1.8.3-minor update to fix mac-address bug.
+V1.8.2-minor changes.
+v1.8.1-minor install updates, seperated SSH Key Setup from Node Authentication.
+v1.8.0-minor adjustments, enhanced runtime.
+v1.7.9-AntiGravity script optimizations.
+v1.7.8-added support for BT8.
+v1.7.7-backhaul fixes.
+v1.7.6-added Wireless Backhaul On/Off.
+v1.7.5-removed RSSI Kick Threshold. enhanced refresh button-hover.
+v1.7.4-runtime adjustment.
+v1.7.3-added runtime option and location option to nicknames.
+v1.7.2-minor updates to Node Authentication.
+v1.7.1-New Node Authentication tool.
+v1.7.0-New Automated Password-less SSH Key Setup..
+v1.6.1-enhanced runtimes.
+v1.6.0-adjusted tab-mount, added runtime to refresh button.
+v1.5.9-minor updates, added script runtime to syslog.
+v1.5.8-minor adjustments to router only mode.
+v1.5.7-minor setup changes & added support for Router only people.
+v1.5.6-minor updates.
+v1.5.5-minor updates.
+v1.5.4-fix wireless backhaul (BH) reporting; optimize RSSI thresholds.
+v1.5.3-added skip mac address to RSSI Device Kicking.
+v1.5.2-added 'optional' RSSI Threshold Device Kicking.
+v1.5.1-added new device detection-the entire device row 'pulses' on new device detected.
+v1.5.0-saves current column state on all tables on refresh.
+v1.4.9-revert back to v1.4.7 code, new sorting hiccup.
+v1.4.8-column state is saved on refresh.
+v1.4.7-minor updates.
+v1.4.6-changed GitHub timeout.
+v1.4.5-enhanced router detection, added right-click sorting of node-hostnames.
+v1.4.4-enhanced router detection.
+v1.4.3-minor changes to router detection.
+v1.4.2-minor update to hostnames.
+v1.4.1-fix hostnames, i added custom clientlist.
+v1.4.0-add Qualcomm Zenwifi BD4 detection.
+v1.3.9-updated main router-scan functionality.
+v1.3.8-updated USB detection.
+v1.3.7-minor adjustments.
+v1.3.6-minor adjustments.
+v1.3.5-minor UI changes, combined all install/script files into one.
+v1.3.4-fix usb detection, entware update screwed with USB mount.
+v1.3.3-page refresh adjustment.
+v1.3.2-fix column sorting (mac/uptime), fixed page refresh, adjust table width.
+v1.3.1-script cleanup, update get_band_html function.
+v1.3.0-script cleanup.
+v1.2.9-removed pulse on new script update, wasn't working correctly.
+v1.2.8-fixed temp/load issue.
+v1.2.7-fixed LOAD/TEMP detection colors.
+v1.2.6-reverted ssh adjustment.
+v1.2.5-IP column, 4th octet alignment.
+v1.2.4-edit update check pulse.
+v1.2.3-added more options for update frequency.
+v1.2.2-added more options for update frequency.
+v1.2.1-change nickname max to 25.
+v1.2.0-added nickname option on script install.
+v1.1.9-updated version display, hover header for version.
+v1.1.8-added version#.
+v1.1.7-visual enhancements.
+v1.1.6-fix issue where wired devices could creep through.
+v1.1.5-HOSTNAME is now reporting mac address instead of Unknown.
+v1.1.4-fix column widths.
+v1.1.3-better router detection.
+v1.1.2-comparison view enhancements.
+v1.1.1-updated fix for XT12.
+v1.1.0-fix hostnames.
+v1.0.9-updated tri-quad band logic.
+v1.0.8-fix hex/backhaul on ssid scans.
+v1.0.7-fix install.
+v1.0.6-install option for °F or °C.
+v1.0.3-install script now autogets ssh port.
+v1.0.1-Initial Release.

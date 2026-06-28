@@ -1,0 +1,8 @@
+#======================#
+#  UNSUPPORTED MODELS  #
+#======================#
+
+
+ZENWIFI_XD4_PLUS(MTK)
+RT-AX1800S(MTK)
+TUF-AX4200(MTK)
