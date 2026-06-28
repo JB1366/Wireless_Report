@@ -203,7 +203,7 @@ do_install() {
 			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then
 				return
 			fi
-		elif [ "$VERHASH" = "-Hash" ]; then
+		elif [ "$VERHASH" = "[Hash]" ]; then
 			echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to update Hash? (y/n): "
 			read -r update
