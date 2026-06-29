@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="1.9.5"
+SCRIPT_VERSION="1.9.6"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -318,7 +318,8 @@ ScriptUpdateFromAMTM() {
 }
 
 get_usb() {
-    local BUP=$(cut -d. -f1 /proc/uptime)
+	[ -n "$USB_PATH" ] && return
+	local BUP=$(cut -d. -f1 /proc/uptime)
     local mount
     local FOUND=0
     for mount in /tmp/mnt/*; do
@@ -1220,11 +1221,14 @@ get_trend() {
         fi
 		local new_history="${history_str:+$history_str,}$new_entry"
 		local final_history="$new_history"
-		local count=$(( $(echo "$final_history" | tr -cd ',' | wc -c) + 1 ))
+		
+		local commas_only="${final_history//[^,]/}"
+		local count=$(( ${#commas_only} + 1 ))
 		while [ "$count" -gt "$RS_HIST_DAYS" ]; do
 			final_history="${final_history#*,}"
 			count=$((count - 1))
 		done
+		
 		echo "$mac|$final_history" >> "$NEW_HISTORY"
 		local rssi_history=""
 		local IFS=','
@@ -2307,14 +2311,10 @@ function sortTable(n, tId, keepDir, forceDesc) {
             valA = cellA.querySelector(sel).innerText.trim().toLowerCase();
             valB = cellB.querySelector(sel).innerText.trim().toLowerCase();
         } else if (n === 6) {
-            var parseTime = function(s) {
-                var d = s.match(/(\d+)d/) ? parseInt(s.match(/(\d+)d/)[1]) : 0;
-                var h = s.match(/(\d+)h/) ? parseInt(s.match(/(\d+)h/)[1]) : 0;
-                var m = s.match(/(\d+)m/) ? parseInt(s.match(/(\d+)m/)[1]) : 0;
-                return (d * 1440) + (h * 60) + m;
-            };
-            valA = parseTime(cellA.innerText);
-            valB = parseTime(cellB.innerText);
+            var spanA = cellA.querySelector('span[data-sort]');
+            valA = spanA ? parseInt(spanA.getAttribute('data-sort'), 10) : 0;
+            var spanB = cellB.querySelector('span[data-sort]');
+            valB = spanB ? parseInt(spanB.getAttribute('data-sort'), 10) : 0;
         } else if (cellA.hasAttribute('data-sort')) {
             valA = cellA.getAttribute('data-sort');
             valB = cellB.getAttribute('data-sort');
