@@ -2,8 +2,8 @@
 #  Wireless Report - Changelog  #
 #===============================#
 
-v1.9.6-Optimized get_trend backend calculations for faster RSSI History tooltips, streamlined WebUI uptime sorting, and added adaptive layout scaling for networks with over 3 nodes.
-v1.9.5-minor updates
+v1.9.6-minor updates, rebranded Wireless Report.
+v1.9.5-minor updates.
 v1.9.4-added Dark Mode, hash version checking.
 v1.9.3-added Robust RSSI History Management.
 v1.9.2-add band to RSSI Tooltip.
