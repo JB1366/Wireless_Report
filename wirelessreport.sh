@@ -2193,7 +2193,9 @@ function triggerRefresh() {
 }
 window.addEventListener('load', function() {
     if (document.cookie.indexOf("report_done=true") === -1) {
-        triggerRefresh();
+        setTimeout(function() {
+            triggerRefresh();
+        }, 250); 
     } else {
         console.log("Cookie found: Skipping auto-refresh to prevent loop.");
     }
@@ -2404,6 +2406,7 @@ document.addEventListener('mouseout', function(e) {
     }
 });
 /* RSSI History Tooltip */
+
 </script>
 </head>
 <body onload="initial();">
