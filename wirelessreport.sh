@@ -41,7 +41,6 @@ LEASES_CACHE="/tmp/dnsmasq_leases.cache"
 DHCPSTATIC_CACHE="/tmp/dhcp_static.cache"
 DEVICE_LIST_CACHE="/tmp/asus_device_list.cache"
 CUSTOM_CLIENTS_CACHE="/tmp/custom_clients.cache"
-[ -f "/root/.ssh/id_dropbear" ] && SSH_KEY="/root/.ssh/id_dropbear" || SSH_KEY=""
 NODE_USER=$(nvram get http_username)
 SSH_PORT=$(nvram get sshd_port)
 [ -z "$SSH_PORT" ] && SSH_PORT=22
@@ -49,6 +48,11 @@ SSH_PORT=$(nvram get sshd_port)
 doScriptUpdateFromAMTM=true
 unset LD_LIBRARY_PATH
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+if [ -f "/root/.ssh/id_dropbear" ]; then
+    SSH_KEY="/root/.ssh/id_dropbear"
+else
+    SSH_KEY=""
+fi
 
 #==================#
 #  Script Install  #
@@ -924,7 +928,11 @@ set_options() {
         case "$t_choice" in
             1)
                 if grep -q "RTIME=" "$CONFIG"; then
-                    [ "$RTIME" = "1" ] && sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG" || sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"
+                    if [ "$RTIME" = "1" ]; then
+						sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
+					else
+						sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"
+					fi
                 else
                     echo 'RTIME="0"' >> "$CONFIG"
                 fi
@@ -934,7 +942,7 @@ set_options() {
                 ;;
             2)
                 if grep -q "BACKHAUL=" "$CONFIG"; then
-                    [ "$BACKHAUL" = "yes" ] && NEW_BACK="no" || NEW_BACK="yes"
+                    if [ "$BACKHAUL" = "yes" ]; then NEW_BACK="no"; else NEW_BACK="yes"; fi
                     sed -i "s/BACKHAUL=.*/BACKHAUL=\"$NEW_BACK\"/" "$CONFIG"
                 else
                     echo 'BACKHAUL="yes"' >> "$CONFIG"
@@ -966,7 +974,7 @@ set_options() {
                 rssi_submenu ;;
             5)
                 if grep -q "DARKMODE=" "$CONFIG"; then
-                    [ "$DARKMODE" = "1" ] && NEW_DM="0" || NEW_DM="1"
+                    if [ "$DARKMODE" = "1" ]; then NEW_DM="0"; else NEW_DM="1"; fi
                     sed -i "s/DARKMODE=.*/DARKMODE=\"$NEW_DM\"/" "$CONFIG"
                 else
                     echo 'DARKMODE="1"' >> "$CONFIG"
@@ -1003,8 +1011,8 @@ set_options() {
 
 rssi_submenu() {
 	while true; do
-		CH="$([ "$CUR_RS_HIST" = "1" ] && echo -e "$ON" || echo -e "$OFF")"
-		TS="$([ "$CUR_DATE" = "1" ] && echo $ON || echo $OFF)"
+		if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
+		if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
 		CE="${GR}$CUR_ENTRIES${NC}"; RS_HIST="$CUR_RS_HIST"
 		RS_HIST_ENTRIES="$CUR_ENTRIES"; RS_HIST_DATE="$CUR_DATE"
 		clear
@@ -1024,7 +1032,7 @@ rssi_submenu() {
 		read -r sub_choice
 		case "$sub_choice" in
             1)
-                [ "$CUR_RS_HIST" = "1" ] && CUR_RS_HIST="0" || CUR_RS_HIST="1"
+                if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
                 ;;
             2)
                 echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CD]: "
@@ -1040,7 +1048,7 @@ rssi_submenu() {
                 esac
                 ;;
             3)
-                [ "$CUR_DATE" = "1" ] && CUR_DATE="0" || CUR_DATE="1"
+                if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
                 ;;
             c|C)
                 echo -e "\n${RD}[!] Changes discarded.${NC}"
@@ -1925,7 +1933,7 @@ for iface in $IFACE_LIST; do
 		fi
 	fi
 	for mac in $MAC_LIST; do
-		[ -z "$mac" ] || [ "$mac" = "mac" ] && continue
+		if [ -z "$mac" ] || [ "$mac" = "mac" ]; then continue; fi
 		get_mac_address || continue
 		get_ip
 		raw_info=$(wl -i "$iface" sta_info "$mac" 2>/dev/null)
@@ -1947,14 +1955,14 @@ for iface in $IFACE_LIST; do
 				*)           width="20" ;;
 			esac
 		fi
-		[ -z "$rx" ] || [ "$rx" = "0" ] && rx_disp="?" || rx_disp="${rx%.*}"
-		[ -z "$tx" ] || [ "$tx" = "0" ] && tx_disp="${max:-?}" || tx_disp="${tx%.*}"
-		[ "$rx_disp" = "?" ] && rx_disp="1"
-		[ "$tx_disp" = "?" ] && tx_disp="1"
-		[ "$rx_disp" = "1" ] && [ "$tx_disp" = "1" ] && lrd="1 / 72" || lrd="${rx_disp} / ${tx_disp}"
+		if [ -z "$rx" ] || [ "$rx" = "0" ]; then rx_disp="?"; else rx_disp="${rx%.*}"; fi
+		if [ -z "$tx" ] || [ "$tx" = "0" ]; then tx_disp="${max:-?}"; else tx_disp="${tx%.*}"; fi
+		if [ "$rx_disp" = "?" ]; then rx_disp="1"; fi
+		if [ "$tx_disp" = "?" ]; then tx_disp="1"; fi
+		if [ "$rx_disp" = "1" ] && [ "$tx_disp" = "1" ]; then lrd="1 / 72"; else lrd="${rx_disp} / ${tx_disp}"; fi
 		case "$rx_disp" in *[!0-9]*|"") V1="" ;; *) V1="$rx_disp" ;; esac
 		case "$tx_disp" in *[!0-9]*|"") V2="" ;; *) V2="$tx_disp" ;; esac
-		[ -n "$V1" ] && [ -n "$V2" ] && [ "$V1" -gt "$V2" ] 2>/dev/null && { T=$rx_disp; rx_disp=$tx_disp; tx_disp=$T; lrd="$rx_disp / $tx_disp"; }
+		if [ -n "$V1" ] && [ -n "$V2" ] && [ "$V1" -gt "$V2" ] 2>/dev/null; then T=$rx_disp; rx_disp=$tx_disp; tx_disp=$T; lrd="$rx_disp / $tx_disp"; fi
 		lrd_val=$(printf "%04d" "${tx_disp:-0}")
 		final_chk
 		is_mac_new=$(check_new_mac "$mac")
