@@ -232,7 +232,6 @@ do_install() {
 		hasta
 		exit 0
 	fi
-	fi
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
         pause
