@@ -748,7 +748,7 @@ do_uninstall() {
 		logger -p user.info -t "Wireless_Report" "Unmounting Wireless Report Tab."
 		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 		rm -f "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
-		echo -e "${BL}[*] Removing Wireless Report Tab...${NC}"
+		echo -e "${BL}[*] Removing Wireless Report Tab...${NC}\n"
 	fi
 	sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
 	sed -i "/wireless_report/d" "$SE_FILE"
