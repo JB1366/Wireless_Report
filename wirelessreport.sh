@@ -490,7 +490,6 @@ node_auth() {
 		return
 	fi
 	sed -i '/^SSH_NODES=/d' "$CONFIG"
-	clear
 	echo -e "\n${GR}[✓] Main Router SSH Key found at: ${WH}$SSH_KEY${NC}\n"
 	echo -e "${BL}==================================================${NC}"
     echo -e "${BL}          Verifying Node Authentication           ${NC}"
