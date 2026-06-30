@@ -163,21 +163,21 @@ menu_vars() {
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
 	NE="${BL}(e)${NC}"; NU="${BL}(u)${NC}"; NV="${BL}(v)${NC}"; NQ="${BL}(c)${NC}"
 	ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
-    KEY=$([[ -z "$SSH_KEY" ]] && echo "${RD}NO${NC}" || echo "${GR}YES${NC}")
+    if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
 	PORT="${GR}$SSH_PORT${NC}"
     RTIME=${RTIME:-1}
-    R_STAT=$([ "$RTIME" = "0" ] && echo "$OFF" || echo "$ON")
+    if [ "$RTIME" = "0" ]; then R_STAT="$OFF"; else R_STAT="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}
-    B_STAT=$([ "$BACKHAUL" = "no" ] && echo "$OFF" || echo "$ON")
+    if [ "$BACKHAUL" = "no" ]; then B_STAT="$OFF"; else B_STAT="$ON"; fi
     : "${PULSE_MINS:=15}"
-    P_STAT=$([ "$PULSE_MINS" = "0" ] && echo "$OFF" || echo "${GR}${PULSE_MINS} Mins${NC}")
+    if [ "$PULSE_MINS" = "0" ]; then P_STAT="$OFF"; else P_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
     RS_HIST=${RS_HIST:-0}
     CUR_RS_HIST=$RS_HIST
     CUR_ENTRIES=${RS_HIST_ENTRIES:-5}
     CUR_DATE=${RS_HIST_DATE:-0}
-    RH_STAT=$([ "$RS_HIST" = "1" ] && echo "$ON" || echo "$OFF")
+    if [ "$RS_HIST" = "1" ]; then RH_STAT="$ON"; else RH_STAT="$OFF"; fi
     DARKMODE=${DARKMODE:-0}
-    DM_STAT=$([ "$DARKMODE" = "1" ] && echo "$ON" || echo "$OFF")
+    if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
 	SYSTEM_MENU="/www/require/modules/menuTree.js"
 	TEMP_MENU="/tmp/menuTree.js"
 	SS_FILE="/jffs/scripts/services-start"
@@ -223,14 +223,16 @@ do_install() {
 			fi
 		fi
 	fi
-	if do_update; then
-		clear
-		echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
-		echo -e "\n${GR}[!] Restart script to apply changes...${NC}\n"
-		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-		restart_httpd
-		hasta
-		exit 0
+	if [ -f "$REPORT_SCRIPT" ] && grep -q "$REPORT_SCRIPT" "$SS_FILE" 2>/dev/null; then
+		if do_update; then
+			clear
+			echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
+			echo -e "\n${GR}[!] Restart script to apply changes...${NC}\n"
+			logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
+			restart_httpd
+			hasta
+			exit 0
+		fi
 	fi
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
