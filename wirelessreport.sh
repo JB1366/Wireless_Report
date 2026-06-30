@@ -199,40 +199,39 @@ check_installed() {
 do_install() {
 	mkdir -p "$INSTALL_DIR" 2>/dev/null
     [ ! -f "$CONFIG" ] && touch "$CONFIG"
-	if [ -f "$REPORT_SCRIPT" ]; then
+	local is_update=0
+	[ -f "$REPORT_SCRIPT" ] && is_update=1
+	if [ "$is_update" = "1" ]; then
 		if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
 			echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
 			printf "Do you want to update version (y/n): "
 			read -r update
-			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then
-				return
-			fi
+			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then return; fi
 		elif [ "$VERHASH" = "[Hash]" ]; then
 			echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to update Hash? (y/n): "
 			read -r update
-			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then
-				return
-			fi
+			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then return; fi
 		else
 			echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to reinstall/overwrite anyway? (y/n): "
 			read -r reinstall
-			if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then
-				return
-			fi
+			if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then return; fi
 		fi
 	fi
-	if [ -f "$REPORT_SCRIPT" ] && grep -q "$REPORT_SCRIPT" "$SS_FILE" 2>/dev/null; then
-		if do_update; then
-			clear
-			echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
-			echo -e "\n${GR}[!] Restart script to apply changes...${NC}\n"
-			logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-			restart_httpd
-			hasta
-			exit 0
-		fi
+	if ! do_update; then
+		echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
+		return 1
+	fi
+	if [ "$is_update" = "1" ]; then
+		clear
+		echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
+		echo -e "\n${GR}[!] Restart script to apply changes...${NC}\n"
+		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
+		restart_httpd
+		hasta
+		exit 0
+	fi
 	fi
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
