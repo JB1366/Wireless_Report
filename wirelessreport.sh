@@ -220,8 +220,13 @@ do_install() {
 		fi
 	fi
 	if ! do_update; then
-		echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
-		return 1
+		if [ -f "$0" ]; then
+			echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
+			cp "$0" "$REPORT_SCRIPT"
+		else
+			echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
+			return 1
+		fi
 	fi
 	if [ "$is_update" = "1" ]; then
 		clear
@@ -254,11 +259,6 @@ do_install() {
             umount -l "/www/user/$OLD_PAGE" 2>/dev/null
             rm -f "/www/user/$OLD_PAGE"
         fi
-    fi
-    curl -sfL --retry 3 "$GITHUB" -o "$REPORT_SCRIPT"
-	if [ ! -s "$REPORT_SCRIPT" ]; then
-        echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
-        cp "$0" "$REPORT_SCRIPT"
     fi
     chmod +x "$REPORT_SCRIPT" 2>/dev/null
     if [ -f "$REPORT_SCRIPT" ]; then
