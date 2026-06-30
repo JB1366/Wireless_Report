@@ -281,10 +281,13 @@ do_install() {
 		echo -e "\n${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
         echo -e "${BL}[i]      Use option #6 in main menu to authenticate new node(s).${NC}"
 		echo -e "\n${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
+		restart_httpd
+		hasta
+		exit 0
 	else
         echo -e "${RD}[!] ERROR: Download failed.${NC}"
+		pause
     fi
-    pause
 }
 
 do_update() {
