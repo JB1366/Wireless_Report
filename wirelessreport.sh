@@ -148,6 +148,10 @@ check_github
 
 menu_vars() {
     [ -f "$CONFIG" ] && . "$CONFIG"
+	if [ -z "$RS_HIST_ENTRIES" ] && [ -n "$RS_HIST_DAYS" ]; then
+		RS_HIST_ENTRIES="$RS_HIST_DAYS"
+		sed -i 's/RS_HIST_DAYS/RS_HIST_ENTRIES/g' "$CONFIG" 2>/dev/null
+	fi
 	update_time
 	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
     UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG="\e[42;37m"
@@ -169,7 +173,7 @@ menu_vars() {
     P_STAT=$([ "$PULSE_MINS" = "0" ] && echo "$OFF" || echo "${GR}${PULSE_MINS} Mins${NC}")
     RS_HIST=${RS_HIST:-0}
     CUR_RS_HIST=$RS_HIST
-    CUR_DAYS=${RS_HIST_DAYS:-5}
+    CUR_ENTRIES=${RS_HIST_ENTRIES:-5}
     CUR_DATE=${RS_HIST_DATE:-0}
     RH_STAT=$([ "$RS_HIST" = "1" ] && echo "$ON" || echo "$OFF")
     DARKMODE=${DARKMODE:-0}
@@ -994,17 +998,17 @@ set_options() {
 
 rssi_submenu() {
 	while true; do
-		CS="$([ "$CUR_RS_HIST" = "1" ] && echo -e "$ON" || echo -e "$OFF")"
+		CH="$([ "$CUR_RS_HIST" = "1" ] && echo -e "$ON" || echo -e "$OFF")"
 		TS="$([ "$CUR_DATE" = "1" ] && echo $ON || echo $OFF)"
-		CD="${GR}$CUR_DAYS${NC}"; RS_HIST="$CUR_RS_HIST"
-		RS_HIST_DAYS="$CUR_DAYS"; RS_HIST_DATE="$CUR_DATE"
+		CE="${GR}$CUR_ENTRIES${NC}"; RS_HIST="$CUR_RS_HIST"
+		RS_HIST_ENTRIES="$CUR_ENTRIES"; RS_HIST_DATE="$CUR_DATE"
 		clear
 		echo -e "${BL}==============================================${NC}"
 		echo -e "${BL}          RSSI History Configuration          ${NC}"
 		echo -e "${BL}==============================================${NC}"
 		echo -e "                                                        "
-		echo -e " $N1 Enable RSSI History: [$CS]                         "
-		echo -e " $N2 Set History Depth:   [$CD] entries                 "
+		echo -e " $N1 Enable RSSI History: [$CH]                         "
+		echo -e " $N2 Set History Depth:   [$CE] entries                 "
 		echo -e " $N3 Enable Timestamps:   [$TS]                         "
 		echo -e "                                                        "
 		echo -e " $NQ Cancel and Discard Changes                         "
@@ -1022,7 +1026,7 @@ rssi_submenu() {
                 read new_days
                 case "$new_days" in
                     5|6|7|8|9|1[0-9]|20)
-                        CUR_DAYS="$new_days"
+                        CUR_ENTRIES="$new_days"
                         ;;
                     *)
                         echo -e "\n${RD}[!] Invalid: Use 5-20${NC}"
@@ -1039,7 +1043,7 @@ rssi_submenu() {
                 break
                 ;;
             e|E)
-                for var in RS_HIST RS_HIST_DAYS RS_HIST_DATE; do
+                for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
                     eval val=\$$var
                     if grep -q "^$var=" "$CONFIG"; then
                         sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
@@ -1221,14 +1225,12 @@ get_trend() {
         fi
 		local new_history="${history_str:+$history_str,}$new_entry"
 		local final_history="$new_history"
-		
 		local commas_only="${final_history//[^,]/}"
 		local count=$(( ${#commas_only} + 1 ))
-		while [ "$count" -gt "$RS_HIST_DAYS" ]; do
+		while [ "$count" -gt "$RS_HIST_ENTRIES" ]; do
 			final_history="${final_history#*,}"
 			count=$((count - 1))
 		done
-		
 		echo "$mac|$final_history" >> "$NEW_HISTORY"
 		local rssi_history=""
 		local IFS=','
@@ -2406,7 +2408,6 @@ document.addEventListener('mouseout', function(e) {
     }
 });
 /* RSSI History Tooltip */
-
 </script>
 </head>
 <body onload="initial();">
