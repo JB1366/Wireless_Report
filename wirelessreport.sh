@@ -240,8 +240,7 @@ do_install() {
         sed -i "/wireless_report/d" "$SE_FILE"
         echo 'if [ "$1" = "restart" ] && [ "$2" = "wireless_report" ]; then sh '$REPORT_SCRIPT'; fi # Wireless Report' >> "$SE_FILE"
         chmod +x "$SE_FILE"
-        restart_httpd
-		install=""
+		install=""; LOCAL_VERSION="$REMOTE_VERSION"
 		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
         echo -e "\n${GR}[✓] SUCCESS: Installation complete!${NC}"
 		echo -e "\n${YL}[i] To access Report, navigate to Advanced Settings > Wireless ${NC}"
@@ -249,7 +248,6 @@ do_install() {
 		echo -e "\n${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
         echo -e "${BL}[i]      Use option #6 in main menu to authenticate new node(s).${NC}"
 		echo -e "\n${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
-		LOCAL_VERSION="$REMOTE_VERSION"
 	else
         echo -e "${RD}[!] ERROR: Download failed.${NC}"
     fi
