@@ -810,8 +810,7 @@ set_nicknames() {
         echo -e "    (Press $N0 for Defaults $N1 for Locations)              "
         echo -e "              (Press $NE to Exit)                           "
         echo -e "${BL}==================================================${NC}"
-        MAIN_HW_MODEL=$(nvram get modelid)
-        if [ -z "$MAIN_HW_MODEL" ]; then MAIN_HW_MODEL=$(nvram get productid); fi
+        MAIN_HW_MODEL=$(nvram get productid)
         MAIN_IP=$(nvram get lan_ipaddr)
         echo -e "\n  ${BL}Main${NC} $MAIN_IP -> ${GR}${MAIN_NICK:-$MAIN_HW_MODEL}${NC}"
         if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
