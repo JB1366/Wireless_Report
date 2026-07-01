@@ -1292,7 +1292,7 @@ get_mac_address() {
 	is_node_pfx=0; bh="no"
 	case "$NODE_PFX" in *"$mac_prefix"*) is_node_pfx=1 ;; esac
 	if [ "$mac_prefix" = "$MAIN_PFX" ] || [ "$is_node_pfx" -eq 1 ]; then
-		    [ "$BACKHAUL" != "yes" ] && return 1
+		    if [ "$BACKHAUL" != "yes" ]; then return 1; fi
 			bh="yes"
 	fi
 	if [ "$bh" = "yes" ]; then
