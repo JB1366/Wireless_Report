@@ -43,16 +43,16 @@ DEVICE_LIST_CACHE="/tmp/asus_device_list.cache"
 CUSTOM_CLIENTS_CACHE="/tmp/custom_clients.cache"
 NODE_USER=$(nvram get http_username)
 SSH_PORT=$(nvram get sshd_port)
-[ -z "$SSH_PORT" ] && SSH_PORT=22
-[ -f "$CONFIG" ] && . "$CONFIG"
-doScriptUpdateFromAMTM=true
-unset LD_LIBRARY_PATH
-export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+if [ -z "$SSH_PORT" ]; then SSH_PORT=22; fi
+if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 if [ -f "/root/.ssh/id_dropbear" ]; then
     SSH_KEY="/root/.ssh/id_dropbear"
 else
     SSH_KEY=""
 fi
+doScriptUpdateFromAMTM=true
+unset LD_LIBRARY_PATH
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 #==================#
 #  Script Install  #
@@ -151,7 +151,7 @@ check_github() {
 check_github
 
 menu_vars() {
-    [ -f "$CONFIG" ] && . "$CONFIG"
+    if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 	if [ -z "$RS_HIST_ENTRIES" ] && [ -n "$RS_HIST_DAYS" ]; then
 		RS_HIST_ENTRIES="$RS_HIST_DAYS"
 		sed -i 's/RS_HIST_DAYS/RS_HIST_ENTRIES/g' "$CONFIG" 2>/dev/null
@@ -160,7 +160,7 @@ menu_vars() {
 	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
     UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG="\e[42;37m"
 	DISPLAY_UNIT="${REPORT_UNIT:-F}"
-    [ "$REPORT_UNIT" = "ISO" ] && DISPLAY_UNIT="C"
+    if [ "$REPORT_UNIT" = "ISO" ]; then DISPLAY_UNIT="C"; fi
 	CT="${GR}$CUR_TIME${NC}"; DU="${GR}°$DISPLAY_UNIT${NC}"
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
@@ -196,15 +196,15 @@ check_installed() {
         pause
         return 1
     fi
-    [ ! -f "$CONFIG" ] && touch "$CONFIG"
+    if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
     return 0
 }
 
 do_install() {
 	mkdir -p "$INSTALL_DIR" 2>/dev/null
-    [ ! -f "$CONFIG" ] && touch "$CONFIG"
+    if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
 	local is_update=0
-	[ -f "$REPORT_SCRIPT" ] && is_update=1
+	if [ -f "$REPORT_SCRIPT" ]; then is_update=1; fi
 	if [ "$is_update" = "1" ]; then
 		if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
 			echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
@@ -256,7 +256,7 @@ do_install() {
 		check_ssh || return 1
 	fi
     echo -e "${GR}[+] Processing Wireless Report Files...${NC}\n"
-    [ -f "$TEMP_MENU" ] && sed -i '/Wireless Report/d' "$TEMP_MENU" 2>/dev/null
+    if [ -f "$TEMP_MENU" ]; then sed -i '/Wireless Report/d' "$TEMP_MENU" 2>/dev/null; fi
     if [ -f "$CONFIG" ]; then
         OLD_PAGE=$(grep "INSTALLED_PAGE=" "$CONFIG" | cut -d'=' -f2)
         if [ -n "$OLD_PAGE" ]; then
@@ -268,11 +268,11 @@ do_install() {
     if [ -f "$REPORT_SCRIPT" ]; then
         inject_menu
 		echo -e "${GR}[+] Mounting Menu[Wireless] Tab[Wireless Report]${NC}"
-        [ ! -f "$SS_FILE" ] && echo "#!/bin/sh" > "$SS_FILE"
+        if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
         sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
         echo "sh $REPORT_SCRIPT inject # Inject Wireless Report" >> "$SS_FILE"
         chmod +x "$SS_FILE"
-        [ ! -f "$SE_FILE" ] && echo "#!/bin/sh" > "$SE_FILE"
+        if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
         sed -i "/wireless_report/d" "$SE_FILE"
         echo 'if [ "$1" = "restart" ] && [ "$2" = "wireless_report" ]; then sh '$REPORT_SCRIPT'; fi # Wireless Report' >> "$SE_FILE"
         chmod +x "$SE_FILE"
@@ -332,7 +332,7 @@ ScriptUpdateFromAMTM() {
 }
 
 get_usb() {
-	[ -n "$USB_PATH" ] && return
+	if [ -n "$USB_PATH" ]; then return; fi
 	local BUP=$(cut -d. -f1 /proc/uptime)
     local mount
     local FOUND=0
@@ -372,7 +372,7 @@ get_usb() {
             USB_PATH="$INSTALL_DIR/data"
         fi
     fi
-    [ -n "$USB_PATH" ] && [ ! -d "$USB_PATH" ] && mkdir -p "$USB_PATH"
+    if [ -n "$USB_PATH" ] && [ ! -d "$USB_PATH" ]; then mkdir -p "$USB_PATH"; fi
     KNOWN_DB="$USB_PATH/known_macs.db"
 	HISTORY_DB="$USB_PATH/rssi_history.db"
     ERROR_LOG="$USB_PATH/ssh_error.log"
@@ -520,8 +520,8 @@ node_auth() {
         for line in $AIMESH_NODES; do
 			ROUTER=$(echo "$line" | cut -d'|' -f1)
 			IP=$(echo "$line" | cut -d'|' -f2)
-			[ -z "$IP" ] && continue
-			[ -z "$ROUTER" ] && ROUTER="Node_$IP"
+			if [ -z "$IP" ]; then continue; fi
+			if [ -z "$ROUTER" ]; then ROUTER="Node_$IP"; fi
 			printf "[*] Testing ${GR}%-14s${NC} (%s) " "$ROUTER" "$IP"
             SSH_ERR=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "exit" 2>&1 >/dev/null)
 			SSH_RC=$?
@@ -736,7 +736,7 @@ do_uninstall() {
     if [ "$confirm" = "n" ] || [ "$confirm" = "N" ]; then
 		return
 	fi
-	[ -f "$CONFIG" ] && . "$CONFIG"
+	if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 	get_usb
 	if mount | grep -q "menuTree.js"; then
 		umount -l "$SYSTEM_MENU" >/dev/null 2>&1
@@ -811,7 +811,7 @@ set_nicknames() {
         echo -e "              (Press $NE to Exit)                           "
         echo -e "${BL}==================================================${NC}"
         MAIN_HW_MODEL=$(nvram get modelid)
-        [ -z "$MAIN_HW_MODEL" ] && MAIN_HW_MODEL=$(nvram get productid)
+        if [ -z "$MAIN_HW_MODEL" ]; then MAIN_HW_MODEL=$(nvram get productid); fi
         MAIN_IP=$(nvram get lan_ipaddr)
         echo -e "\n  ${BL}Main${NC} $MAIN_IP -> ${GR}${MAIN_NICK:-$MAIN_HW_MODEL}${NC}"
         if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
@@ -952,7 +952,7 @@ set_options() {
                 echo -e "\n (${GR}0${NC}) disable (${GR}15${NC}) def (${GR}1440${NC}) max "
                 printf " ${BL}Enter alert interval in mins:${NC} "
                 read -r user_mins
-                [ -z "$user_mins" ] && user_mins="15"
+                if [ -z "$user_mins" ]; then user_mins="15"; fi
                 if echo "$user_mins" | grep -q '^[0-9]\+$'; then
                     if [ "$user_mins" -le 1440 ]; then
                         NEW_MINS="$user_mins"
@@ -1064,7 +1064,7 @@ rssi_submenu() {
                         echo "$var=\"$val\"" >> "$CONFIG"
                     fi
                 done
-                [ -f "$HISTORY_DB" ] && rm -f "$HISTORY_DB"
+                if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
                 echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
                 pause
                 break
@@ -1259,7 +1259,7 @@ get_trend() {
                 rband_val="$rest"
                 time=""
             fi
-			[ "$time" = "$rest" ] && time=""
+			if [ "$time" = "$rest" ]; then time=""; fi
 			if [ "$rssi" -ge -50 ]; then style="color: #30d158; font-weight: bold;"
 			elif [ "$rssi" -ge -60 ]; then style="color: #64d2ff; font-weight: bold;"
 			elif [ "$rssi" -ge -70 ]; then style="color: #ffd60a; font-weight: bold;"
@@ -1354,7 +1354,7 @@ get_name() {
 		local mid_mac="${temp%:*}"
 		if [ -n "$mid_mac" ]; then
 			local node_match=""
-			[ -f "$DEVICE_LIST_CACHE" ] && node_match=$(grep -i "$mid_mac" "$DEVICE_LIST_CACHE")
+			if [ -f "$DEVICE_LIST_CACHE" ]; then node_match=$(grep -i "$mid_mac" "$DEVICE_LIST_CACHE"); fi
 			if [ -n "$node_match" ]; then
 				node_alias=$(echo "$node_match" | cut -d'>' -f2)
 				name="${node_alias:-NODE}-BH"
@@ -1370,11 +1370,21 @@ get_name() {
 
 get_ip() {
 	ip=""
-	[ -z "$ip" ] && ip=$(grep -ih "^$mac|" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
-    [ -z "$ip" ] && ip=$(grep -ih "^$mac|" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
-    [ -z "$ip" ] && ip=$(grep -ih "^$mac|" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
-    [ -z "$ip" ] && ip=$(grep -ih "^$mac|" "$DHCPSTATIC_CACHE" | cut -d'|' -f2 | head -n 1)
-    [ -z "$ip" ] && ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
+	if [ -z "$ip" ]; then
+		ip=$(grep -ih "^$mac|" "$ARP_CACHE" | cut -d'|' -f2 | head -n 1)
+	fi
+    if [ -z "$ip" ]; then
+		ip=$(grep -ih "^$mac|" "$LEASES_CACHE" | cut -d'|' -f2 | head -n 1)
+	fi
+	if [ -z "$ip" ]; then
+		ip=$(grep -ih "^$mac|" "$YAZ_CACHE" | cut -d'|' -f2 | head -n 1)
+	fi
+	if [ -z "$ip" ]; then
+		ip=$(grep -ih "^$mac|" "$DHCPSTATIC_CACHE" | cut -d'|' -f2 | head -n 1)
+	fi
+	if [ -z "$ip" ]; then
+		ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1)
+	fi
 	case "$name" in *-BH*) ip="" ;; esac
 	if [ -z "$ip" ] || [ "$ip" = "---" ]; then
 		ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE")
@@ -1388,7 +1398,7 @@ get_ip() {
 
 check_new_mac() {
 	local mac="$1"
-    [ ! -f "$KNOWN_DB" ] && touch "$KNOWN_DB"
+    if [ ! -f "$KNOWN_DB" ]; then touch "$KNOWN_DB"; fi
     if ! grep -qi "^$mac$" "$KNOWN_CACHE"; then
         echo "$mac" >> "$KNOWN_DB"
         echo "$mac" >> "$KNOWN_CACHE"
@@ -1414,7 +1424,8 @@ ip_to_num() {
 
 get_band() {
     local iface=$1; local width=$2; local model=$3
-    local w_text=""; [ -n "$width" ] && w_text=" ($width)"
+    local w_text=""
+	if [ -n "$width" ]; then w_text=" ($width)"; fi
     local Label="Unknown"
     local m=$(echo "$model" | tr '[:lower:]' '[:upper:]')
 	case "$m" in
@@ -1560,7 +1571,7 @@ get_temp_unit() {
 
 get_temp_class() {
     local temp_str=$1
-    [ "$temp_str" = "--" ] && echo "stat-cool" && return
+    if [ "$temp_str" = "--" ]; then echo "stat-cool"; return; fi
     local val=$(echo "$temp_str" | sed 's/[^0-9.]//g')
     if [ "$REPORT_UNIT" = "C" ]; then
         awk -v t="$val" 'BEGIN { if(t>75) print "stat-hot"; else if(t>68) print "stat-warm"; else print "stat-cool"; }'
@@ -1595,10 +1606,10 @@ get_bars_rssi_style() {
 }
 
 get_max_column() {
-	[ "${#name}" -gt 20 ] && name="${name:0:20}"
-    [ "${#mac}"  -gt 17 ] && mac="${mac:0:17}"
-    [ "${#ip}"   -gt 15 ] && ip="${ip:0:15}"
-    [ "${#ssid}" -gt 15 ] && ssid="${ssid:0:15}"
+	if [ "${#name}" -gt 20 ]; then name="${name:0:20}"; fi
+	if [ "${#mac}"  -gt 17 ]; then mac="${mac:0:17}"; fi
+	if [ "${#ip}"   -gt 15 ]; then ip="${ip:0:15}"; fi
+	if [ "${#ssid}" -gt 15 ]; then ssid="${ssid:0:15}"; fi
 }
 
 get_row() {
@@ -1623,7 +1634,7 @@ get_row() {
 }
 
 final_chk() {
-	[ -z "$ssid" ] && ssid="Wireless"
+	if [ -z "$ssid" ]; then ssid="Wireless"; fi
     if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then
         rssi=-54
     fi
@@ -1636,7 +1647,7 @@ check_qca_up() {
 		START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
 		if [ "$START_TS" -gt 0 ]; then
 			uptime=$((NOW - START_TS))
-			[ "$uptime" -lt 0 ] && uptime=$((START_TS - NOW))
+			if [ "$uptime" -lt 0 ]; then uptime=$((START_TS - NOW)); fi
 		else
 			uptime="0"
 		fi
@@ -1683,7 +1694,7 @@ mkdir -p "$NODE_DATA_DIR"
 for line in $SSH_NODES; do
 	ROUTER=$(echo "$line" | cut -d'|' -f1)
 	IP=$(echo "$line" | cut -d'|' -f2)
-	[ -z "$IP" ] && continue
+	if [ -z "$IP" ]; then continue; fi
 	CLEAN_IP=$(echo "$IP" | tr '.' '_')
 	(
 		/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "
@@ -1866,9 +1877,9 @@ done
 update_time; get_usb
 YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
-[ -f "$KNOWN_DB" ] && cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null || > "$KNOWN_CACHE"
-[ -f "$HISTORY_DB" ] && cp "$HISTORY_DB" "$HISTORY_CACHE" 2>/dev/null || > "$HISTORY_CACHE"
-[ -f "$YAZDHCP" ] && awk -F',' 'NR>1 {print toupper($1) "|" $2 "|" $3}' "$YAZDHCP" > "$YAZ_CACHE" || > "$YAZ_CACHE"
+if [ -f "$KNOWN_DB" ]; then cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null; else > "$KNOWN_CACHE"; fi
+if [ -f "$HISTORY_DB" ]; then cp "$HISTORY_DB" "$HISTORY_CACHE" 2>/dev/null; else > "$HISTORY_CACHE"; fi
+if [ -f "$YAZDHCP" ]; then awk -F',' 'NR>1 {print toupper($1) "|" $2 "|" $3}' "$YAZDHCP" > "$YAZ_CACHE"; else > "$YAZ_CACHE"; fi
 awk '{print toupper($2)"|"$3}' /var/lib/misc/dnsmasq*.leases > "$LEASES_CACHE" 2>/dev/null || > "$LEASES_CACHE"
 nvram get dhcp_staticlist | sed 's/>>/  /g; s/[<>]/ /g' | \
 awk '{print toupper($1)"|"$2}' > "$DHCPSTATIC_CACHE" 2>/dev/null || > "$DHCPSTATIC_CACHE"
@@ -1886,7 +1897,7 @@ NODE_PFX=$(nvram get cfg_relist | sed 's/[<>]/ /g' | tr ' ' '\n' | grep ":" | cu
 ROUTER_IP=$(nvram get lan_ipaddr)
 ROUTER=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"
-[ "${#MAIN_NAME}" -gt 25 ] && MAIN_NAME="${MAIN_NAME:0:25}"
+if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
 MAIN_LABEL="<span class='router-branding'>$MAIN_NAME</span>"
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
@@ -1915,19 +1926,19 @@ for iface in $IFACE_LIST; do
 	esac
     ASSOCLIST=$(wl -i "$iface" assoclist 2>/dev/null)
     WL_ALIVE=0
-    [ -n "$ASSOCLIST" ] && WL_ALIVE=1
+    if [ -n "$ASSOCLIST" ]; then WL_ALIVE=1; fi
     ssid=$(nvram get "${iface}_ssid")
 	if [ -z "$ssid" ] || echo "$ssid" | grep -qE '^[0-9A-Fa-f]{16,}$'; then
 		idx=${iface#*.}
-		[ "$idx" != "$iface" ] && ssid=$(nvram get "gnp_name_$idx")
+		if [ "$idx" != "$iface" ]; then ssid=$(nvram get "gnp_name_$idx"); fi
 	fi
-	[ -z "$ssid" ] && [ -n "$data_iface" ] && ssid=$(nvram get "${data_iface}_ssid")
-	[ -z "$ssid" ] && ssid=$(nvram get "${iface%.*}_ssid")
-	[ -z "$ssid" ] && [ -n "$data_iface" ] && ssid=$(nvram get "${data_iface%.*}_ssid")
+	if [ -z "$ssid" ] && [ -n "$data_iface" ]; then ssid=$(nvram get "${data_iface}_ssid"); fi
+	if [ -z "$ssid" ]; then ssid=$(nvram get "${iface%.*}_ssid"); fi
+	if [ -z "$ssid" ] && [ -n "$data_iface" ]; then ssid=$(nvram get "${data_iface%.*}_ssid"); fi
 	MAC_LIST=$(echo "$ASSOCLIST" | awk '{print $2}')
 	if [ -z "$MAC_LIST" ]; then
 		BRIDGE=$(brctl show 2>/dev/null | grep "$iface" | awk '{print $1}')
-		[ -z "$BRIDGE" ] && BRIDGE=$(brctl show 2>/dev/null | grep -B1 "$iface" | grep -v "\-\-" | head -n1 | awk '{print $1}')
+		if [ -z "$BRIDGE" ]; then BRIDGE=$(brctl show 2>/dev/null | grep -B1 "$iface" | grep -v "\-\-" | head -n1 | awk '{print $1}'); fi
 		if [ -n "$BRIDGE" ]; then
 			MAC_LIST=$(brctl showmacs "$BRIDGE" 2>/dev/null | grep -v "yes" | awk '{print $2}')
 		fi
@@ -1937,7 +1948,7 @@ for iface in $IFACE_LIST; do
 		get_mac_address || continue
 		get_ip
 		raw_info=$(wl -i "$iface" sta_info "$mac" 2>/dev/null)
-		[ -z "$raw_info" ] && raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null)
+		if [ -z "$raw_info" ]; then raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null); fi
 		sta_parsed=$(parse_main_sta "$raw_info")
 		parse_main "$sta_parsed"
 		if [ -z "$rssi" ]; then
@@ -1989,23 +2000,23 @@ for line in $SSH_NODES; do
 	NODE_OUT=""
 	ROUTER=$(echo "$line" | cut -d'|' -f1)
 	IP=$(echo "$line" | cut -d'|' -f2)
-	[ -z "$IP" ] && continue
+	if [ -z "$IP" ]; then continue; fi
 	CLEAN_IP=$(echo "$IP" | tr '.' '_')
 	eval CUSTOM_NICK=\$NODE_NICK_$CLEAN_IP
 	NODE_NAME="${CUSTOM_NICK:-${ROUTER:-$IP}}"
-	[ "${#NODE_NAME}" -gt 25 ] && NODE_NAME="${NODE_NAME:0:25}"
-	[ -f "$NODE_DATA_DIR/${CLEAN_IP}.out" ] && NODE_OUT=$(cat "$NODE_DATA_DIR/${CLEAN_IP}.out")
+	if [ "${#NODE_NAME}" -gt 25 ]; then NODE_NAME="${NODE_NAME:0:25}"; fi
+	if [ -f "$NODE_DATA_DIR/${CLEAN_IP}.out" ]; then NODE_OUT=$(cat "$NODE_DATA_DIR/${CLEAN_IP}.out"); fi
 	if [ -n "$NODE_OUT" ]; then
         NUMBERED_NODE=$((NUMBERED_NODE + 1))
 		COLOR_INDEX=$((COLOR_INDEX + 1))
         NODE_COLOR=$(echo $N_COLORS | cut -d' ' -f$((COLOR_INDEX)))
-		[ -z "$NODE_COLOR" ] && NODE_COLOR="#ffffff"
+		if [ -z "$NODE_COLOR" ]; then NODE_COLOR="#ffffff"; fi
         NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
 		export NODE_NUM
         NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
-        [ -z "$N_NAMES" ] && N_NAMES="$NODE_BRAND" || N_NAMES="$N_NAMES&ensp;$NODE_BRAND"
+        if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES&ensp;$NODE_BRAND"; fi
 		N_TEMP_RAW=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2)
-        [ ${#N_TEMP_RAW} -gt 3 ] && N_TEMP_RAW=$((N_TEMP_RAW / 1000))
+        if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
         N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
 		N_LOAD=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
 		NC_TEMP=$(get_temp_class "$N_TEMP")
@@ -2023,7 +2034,7 @@ for line in $SSH_NODES; do
 		N_BOOTS="${N_BOOTS}${N_BOOTS:+$DOT}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
         NODE_DEVICES=0
 		while read -r ssh_node_data; do
-			[ -z "$ssh_node_data" ] && continue
+			if [ -z "$ssh_node_data" ]; then continue; fi
 			parse_node "$ssh_node_data"
 			get_mac_address || continue
 			get_ip
