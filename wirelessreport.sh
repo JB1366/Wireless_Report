@@ -150,9 +150,14 @@ menu_vars() {
     if [ "$BACKHAUL" = "no" ]; then B_STAT="$OFF"; else B_STAT="$ON"; fi
     : "${PULSE_MINS:=15}"
     if [ "$PULSE_MINS" = "0" ]; then P_STAT="$OFF"; else P_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
-    RS_HIST=${RS_HIST:-0}; CUR_RS_HIST=$RS_HIST
-    CUR_ENTRIES=${RS_HIST_ENTRIES:-5}; CUR_DATE=${RS_HIST_DATE:-0}
+    RS_HIST=${RS_HIST:-0}
+    : "${CUR_RS_HIST:=$RS_HIST}"
+    : "${CUR_ENTRIES:=${RS_HIST_ENTRIES:-5}}"
+    : "${CUR_DATE:=${RS_HIST_DATE:-0}}"
     if [ "$RS_HIST" = "1" ]; then RH_STAT="$ON"; else RH_STAT="$OFF"; fi
+	if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
+	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
+	CE="${GR}$CUR_ENTRIES${NC}"
     DARKMODE=${DARKMODE:-0}
     if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
 }
@@ -1004,11 +1009,7 @@ set_options() {
 
 rssi_submenu() {
 	while true; do
-		if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
-		if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
-		CE="${GR}$CUR_ENTRIES${NC}"; RS_HIST="$CUR_RS_HIST"
-		RS_HIST_ENTRIES="$CUR_ENTRIES"; RS_HIST_DATE="$CUR_DATE"
-		clear
+		clear; menu_vars
 		echo -e "${BL}==============================================${NC}"
 		echo -e "${BL}          RSSI History Configuration          ${NC}"
 		echo -e "${BL}==============================================${NC}"
@@ -1045,10 +1046,14 @@ rssi_submenu() {
                 ;;
             c|C)
                 echo -e "\n${RD}[!] Changes discarded.${NC}"
-                pause
+                unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
+				pause
                 break
                 ;;
             e|E)
+				RS_HIST="$CUR_RS_HIST"
+				RS_HIST_ENTRIES="$CUR_ENTRIES"
+				RS_HIST_DATE="$CUR_DATE"
                 for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
                     eval val=\$$var
                     if grep -q "^$var=" "$CONFIG"; then
@@ -1059,7 +1064,8 @@ rssi_submenu() {
                 done
                 if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
                 echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
-                pause
+                unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
+				pause
                 break
                 ;;
         esac
