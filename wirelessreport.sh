@@ -221,15 +221,7 @@ do_install() {
 			if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then return; fi
 		fi
 	fi
-	if ! do_update; then
-		if [ -f "$0" ]; then
-			echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
-			cp "$0" "$REPORT_SCRIPT"
-		else
-			echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
-			return 1
-		fi
-	fi
+	do_update || return 1
 	if [ "$is_update" = "1" ]; then
 		clear
 		echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
@@ -301,8 +293,15 @@ do_update() {
         sleep 2
 		return 0
     else
-        echo -e "${RD}[!] Download failed. Sticking with current version.${NC}"
-        return 1
+        if [ -f "$0" ]; then
+            echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
+            cp "$0" "$REPORT_SCRIPT"
+            chmod +x "$REPORT_SCRIPT" 2>/dev/null
+            return 0  # Return success because the script was successfully installed locally
+        else
+            echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
+            return 1
+        fi
     fi
 }
 
