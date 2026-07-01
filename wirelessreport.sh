@@ -249,7 +249,7 @@ do_install() {
 	else
         echo -e "${RD}[!] ERROR: Download failed.${NC}"
     fi
-	pause	
+	pause
 }
 
 do_update() {
@@ -267,7 +267,7 @@ do_update() {
             echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
             cp "$0" "$REPORT_SCRIPT"
             chmod +x "$REPORT_SCRIPT" 2>/dev/null
-            return 0  # Return success because the script was successfully installed locally
+            return 0
         else
             echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
             return 1
@@ -2220,7 +2220,7 @@ window.addEventListener('load', function() {
     if (document.cookie.indexOf("report_done=true") === -1) {
         setTimeout(function() {
             triggerRefresh();
-        }, 250); 
+        }, 250);
     } else {
         console.log("Cookie found: Skipping auto-refresh to prevent loop.");
     }
