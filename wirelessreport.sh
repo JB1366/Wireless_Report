@@ -41,15 +41,7 @@ LEASES_CACHE="/tmp/dnsmasq_leases.cache"
 DHCPSTATIC_CACHE="/tmp/dhcp_static.cache"
 DEVICE_LIST_CACHE="/tmp/asus_device_list.cache"
 CUSTOM_CLIENTS_CACHE="/tmp/custom_clients.cache"
-NODE_USER=$(nvram get http_username)
-SSH_PORT=$(nvram get sshd_port)
-if [ -z "$SSH_PORT" ]; then SSH_PORT=22; fi
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-if [ -f "/root/.ssh/id_dropbear" ]; then
-    SSH_KEY="/root/.ssh/id_dropbear"
-else
-    SSH_KEY=""
-fi
 doScriptUpdateFromAMTM=true
 unset LD_LIBRARY_PATH
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
@@ -127,28 +119,6 @@ check_version() {
         echo -e " ${BL}STATUS:${NC} [Up to date] ${GR}Current: v$LOCAL_VERSION${NC}"
     fi
 }
-
-check_github() {
-	GITHUB="https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh"
-	LOCAL_VERSION=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
-	LOCAL_HASH=$(sha256sum "$0" | awk '{print $1}')
-	REMOTE_TMP="/tmp/wr_remote.tmp"
-	if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
-		REMOTE_VERSION=$(grep "SCRIPT_VERSION=" "$REMOTE_TMP" | head -n 1 | cut -d'"' -f2 | tr -cd '0-9.')
-		REMOTE_HASH=$(sha256sum "$REMOTE_TMP" | awk '{print $1}')
-	else
-		REMOTE_VERSION=""; REMOTE_HASH=""
-	fi
-	rm -f "$REMOTE_TMP"
-	if [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-		VERHASH="[$REMOTE_VERSION]"
-	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-		VERHASH="[Hash]"
-	else
-		VERHASH=""
-	fi
-}
-check_github
 
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
@@ -385,6 +355,38 @@ check_storage() {
         touch "$USB_PATH/rssi_history.db"
         touch "$USB_PATH/known_macs.db"
     fi
+}
+
+check_github() {
+	GITHUB="https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh"
+	LOCAL_VERSION=$(grep "SCRIPT_VERSION=" "$REPORT_SCRIPT" | head -n 1 | cut -d'"' -f2 2>/dev/null)
+	LOCAL_HASH=$(sha256sum "$0" | awk '{print $1}')
+	REMOTE_TMP="/tmp/wr_remote.tmp"
+	if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
+		REMOTE_VERSION=$(grep "SCRIPT_VERSION=" "$REMOTE_TMP" | head -n 1 | cut -d'"' -f2 | tr -cd '0-9.')
+		REMOTE_HASH=$(sha256sum "$REMOTE_TMP" | awk '{print $1}')
+	else
+		REMOTE_VERSION=""; REMOTE_HASH=""
+	fi
+	rm -f "$REMOTE_TMP"
+	if [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+		VERHASH="[$REMOTE_VERSION]"
+	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+		VERHASH="[Hash]"
+	else
+		VERHASH=""
+	fi
+}
+
+ssh_init () {
+	NODE_USER=$(nvram get http_username)
+	SSH_PORT=$(nvram get sshd_port)
+	SSH_PORT=${SSH_PORT:-22}
+	if [ -f "/root/.ssh/id_dropbear" ]; then
+		SSH_KEY="/root/.ssh/id_dropbear"
+	else
+		SSH_KEY=""
+	fi
 }
 
 check_ssh() {
@@ -1670,6 +1672,9 @@ $1
 ROW
 }
 
+check_github; ssh_init
+update_time; get_usb
+
 run_report() {
 #=================#
 #  Node Scan(s)   #
@@ -1865,7 +1870,6 @@ done
 #=============================#
 #  Main Scan/Device Assembly  #
 #=============================#
-update_time; get_usb
 YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
 if [ -f "$KNOWN_DB" ]; then cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null; else > "$KNOWN_CACHE"; fi
