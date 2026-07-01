@@ -1366,14 +1366,14 @@ get_name() {
 
 get_ip() {
 	ip=""
-	if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$ARP_CACHE") && ip="${line#*|}"; ip="${ip%%|*}"; fi
-	if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$LEASES_CACHE") && ip="${line#*|}"; ip="${ip%%|*}"; fi
-	if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$YAZ_CACHE") && ip="${line#*|}"; ip="${ip%%|*}"; fi
-	if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$DHCPSTATIC_CACHE") && ip="${line#*|}"; ip="${ip%%|*}"; fi
+	if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$ARP_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
+    if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$LEASES_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
+    if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$YAZ_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
+    if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$DHCPSTATIC_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
 	if [ -z "$ip" ]; then ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1); fi
 	case "$name" in *-BH*) ip="" ;; esac
 	if [ -z "$ip" ] || [ "$ip" = "---" ]; then ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE"); fi
-	ip=$(echo "$ip" | tr ' \t' '\n' | grep -v '^$' | head -n 1)
+	ip="${ip%%[[:space:]]*}"
 	ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
     ip="${ip%%<*}"
     ip_to_num "$ip"
