@@ -202,7 +202,6 @@ do_install() {
 		echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
 		echo -e "\n${GR}[!] Restart script to apply changes...${NC}\n"
 		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-		restart_httpd
 		hasta
 		exit 0
 	fi
