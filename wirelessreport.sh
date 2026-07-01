@@ -159,34 +159,32 @@ menu_vars() {
 	update_time
 	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
     UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG="\e[42;37m"
-	DISPLAY_UNIT="${REPORT_UNIT:-F}"
-    if [ "$REPORT_UNIT" = "ISO" ]; then DISPLAY_UNIT="C"; fi
-	CT="${GR}$CUR_TIME${NC}"; DU="${GR}°$DISPLAY_UNIT${NC}"
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
 	NE="${BL}(e)${NC}"; NU="${BL}(u)${NC}"; NV="${BL}(v)${NC}"; NQ="${BL}(c)${NC}"
 	ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
-    if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
+    SYSTEM_MENU="/www/require/modules/menuTree.js"
+	TEMP_MENU="/tmp/menuTree.js"
+	SS_FILE="/jffs/scripts/services-start"
+	SE_FILE="/jffs/scripts/service-event"
+	if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
 	PORT="${GR}$SSH_PORT${NC}"
-    RTIME=${RTIME:-1}
+    DISPLAY_UNIT="${REPORT_UNIT:-F}"
+    if [ "$REPORT_UNIT" = "ISO" ]; then DISPLAY_UNIT="C"; fi
+	DU="${GR}°$DISPLAY_UNIT${NC}"; CT="${GR}$CUR_TIME${NC}"
+	DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
+	RTIME=${RTIME:-1}
     if [ "$RTIME" = "0" ]; then R_STAT="$OFF"; else R_STAT="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}
     if [ "$BACKHAUL" = "no" ]; then B_STAT="$OFF"; else B_STAT="$ON"; fi
     : "${PULSE_MINS:=15}"
     if [ "$PULSE_MINS" = "0" ]; then P_STAT="$OFF"; else P_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
-    RS_HIST=${RS_HIST:-0}
-    CUR_RS_HIST=$RS_HIST
-    CUR_ENTRIES=${RS_HIST_ENTRIES:-5}
-    CUR_DATE=${RS_HIST_DATE:-0}
+    RS_HIST=${RS_HIST:-0}; CUR_RS_HIST=$RS_HIST
+    CUR_ENTRIES=${RS_HIST_ENTRIES:-5}; CUR_DATE=${RS_HIST_DATE:-0}
     if [ "$RS_HIST" = "1" ]; then RH_STAT="$ON"; else RH_STAT="$OFF"; fi
     DARKMODE=${DARKMODE:-0}
     if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
-	SYSTEM_MENU="/www/require/modules/menuTree.js"
-	TEMP_MENU="/tmp/menuTree.js"
-	SS_FILE="/jffs/scripts/services-start"
-	SE_FILE="/jffs/scripts/service-event"
-	DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
 }
 
 check_installed() {
