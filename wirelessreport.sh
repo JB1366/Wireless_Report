@@ -81,7 +81,7 @@ install_menu() {
 		echo -e "  $N2  Uninstall                                            "
 		echo -e "  $N3  Temp/Date ($DU) ($CT)                                "
 		echo -e "  $N4  Router/Node Nicknames                                "
-		echo -e "  $N5  Set Options  RT:($R_STAT) BH:($B_STAT) RH:($RH_STAT) "
+		echo -e "  $N5  Set Options  RT:($RTM) BH:($WB_STAT) RH:($RH_STAT)   "
 		echo -e "  $N6  Node Authentication                                  "
 		echo -e "  $N7  Setup SSH Environment (SSH-KEY:$KEY)                 "
 		echo -e "  $NE  Exit                                                 "
@@ -145,11 +145,11 @@ menu_vars() {
 	DU="${GR}°$DISPLAY_UNIT${NC}"; CT="${GR}$CUR_TIME${NC}"
 	DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
 	RTIME=${RTIME:-1}
-    if [ "$RTIME" = "0" ]; then R_STAT="$OFF"; else R_STAT="$ON"; fi
+    if [ "$RTIME" = "0" ]; then RTM="$OFF"; else RTM="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}
-    if [ "$BACKHAUL" = "no" ]; then B_STAT="$OFF"; else B_STAT="$ON"; fi
+    if [ "$BACKHAUL" = "no" ]; then WB_STAT="$OFF"; else WB_STAT="$ON"; fi
     : "${PULSE_MINS:=15}"
-    if [ "$PULSE_MINS" = "0" ]; then P_STAT="$OFF"; else P_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
+    if [ "$PULSE_MINS" = "0" ]; then UP_STAT="$OFF"; else UP_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
     RS_HIST=${RS_HIST:-0}
     : "${CUR_RS_HIST:=$RS_HIST}"
     : "${CUR_ENTRIES:=${RS_HIST_ENTRIES:-5}}"
@@ -909,9 +909,9 @@ set_options() {
         echo -e "${BL}                    Set Options                   ${NC}"
         echo -e "${BL}==================================================${NC}"
         echo -e "                                                            "
-        echo -e "  $N1  Show Runtime Tracking: ($R_STAT)                     "
-        echo -e "  $N2  Show Wireless Backhaul: ($B_STAT)                    "
-        echo -e "  $N3  Uptime Alert Pulse: ($P_STAT)                        "
+        echo -e "  $N1  Show Runtime Tracking: ($RTM)                         "
+        echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)                   "
+        echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                       "
         echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
         echo -e "  $N5  Enable Dark Mode: ($DM_STAT)                         "
 		echo -e "                                                            "
