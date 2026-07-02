@@ -108,9 +108,7 @@ install_menu() {
 }
 
 check_version() {
-	if [ ! -f "$REPORT_SCRIPT" ]; then
-        LOCAL_VERSION="Not Installed"
-    fi
+	if [ ! -f "$REPORT_SCRIPT" ]; then LOCAL_VERSION="Not Installed"; fi
 	if [ -z "$REMOTE_VERSION" ]; then
         echo -e " ${BL}STATUS:${NC} ${RD}[Offline]${NC} Could not reach GitHub"
     elif [ "$LOCAL_VERSION" = "Not Installed" ]; then
@@ -195,17 +193,17 @@ do_install() {
 			echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
 			printf "Do you want to update version (y/n): "
 			read -r update
-			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then return; fi
+			case "$update" in [yY]) ;; *) return ;; esac
 		elif [ "$VERHASH" = "[Hash]" ]; then
 			echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to update Hash? (y/n): "
 			read -r update
-			if [ "$update" != "y" ] && [ "$update" != "Y" ]; then return; fi
+			case "$update" in [yY]) ;; *) return ;; esac
 		else
 			echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to reinstall/overwrite anyway? (y/n): "
 			read -r reinstall
-			if [ "$reinstall" != "y" ] && [ "$reinstall" != "Y" ]; then return; fi
+			case "$reinstall" in [yY]) ;; *) return ;; esac
 		fi
 	fi
 	do_update || return 1
@@ -268,9 +266,7 @@ do_install() {
 
 do_update() {
     local prefix="\n"
-    if [ "$amtm" = "1" ]; then
-        prefix="\n${BG} wr${NC} "
-    fi
+    if [ "$amtm" = "1" ]; then prefix="\n${BG} wr${NC} "; fi
     echo -e "${prefix}${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
     if curl -sfL --retry 3 "$GITHUB" -o "$REPORT_SCRIPT"; then
         chmod +x "$REPORT_SCRIPT" 2>/dev/null
@@ -294,9 +290,7 @@ ScriptUpdateFromAMTM() {
         printf "Automatic updates via AMTM are currently disabled.\n\n"
         return 1
     fi
-    if [ "$1" = "check" ]; then
-        return 0
-    fi
+    if [ "$1" = "check" ]; then return 0; fi
 	amtm=1; menu_vars
     if do_update; then
         echo -e "\n\n${BG} wr${NC}${GR} [✓] Wireless Report successfully updated${NC}\n"
@@ -656,10 +650,7 @@ ssh_keys() {
     nvram commit
 	nvram get sshd_authkeys > /root/.ssh/authorized_keys
     chmod 600 /root/.ssh/authorized_keys
-    if [ ! -f "$SS_FILE" ]; then
-        echo "#!/bin/sh" > "$SS_FILE"
-        chmod +x "$SS_FILE"
-    fi
+    if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE" && chmod +x "$SS_FILE"; fi
     if ! grep -q "id_dropbear" "$SS_FILE"; then
         echo -e "\n${YL}[i] Adding SSH Key to services-start for persistence on reboots...${NC}\n"
 		echo -e "${YL}[i] Adding known_hosts to services-start...${NC}\n"
@@ -739,9 +730,7 @@ do_uninstall() {
     echo -e "\n${RD}[!] WARNING: Removing Wireless Report...${NC}\n"
     printf "Are you sure? (y/n): "
     read -r confirm
-    if [ "$confirm" = "n" ] || [ "$confirm" = "N" ]; then
-		return
-	fi
+    case "$confirm" in [nN]) return ;; esac
 	if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 	get_usb
 	if mount | grep -q "menuTree.js"; then
@@ -942,9 +931,7 @@ set_options() {
                 else
                     echo 'RTIME="0"' >> "$CONFIG"
                 fi
-                if [ -f "$USB_PATH/runtime.db" ]; then
-                    rm -f "$USB_PATH/runtime.db"
-                fi
+                if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
                 ;;
             2)
                 if grep -q "BACKHAUL=" "$CONFIG"; then
@@ -1120,9 +1107,7 @@ do_runtime() {
 		STATS_FILE="$USB_PATH/runtime.db"
 		DIFF=$(awk "BEGIN {printf \"%.2f\", $END_RUNTIME - $START_RUNTIME}")
 		RUNTIME="${DIFF}s"
-		if [ ! -f "$STATS_FILE" ] || [ "$(wc -w < "$STATS_FILE")" -lt 4 ]; then
-			echo "0 0 999.99 0.00" > "$STATS_FILE"
-		fi
+		if [ ! -f "$STATS_FILE" ] || [ "$(wc -w < "$STATS_FILE")" -lt 4 ]; then echo "0 0 999.99 0.00" > "$STATS_FILE"; fi
 		read -r TOTAL_TIME COUNT MIN_TIME MAX_TIME < "$STATS_FILE"
 		NEW_TOTAL=$(awk "BEGIN {printf \"%.2f\", $TOTAL_TIME + $DIFF}")
 		NEW_COUNT=$((COUNT + 1))
@@ -1145,9 +1130,7 @@ do_runtime() {
 			.refresh-box:has(.btn-manual:hover) .btn-manual:after, .refresh-box:has(select:hover) select:after { opacity: 1; visibility: visible; }"
 	else
 		RUNTIME_CSS=""; RUNTIME=""
-		if [ -f "$USB_PATH/runtime.db" ]; then
-			rm -f "$USB_PATH/runtime.db"
-		fi
+		if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
 	fi
 }
 
@@ -1372,9 +1355,7 @@ get_name() {
 		local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
 		local raw_parent=$(echo "$entry" | sed -n 's/.*"mlo_all_mac":"<\([^"]*\)".*/\1/p' | tr '[:lower:]' '[:upper:]')
 		local parent_mac=$(echo "$raw_parent" | cut -d'<' -f1)
-		if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then
-			mac="$parent_mac"
-		fi
+		if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then mac="$parent_mac"; fi
 		name=$(echo "$entry" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
     fi
 
@@ -1393,9 +1374,7 @@ get_name() {
 	fi
 
 	# Fallback
-	if [ -z "$name" ] || [ "$name" = "*" ]; then
-		name="$mac"
-	fi
+	if [ -z "$name" ] || [ "$name" = "*" ]; then name="$mac"; fi
 }
 
 get_ip() {
@@ -1561,9 +1540,7 @@ fmt_uptime() {
     local check_mins="${PULSE_MINS:-15}"
     local pulse_sec=$((check_mins * 60))
     local pulse=""
-    if [ "$check_mins" -ne 0 ] && [ "$T" -lt "$pulse_sec" ]; then
-        pulse="pulse-blue"
-    fi
+    if [ "$check_mins" -ne 0 ] && [ "$T" -lt "$pulse_sec" ]; then pulse="pulse-blue"; fi
     local d=$((T / 86400))
     local rem=$((T % 86400))
     local h=$((rem / 3600))
@@ -1656,9 +1633,7 @@ get_row() {
 
 final_chk() {
 	if [ -z "$ssid" ]; then ssid="Wireless"; fi
-    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then
-        rssi=-54
-    fi
+    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
 }
 
 check_qca_up() {
@@ -1698,6 +1673,20 @@ parse_node() {
     IFS='|' read -r _ mac rssi iface uptime ssid lrd_val lrd width _ <<ROW
 $1
 ROW
+}
+
+node_temp_load() {
+    N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
+    while IFS='|' read -r key val; do
+        case "$key" in
+            "TEMP")       N_TEMP_RAW=$val ;;
+            "LOAD")       N_LOAD=$val ;;
+            "UPTIME_RAW") N_UPTIME_RAW=$val ;;
+            "UPTIME_VAL") N_UPTIME=$val ;;
+        esac
+    done <<EOF
+$1
+EOF
 }
 
 check_github; ssh_init
@@ -1911,10 +1900,14 @@ nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toup
 M_T=$(($(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0) / 1000))
 M_TEMP=$(get_temp_unit "$M_T")
 MC_TEMP=$(get_temp_class "$M_TEMP")
-M_LOAD=$(cat /proc/loadavg | awk '{print $1}')
+read -r M_LOAD _ < /proc/loadavg
 MC_LOAD=$(get_load_class "$M_LOAD")
-M_UPTIME=$(awk -v s=$(cut -d. -f1 /proc/uptime) 'BEGIN {d=int(s/86400); h=int((s%86400)/3600); m=int((s%3600)/60); if(d>0) printf "%dd %dh %dm", d, h, m; else if(h>0) printf "%dh %dm", h, m; else printf "%dm", m}')
-M_BOOT=$(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "$D_FMT")
+read -r s _ < /proc/uptime; s=${s%.*}; d=$((s / 86400)); h=$((s % 86400 / 3600)); m=$((s % 3600 / 60))
+if [ $d -gt 0 ]; then M_UPTIME="${d}d ${h}h ${m}m"
+elif [ $h -gt 0 ]; then M_UPTIME="${h}h ${m}m"
+else M_UPTIME="${m}m"; fi
+read -r s _ < /proc/uptime; s=${s%.*}; boot_epoch=$(( $(date +%s) - s ))
+M_BOOT=$(date -d @$boot_epoch "$D_FMT")
 MAIN_PFX=$(nvram get lan_hwaddr | cut -c 3-14 | tr '[:lower:]' '[:upper:]')
 NODE_PFX=$(nvram get cfg_relist | sed 's/[<>]/ /g' | tr ' ' '\n' | grep ":" | cut -c 3-14 | sort -u | tr '[:lower:]' '[:upper:]')
 ROUTER_IP=$(nvram get lan_ipaddr)
@@ -2038,14 +2031,11 @@ for line in $SSH_NODES; do
 		export NODE_NUM
         NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
         if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES&ensp;$NODE_BRAND"; fi
-		N_TEMP_RAW=$(echo "$NODE_OUT" | grep "TEMP|" | cut -d'|' -f2)
-        if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
-        N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
-		N_LOAD=$(echo "$NODE_OUT" | grep "LOAD|" | cut -d'|' -f2)
+		node_temp_load "$NODE_OUT"
+		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
+		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
 		NC_TEMP=$(get_temp_class "$N_TEMP")
 		NC_LOAD=$(get_load_class "$N_LOAD")
-        N_UPTIME_RAW=$(echo "$NODE_OUT" | grep "UPTIME_RAW|" | cut -d'|' -f2)
-		N_UPTIME=$(echo "$NODE_OUT" | grep "UPTIME_VAL|" | cut -d'|' -f2)
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
 		TOTAL_TEMP="$TOTAL_TEMP$DOT<span class='${NC_TEMP}'>${N_TEMP}</span>"
         TOTAL_LOAD="$TOTAL_LOAD$DOT<span class='${NC_LOAD}'>${N_LOAD}</span>"
