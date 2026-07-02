@@ -993,7 +993,6 @@ set_options() {
                     fi
                     sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                 else
-                    # Since default is Y, the first toggle turns it N (OFF)
                     NEW_PAD="N"
                     echo -e "\n ${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
                     pause
