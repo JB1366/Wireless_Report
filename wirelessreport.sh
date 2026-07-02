@@ -1570,17 +1570,21 @@ get_temp_unit() {
 get_temp_class() {
     local temp_str=$1
     if [ "$temp_str" = "--" ]; then echo "stat-cool"; return; fi
-    local val=$(echo "$temp_str" | sed 's/[^0-9.]//g')
+    local val="${temp_str%%[^0-9]*}"
     if [ "$REPORT_UNIT" = "C" ]; then
-        awk -v t="$val" 'BEGIN { if(t>75) print "stat-hot"; else if(t>68) print "stat-warm"; else print "stat-cool"; }'
+        if [ "$val" -gt 75 ]; then echo "stat-hot"
+        elif [ "$val" -gt 68 ]; then echo "stat-warm"
+        else echo "stat-cool"; fi
     else
-        awk -v t="$val" 'BEGIN { if(t>167) print "stat-hot"; else if(t>155) print "stat-warm"; else print "stat-cool"; }'
+        if [ "$val" -gt 167 ]; then echo "stat-hot"
+        elif [ "$val" -gt 155 ]; then echo "stat-warm"
+        else echo "stat-cool"; fi
     fi
 }
 
 get_load_class() {
     local l=$1; [ "$l" = "--" ] && { echo "stat-cool"; return; }
-    awk -v l="$l" 'BEGIN { print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) }'
+    echo "" | awk -v l="$l" 'BEGIN { print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) }'
 }
 
 get_bars_rssi_style() {
