@@ -1026,29 +1026,25 @@ set_options() {
 }
 
 rssi_submenu() {
-    while true; do
-        show_header
-        echo -e "${BL}==============================================${NC}"
-        echo -e "${BL} RSSI History Configuration ${NC}                  "
-        echo -e "${BL}==============================================${NC}"
-        echo -e "                                                        "
-        echo -e " $N1 Enable RSSI History: [$CH]                         "
-        echo -e " $N2 Set History Depth: [$CE] entries                   "
-        echo -e " $N3 Enable Timestamps: [$TS]                           "
-        echo -e "                                                        "
-        echo -e " $NQ Cancel and Discard Changes                         "
-        echo -e " $NE Exit and Save Changes                              "
-        echo -e "                                                        "
-        echo -e "${BL}==============================================${NC}"
-        printf "\n ${BL}Selection:${NC} "
-        read -r sub_choice
-        case "$sub_choice" in
+	while true; do
+		show_header
+		echo -e "${BL}==============================================${NC}"
+		echo -e "${BL}          RSSI History Configuration          ${NC}"
+		echo -e "${BL}==============================================${NC}"
+		echo -e "                                                        "
+		echo -e " $N1 Enable RSSI History: [$CH]                         "
+		echo -e " $N2 Set History Depth:   [$CE] entries                 "
+		echo -e " $N3 Enable Timestamps:   [$TS]                         "
+		echo -e "                                                        "
+		echo -e " $NQ Cancel and Discard Changes                         "
+		echo -e " $NE Exit and Save Changes                              "
+		echo -e "                                                        "
+		echo -e "${BL}==============================================${NC}"
+		printf "\n ${BL}Selection:${NC} "
+		read -r sub_choice
+		case "$sub_choice" in
             1)
-                if [ "$CUR_RS_HIST" = "1" ]; then
-                    CUR_RS_HIST="0"
-                else
-                    CUR_RS_HIST="1"
-                fi
+                if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
                 ;;
             2)
                 echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CD]: "
@@ -1061,22 +1057,18 @@ rssi_submenu() {
                 fi
                 ;;
             3)
-                if [ "$CUR_DATE" = "1" ]; then
-                    CUR_DATE="0"
-                else
-                    CUR_DATE="1"
-                fi
+                if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
                 ;;
             c|C)
                 echo -e "\n${RD}[!] Changes discarded.${NC}"
                 unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                pause
+				pause
                 break
                 ;;
             e|E)
-                RS_HIST="$CUR_RS_HIST"
-                RS_HIST_ENTRIES="$CUR_ENTRIES"
-                RS_HIST_DATE="$CUR_DATE"
+				RS_HIST="$CUR_RS_HIST"
+				RS_HIST_ENTRIES="$CUR_ENTRIES"
+				RS_HIST_DATE="$CUR_DATE"
                 for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
                     eval "val=\$${var}"
                     if grep -q "^$var=" "$CONFIG"; then
@@ -1085,24 +1077,24 @@ rssi_submenu() {
                         echo "$var=\"$val\"" >> "$CONFIG"
                     fi
                 done
-                if [ -f "$HISTORY_DB" ]; then
-                    rm -f "$HISTORY_DB"
-                fi
+                if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
                 echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
                 unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                pause
+				pause
                 break
                 ;;
         esac
     done
 }
 
-restart_httpd() {
+restart_httpd()
+{
     service restart_httpd >/dev/null 2>&1
     killall -HUP httpd >/dev/null 2>&1
 }
 
-pause() {
+pause()
+{
     printf "\nPress ${BL}[Enter]${NC} to return..."
     read discard
 }
