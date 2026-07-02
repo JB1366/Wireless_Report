@@ -397,9 +397,7 @@ ssh_init () {
 }
 
 check_ssh() {
-	if [ "$1" = "pause" ]; then
-        check_installed || return 1
-    fi
+	if [ "$1" = "pause" ]; then check_installed || return 1; fi
 	while true; do
 		show_header; get_usb
 		echo -e "${BL}==================================================${NC}"
