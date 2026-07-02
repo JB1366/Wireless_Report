@@ -50,7 +50,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 #  Script Install  #
 #==================#
 
-show_header(){
+show_header() {
 	clear; menu_vars
 	echo -e "${BL}" #========================================================
 	echo -e "                                                               "
