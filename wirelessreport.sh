@@ -164,8 +164,14 @@ menu_vars() {
 	CE="${GR}$CUR_ENTRIES${NC}"
     DARKMODE=${DARKMODE:-0}
     if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
-	IPPAD=${IPPAD:-Y}
-	if [ "$IPPAD" = "Y" ]; then PD_STAT="$ON"; else PD_STAT="$OFF"; fi
+	IPPAD=${IPPAD:-1}
+	if [ "$IPPAD" = "2" ]; then
+		PD_STAT="${GR}Last 2 Octets${NC}"
+	elif [ "$IPPAD" = "1" ]; then
+		PD_STAT="${GR}Last Octet${NC}"
+	else
+		PD_STAT="${RD}Disabled${NC}"
+	fi
 }
 
 check_installed() {
@@ -982,21 +988,25 @@ set_options() {
                 ;;
 			6)
                 if grep -q "IPPAD=" "$CONFIG"; then
-                    if [ "$IPPAD" = "Y" ]; then 
-                        NEW_PAD="N"
-                        echo -e "\n${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
+                    if [ "$IPPAD" = "1" ]; then
+                        NEW_PAD="0"
+                        echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
                         pause
-                    else 
-                        NEW_PAD="Y"
-                        echo -e "\n${GR}ON:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC}"
+                    elif [ "$IPPAD" = "0" ]; then
+                        NEW_PAD="2"
+                        echo -e "\n${GR}[+] Mode 2:${NC} 192.168.50.3 --> ${GR}192.168.050.003${NC} (Last 2 Octets)"
+                        pause
+                    else
+                        NEW_PAD="1"
+                        echo -e "\n ${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"
                         pause
                     fi
                     sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                 else
-                    NEW_PAD="N"
-                    echo -e "\n ${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
+                    NEW_PAD="0"
+                    echo -e "\n ${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
                     pause
-                    echo 'IPPAD="N"' >> "$CONFIG"
+                    echo 'IPPAD="0"' >> "$CONFIG"
                 fi
                 ;;
             u|U)
@@ -1397,8 +1407,14 @@ get_ip() {
 	if [ -z "$ip" ]; then ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1); fi
 	case "$name" in *-BH*) ip="" ;; esac
 	if [ -z "$ip" ] || [ "$ip" = "---" ]; then ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE"); fi
-	if [ "$IPPAD" = "Y" ]; then ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}"); fi
-    ip_to_num "$ip"
+	if [ "$IPPAD" = "1" ]; then
+		ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
+	elif [ "$IPPAD" = "2" ]; then
+		ip_base="${ip%.*.*}"
+		ip_last_two="${ip#*.*.}"
+		ip=$(printf "%s.%03d.%03d" "$ip_base" "${ip_last_two%.*}" "${ip_last_two#*.}")
+	fi
+	ip_to_num "$ip"
     ip_sort="$IP_NUM"
 }
 
@@ -1695,7 +1711,7 @@ START_RUNTIME=$(awk '{print $1}' /proc/uptime)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
 DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
-NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0; IPPAD=${IPPAD:-Y}
+NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0; IPPAD=${IPPAD:-1}
 NODE_DATA_DIR="/tmp/node_data"
 rm -rf "$NODE_DATA_DIR" 2>/dev/null
 mkdir -p "$NODE_DATA_DIR"
