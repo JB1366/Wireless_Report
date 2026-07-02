@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="1.9.6"
+SCRIPT_VERSION="1.9.7"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -164,6 +164,8 @@ menu_vars() {
 	CE="${GR}$CUR_ENTRIES${NC}"
     DARKMODE=${DARKMODE:-0}
     if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
+	IPPAD=${IPPAD:-Y}
+	if [ "$IPPAD" = "Y" ]; then PD_STAT="$ON"; else PD_STAT="$OFF"; fi
 }
 
 check_installed() {
@@ -911,11 +913,12 @@ set_options() {
         echo -e "${BL}                    Set Options                   ${NC}"
         echo -e "${BL}==================================================${NC}"
         echo -e "                                                            "
-        echo -e "  $N1  Show Runtime Tracking: ($RTM)                         "
+        echo -e "  $N1  Show Runtime Tracking: ($RTM)                        "
         echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)                   "
         echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                       "
         echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
         echo -e "  $N5  Enable Dark Mode: ($DM_STAT)                         "
+		echo -e "  $N6  Enable IP Padding: ($PD_STAT)                        "
 		echo -e "                                                            "
         echo -e "  $NE  Exit to main menu                                    "
         echo -e "                                                            "
@@ -975,6 +978,22 @@ set_options() {
                     sed -i "s/DARKMODE=.*/DARKMODE=\"$NEW_DM\"/" "$CONFIG"
                 else
                     echo 'DARKMODE="1"' >> "$CONFIG"
+                fi
+                ;;
+			6)
+                if grep -q "IPPAD=" "$CONFIG"; then
+                    if [ "$IPPAD" = "Y" ]; then 
+						NEW_PAD="N"
+						echo -e "\n${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
+						pause
+					else 
+						NEW_PAD="Y"
+						echo -e "\n${GR}ON:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC}"
+						pause
+					fi
+                    sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
+                else
+                    echo 'IPPAD="Y"' >> "$CONFIG"
                 fi
                 ;;
             u|U)
@@ -1375,7 +1394,7 @@ get_ip() {
 	if [ -z "$ip" ]; then ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1); fi
 	case "$name" in *-BH*) ip="" ;; esac
 	if [ -z "$ip" ] || [ "$ip" = "---" ]; then ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE"); fi
-	ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
+	if [ "$IPPAD" = "Y" ]; then ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}"); fi
     ip_to_num "$ip"
     ip_sort="$IP_NUM"
 }
@@ -1673,7 +1692,7 @@ START_RUNTIME=$(awk '{print $1}' /proc/uptime)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
 DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
-NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
+NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0; IPPAD=${IPPAD:-Y}
 NODE_DATA_DIR="/tmp/node_data"
 rm -rf "$NODE_DATA_DIR" 2>/dev/null
 mkdir -p "$NODE_DATA_DIR"
