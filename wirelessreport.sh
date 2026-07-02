@@ -1375,9 +1375,7 @@ get_ip() {
 	if [ -z "$ip" ]; then ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1); fi
 	case "$name" in *-BH*) ip="" ;; esac
 	if [ -z "$ip" ] || [ "$ip" = "---" ]; then ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE"); fi
-	ip="${ip%%[[:space:]]*}"
 	ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
-    ip="${ip%%<*}"
     ip_to_num "$ip"
     ip_sort="$IP_NUM"
 }
