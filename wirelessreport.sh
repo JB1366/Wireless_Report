@@ -1004,7 +1004,7 @@ set_options() {
                     sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                 else
                     NEW_PAD="0"
-                    echo -e "\n ${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
+                    echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
                     pause
                     echo 'IPPAD="0"' >> "$CONFIG"
                 fi
