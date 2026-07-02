@@ -1580,8 +1580,14 @@ get_temp_class() {
 }
 
 get_load_class() {
-    local l=$1; [ "$l" = "--" ] && { echo "stat-cool"; return; }
-    echo "" | awk -v l="$l" 'BEGIN { print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) }'
+    local l=$1
+    if [ "$l" = "--" ]; then
+        echo "stat-cool"
+        return
+    fi
+    echo "" | awk -v l="$l" 'BEGIN { 
+        print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) 
+    }'
 }
 
 get_bars_rssi_style() {
@@ -1633,8 +1639,12 @@ get_row() {
 }
 
 final_chk() {
-	if [ -z "$ssid" ]; then ssid="Wireless"; fi
-    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
+    if [ -z "$ssid" ]; then 
+        ssid="Wireless"
+    fi
+    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then 
+        rssi=-54
+    fi
 }
 
 check_qca_up() {
