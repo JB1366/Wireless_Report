@@ -163,13 +163,9 @@ menu_vars() {
     DARKMODE=${DARKMODE:-0}
     if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
 	IPPAD=${IPPAD:-1}
-	if [ "$IPPAD" = "2" ]; then
-		PD_STAT="${GR}Last 2 Octets${NC}"
-	elif [ "$IPPAD" = "1" ]; then
-		PD_STAT="${GR}Last Octet${NC}"
-	else
-		PD_STAT="${RD}Disabled${NC}"
-	fi
+	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
+	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
+	else PD_STAT="${RD}Disabled${NC}"; fi
 }
 
 check_installed() {
@@ -422,9 +418,7 @@ check_ssh() {
 		case "$ssh_choice" in
             1)
                 ssh_keys
-                if [ "$install" = "1" ]; then
-                    return 0
-                fi
+                if [ "$install" = "1" ]; then return 0; fi
                 continue
                 ;;
             2)
@@ -1088,15 +1082,15 @@ rssi_submenu() {
 }
 
 restart_httpd() {
-
     service restart_httpd >/dev/null 2>&1
     killall -HUP httpd >/dev/null 2>&1
+	
 }
 
 pause() {
-
     printf "\nPress ${BL}[Enter]${NC} to return..."
     read discard
+	
 }
 
 do_runtime() {
@@ -1583,10 +1577,7 @@ get_temp_class() {
 
 get_load_class() {
     local l=$1
-    if [ "$l" = "--" ]; then
-        echo "stat-cool"
-        return
-    fi
+    if [ "$l" = "--" ]; then echo "stat-cool"; return; fi
     echo "" | awk -v l="$l" 'BEGIN {
         print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool"))
     }'
@@ -1641,9 +1632,9 @@ get_row() {
 }
 
 final_chk() {
-
 	if [ -z "$ssid" ]; then ssid="Wireless"; fi
     if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
+	
 }
 
 check_qca_up() {
