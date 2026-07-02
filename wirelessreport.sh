@@ -983,17 +983,21 @@ set_options() {
 			6)
                 if grep -q "IPPAD=" "$CONFIG"; then
                     if [ "$IPPAD" = "Y" ]; then 
-						NEW_PAD="N"
-						echo -e "\n${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
-						pause
-					else 
-						NEW_PAD="Y"
-						echo -e "\n${GR}ON:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC}"
-						pause
-					fi
+                        NEW_PAD="N"
+                        echo -e "\n ${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
+                        pause
+                    else 
+                        NEW_PAD="Y"
+                        echo -e "\n ${GR}ON:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC}"
+                        pause
+                    fi
                     sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                 else
-                    echo 'IPPAD="Y"' >> "$CONFIG"
+                    # Since default is Y, the first toggle turns it N (OFF)
+                    NEW_PAD="N"
+                    echo -e "\n ${RD}OFF:${NC} 192.168.50.003 --> ${RD}192.168.50.3${NC}"
+                    pause
+                    echo 'IPPAD="N"' >> "$CONFIG"
                 fi
                 ;;
             u|U)
