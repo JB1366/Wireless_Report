@@ -1070,7 +1070,7 @@ rssi_submenu() {
 				RS_HIST_ENTRIES="$CUR_ENTRIES"
 				RS_HIST_DATE="$CUR_DATE"
                 for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
-                    eval val=\$$var
+                    eval "val=\$${var}"
                     if grep -q "^$var=" "$CONFIG"; then
                         sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
                     else
