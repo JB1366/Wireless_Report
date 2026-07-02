@@ -1088,13 +1088,13 @@ rssi_submenu() {
 }
 
 restart_httpd() {
-	# Restart Webserver
+
     service restart_httpd >/dev/null 2>&1
     killall -HUP httpd >/dev/null 2>&1
 }
 
 pause() {
-	# Press Enter
+
     printf "\nPress ${BL}[Enter]${NC} to return..."
     read discard
 }
@@ -1641,7 +1641,7 @@ get_row() {
 }
 
 final_chk() {
-    # Final Check
+
 	if [ -z "$ssid" ]; then ssid="Wireless"; fi
     if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
 }
