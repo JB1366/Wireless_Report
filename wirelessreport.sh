@@ -1585,8 +1585,8 @@ get_load_class() {
         echo "stat-cool"
         return
     fi
-    echo "" | awk -v l="$l" 'BEGIN { 
-        print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool")) 
+    echo "" | awk -v l="$l" 'BEGIN {
+        print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool"))
     }'
 }
 
@@ -1639,10 +1639,10 @@ get_row() {
 }
 
 final_chk() {
-    if [ -z "$ssid" ]; then 
+    if [ -z "$ssid" ]; then
         ssid="Wireless"
     fi
-    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then 
+    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then
         rssi=-54
     fi
 }
