@@ -998,7 +998,7 @@ set_options() {
                         pause
                     else
                         NEW_PAD="1"
-                        echo -e "\n ${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"
+                        echo -e "\n${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"
                         pause
                     fi
                     sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
