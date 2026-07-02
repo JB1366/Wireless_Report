@@ -1408,9 +1408,8 @@ ip_to_num() {
 
 get_band() {
     local iface=$1; local width=$2; local model=$3
-    local w_text=""
+    local w_text=""; local Label="Unknown"
 	if [ -n "$width" ]; then w_text=" ($width)"; fi
-    local Label="Unknown"
     local m=$(echo "$model" | tr '[:lower:]' '[:upper:]')
 	case "$m" in
 
