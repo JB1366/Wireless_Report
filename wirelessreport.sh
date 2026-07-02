@@ -1049,15 +1049,12 @@ rssi_submenu() {
             2)
                 echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CD]: "
                 read new_days
-                case "$new_days" in
-                    5|6|7|8|9|1[0-9]|20)
-                        CUR_ENTRIES="$new_days"
-                        ;;
-                    *)
-                        echo -e "\n${RD}[!] Invalid: Use 5-20${NC}"
-                        sleep 1
-                        ;;
-                esac
+                if [ "$new_days" -ge 5 ] && [ "$new_days" -le 20 ]; then
+                    CUR_ENTRIES="$new_days"
+                else
+                    echo -e "\n${RD}[!] Invalid: Use 5-20${NC}"
+                    sleep 1
+                fi
                 ;;
             3)
                 if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
