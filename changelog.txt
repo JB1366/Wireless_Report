@@ -1,7 +1,8 @@
 ----------------------------------
-Wireless Report AiMesh - Changelog
+Wireless Report - Changelog
 ----------------------------------
 
+v1.9.8-added New Node Hostname Display option.
 v1.9.7-added new IP Padding option.
 v1.9.6-minor updates, rebranded Wireless Report.
 v1.9.5-minor updates
