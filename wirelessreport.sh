@@ -2033,7 +2033,7 @@ for line in $SSH_NODES; do
         NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
 		export NODE_NUM
         NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
-        if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES&ensp;&ensp;$NODE_BRAND"; fi
+        if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
 		node_temp_load "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
@@ -2074,7 +2074,7 @@ NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$DOT}<span style='color:$NODE_COLOR;'>
     fi
 done
 GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
-BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>&ensp;&ensp;$N_NAMES"
+BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>$DOT$N_NAMES"
 do_numbered_node; do_runtime; header_box; do_darkmode
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
