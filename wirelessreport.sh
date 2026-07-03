@@ -1615,9 +1615,6 @@ hostcolor_main() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		NAMEN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAMEN"
-		IP_COLOR=""
-	else
-		IP_COLOR="color: #64d2ff;"
 	fi
 }
 
@@ -1944,6 +1941,7 @@ ROUTER_IP=$(nvram get lan_ipaddr)
 ROUTER=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"
 if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
+if [ "$HOST_COLOR" = "1" ]; then IP_COLOR=""; else IP_COLOR="color: #64d2ff;"; fi
 MAIN_LABEL="<span class='router-branding'>$MAIN_NAME</span>"
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
