@@ -1,6 +1,6 @@
-----------------------------------
-Wireless Report - Changelog
-----------------------------------
+#===============================#
+#  Wireless Report - Changelog  #
+#===============================#
 
 v1.9.8-added New Node Hostname Display option.
 v1.9.7-added new IP Padding option.
