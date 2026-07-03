@@ -1043,7 +1043,7 @@ rssi_submenu() {
                 if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
                 ;;
             2)
-                echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CD]: "
+                echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CE]: "
                 read new_days
                 if [ "$new_days" -ge 5 ] && [ "$new_days" -le 20 ]; then
                     CUR_ENTRIES="$new_days"
