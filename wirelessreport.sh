@@ -234,7 +234,6 @@ do_install() {
             rm -f "/www/user/$OLD_PAGE"
         fi
     fi
-    chmod +x "$REPORT_SCRIPT" 2>/dev/null
     if [ -f "$REPORT_SCRIPT" ]; then
         inject_menu
 		echo -e "${GR}[+] Mounting Menu[Wireless] Tab[Wireless Report]${NC}"
@@ -805,7 +804,8 @@ set_nicknames() {
         if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
             VALID_NODES=$(echo "$SSH_NODES" | tr ' ' '\n' | grep '|')
             for node in $VALID_NODES; do
-                MODEL=$(echo "$node" | cut -d'|' -f1); IP=$(echo "$node" | cut -d'|' -f2)
+                MODEL=$(echo "$node" | cut -d'|' -f1)
+				IP=$(echo "$node" | cut -d'|' -f2)
                 CLEAN_IP=$(echo "$IP" | tr '.' '_')
                 eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
                 echo -e "  ${BL}Node${NC} $IP -> ${GR}${SAVED_NICK:-$MODEL}${NC}"
@@ -827,7 +827,8 @@ set_nicknames() {
                 echo -e "    $OLD_NAME -> ${GR}$MAIN_HW_MODEL${NC}"; sleep 1
                 if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
                     for node in $VALID_NODES; do
-                        MODEL=$(echo "$node" | cut -d'|' -f1); IP=$(echo "$node" | cut -d'|' -f2)
+                        MODEL=$(echo "$node" | cut -d'|' -f1)
+						IP=$(echo "$node" | cut -d'|' -f2)
                         CLEAN_IP=$(echo "$IP" | tr '.' '_')
                         eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
                         sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
@@ -877,7 +878,8 @@ set_nicknames() {
                     echo "MAIN_NICK=\"$manual_main\"" >> "$CONFIG"
                 fi
                 for node in $VALID_NODES; do
-                    MODEL=$(echo "$node" | cut -d'|' -f1); IP=$(echo "$node" | cut -d'|' -f2)
+                    MODEL=$(echo "$node" | cut -d'|' -f1)
+					IP=$(echo "$node" | cut -d'|' -f2)
                     CLEAN_IP=$(echo "$IP" | tr '.' '_')
                     eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
                     printf "  Node $IP ${GR}[${OLD_NICK:-$MODEL}]:${NC} "
