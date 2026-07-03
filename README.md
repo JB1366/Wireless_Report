@@ -68,7 +68,11 @@ $\color{green}{\text{Option (5):}}$ Set Options
  * $\color{blue}{\text{Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
  * $\color{blue}{\text{Show RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
  * $\color{blue}{\text{Toggle Dark Mode:}}$ Enable or disable Dark Mode.<br>
- * $\color{blue}{\text{Enable IP Padding:}}$ Enable or disable IP Padding.<br>
+ * $\color{blue}{\text{Enable IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. Set to Last Octet by default to maintain your familiar layout out of the box.<br>
+   * Mode 1 (Default): 192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only)
+   * Disabled: 192.168.050.003 --> 192.168.50.3 (Standard IP Display)
+   * Mode 2: 192.168.50.3 --> 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
+
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
 
