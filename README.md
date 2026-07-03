@@ -69,12 +69,12 @@ $\color{green}{\text{Option (5):}}$ Set Options
  * $\color{blue}{\text{Show RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
  * $\color{blue}{\text{Toggle Dark Mode:}}$ Enable or disable Dark Mode.<br>
  * $\color{blue}{\text{Enable IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. <br>
-   * Mode 1:   192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only) (Default)
-   * Disabled: 192.168.050.003 --> 192.168.50.3 (Standard IP Display)
-   * Mode 2:   192.168.50.3 --> 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
+   * $\color{green}{\text{Mode 1:}}$ 192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only) (Default)
+   * $\color{green}{\text{Disabled:}}$ 192.168.050.003 --> 192.168.50.3 (Standard IP Display)
+   * $\color{green}{\text{Mode 2:}}$ 192.168.50.3 --> 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
  * $\color{blue}{\text{Node Hostname Display:}}$ Gives you full control over how mesh node identifiers look, allowing for an incredibly clean, unified text layout or distinct color-coded node tracking.<br>
-   * Numbered Hostnames (Default): Hostnames remain a uniform, clean white while their tracking superscripts (sup) are color-coded to match their respective nodes.
-   * Colored Hostnames: The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.
+   * $\color{green}{\text{Numbered Hostnames (Default):}}$ Hostnames remain a uniform, clean white while their tracking superscripts (sup) are color-coded to match their respective nodes.
+   * $\color{green}{\text{Colored Hostnames:}}$ The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
 
