@@ -1617,14 +1617,14 @@ get_bars_rssi_style() {
 	fi
 }
 
-host_main() {
+hostcolor_main() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		NAMEN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAMEN"
 	fi
 }
 
-host_color() {
+hostcolor_node() {
     if [ "$HOST_COLOR" = "1" ]; then
         NAMEN="<span style='color:$NODE_COLOR;'>$name</span>"
         NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'><sup>$NUMBERED_NODE</sup></span>"
@@ -2031,7 +2031,7 @@ for iface in $IFACE_LIST; do
 		uptime=$(fmt_uptime "$uptime")
 		get_bars_rssi_style
 		get_max_column
-		host_main
+		hostcolor_main
 		get_row
 		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
 		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
@@ -2097,7 +2097,7 @@ for line in $SSH_NODES; do
 			uptime=$(fmt_uptime "$uptime")
 			get_bars_rssi_style
 			get_max_column
-			host_color
+			hostcolor_node
 			name="$NAMEN$NODE_NUM"
             get_row
             NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
