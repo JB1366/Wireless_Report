@@ -1617,6 +1617,13 @@ get_bars_rssi_style() {
 	fi
 }
 
+host_main() {
+	if [ "$HOST_COLOR" = "1" ]; then
+		NAMEN="<span style='color:#0096ff;'>$name</span>"
+		name="$NAMEN"
+	fi
+}
+
 host_color() {
     if [ "$HOST_COLOR" = "1" ]; then
         NAMEN="<span style='color:$NODE_COLOR;'>$name</span>"
@@ -1725,7 +1732,8 @@ START_RUNTIME=$(awk '{print $1}' /proc/uptime)
 N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
 DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
-NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0; IPPAD=${IPPAD:-1}
+NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
+IPPAD=${IPPAD:-1}; : "${HOST_COLOR:=0}"
 NODE_DATA_DIR="/tmp/node_data"
 rm -rf "$NODE_DATA_DIR" 2>/dev/null
 mkdir -p "$NODE_DATA_DIR"
@@ -2023,6 +2031,7 @@ for iface in $IFACE_LIST; do
 		uptime=$(fmt_uptime "$uptime")
 		get_bars_rssi_style
 		get_max_column
+		host_main
 		get_row
 		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
 		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
@@ -2054,13 +2063,11 @@ for line in $SSH_NODES; do
 		if [ -z "$NODE_COLOR" ]; then NODE_COLOR="#ffffff"; fi
         NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
 		export NODE_NUM
-        : "${HOST_COLOR:=0}"
 		if [ "$HOST_COLOR" = "1" ]; then
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}</span>"
         else
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
 		fi
-		
 		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
 		node_temp_load "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
