@@ -2134,8 +2134,10 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+	/* Hostnames Left-Aligned to match column 
 	table.report_table tr td:first-child { text-align: left; padding-left: 10px; }
 	table.report_table thead th:first-child { text-align: left; padding-left: 10px; }
+	*/
 	.f-res { color: #0096ff; }
 	.sep-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
