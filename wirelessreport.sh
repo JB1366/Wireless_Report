@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="1.9.7"
+SCRIPT_VERSION="1.9.8"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -166,6 +166,9 @@ menu_vars() {
 	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
 	else PD_STAT="${RD}Disabled${NC}"; fi
+	: "${HOST_COLOR:=0}"
+	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored Hostnames${NC}"
+	else HN_STAT="${BL}Numbered Hostnames${NC}"; fi
 }
 
 check_installed() {
@@ -910,6 +913,7 @@ set_options() {
         echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
         echo -e "  $N5  Enable Dark Mode: ($DM_STAT)                         "
 		echo -e "  $N6  Enable IP Padding: ($PD_STAT)                        "
+		echo -e "  $N7  Node Hostname Display: ($HN_STAT)                    "
 		echo -e "                                                            "
         echo -e "  $NE  Exit to main menu                                    "
         echo -e "                                                            "
@@ -992,6 +996,14 @@ set_options() {
                     echo 'IPPAD="0"' >> "$CONFIG"
                 fi
                 ;;
+			7)
+                if grep -q "HOST_COLOR=" "$CONFIG"; then
+                    if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
+                    sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
+                else
+                    echo 'HOST_COLOR="1"' >> "$CONFIG"
+                fi
+				;;
             u|U)
                 echo -e "\n${BL}================= USB Check ======================${NC}"
                 check_storage
@@ -1605,6 +1617,16 @@ get_bars_rssi_style() {
 	fi
 }
 
+host_color() {
+    if [ "$HOST_COLOR" = "1" ]; then
+        NAMEN="<span style='color:$NODE_COLOR;'>$name</span>"
+        NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'><sup>$NUMBERED_NODE</sup></span>"
+    else
+        NAMEN="<span style='color:#ffffff;'>$name</span>"
+		NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
+    fi
+}
+
 get_max_column() {
 	if [ "${#name}" -gt 20 ]; then name="${name:0:20}"; fi
 	if [ "${#mac}"  -gt 17 ]; then mac="${mac:0:17}"; fi
@@ -2032,8 +2054,14 @@ for line in $SSH_NODES; do
 		if [ -z "$NODE_COLOR" ]; then NODE_COLOR="#ffffff"; fi
         NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
 		export NODE_NUM
-        NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
-        if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
+        : "${HOST_COLOR:=0}"
+		if [ "$HOST_COLOR" = "1" ]; then
+			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}</span>"
+        else
+			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
+		fi
+		
+		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
 		node_temp_load "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
@@ -2062,7 +2090,8 @@ for line in $SSH_NODES; do
 			uptime=$(fmt_uptime "$uptime")
 			get_bars_rssi_style
 			get_max_column
-			name="$name$NODE_NUM"
+			host_color
+			name="$NAMEN$NODE_NUM"
             get_row
             NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
 			NODE_DEVICES=$((NODE_DEVICES + 1))
