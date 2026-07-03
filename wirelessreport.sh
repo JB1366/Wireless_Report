@@ -2074,7 +2074,7 @@ NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$DOT}<span style='color:$NODE_COLOR;'>
     fi
 done
 GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
-BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>&ensp;$N_NAMES"
+BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>&ensp;&ensp;$N_NAMES"
 do_numbered_node; do_runtime; header_box; do_darkmode
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
