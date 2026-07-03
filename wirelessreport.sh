@@ -1615,6 +1615,9 @@ hostcolor_main() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		NAMEN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAMEN"
+		IP_COLOR=""
+	else
+		IP_COLOR="color: #64d2ff;"
 	fi
 }
 
@@ -2059,10 +2062,8 @@ for line in $SSH_NODES; do
 		export NODE_NUM
 		if [ "$HOST_COLOR" = "1" ]; then
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}</span>"
-			IP_COLOR=""
         else
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
-			IP_COLOR="color: #64d2ff;" 
 		fi
 		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
 		node_temp_load "$NODE_OUT"
