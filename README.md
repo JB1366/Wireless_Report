@@ -68,6 +68,7 @@ $\color{green}{\text{Option (5):}}$ Set Options
  * $\color{blue}{\text{Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
  * $\color{blue}{\text{Show RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
  * $\color{blue}{\text{Toggle Dark Mode:}}$ Enable or disable Dark Mode.<br>
+ * $\color{blue}{\text{Enable IP Padding:}}$ Enable or disable IP Padding.<br>
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
 
