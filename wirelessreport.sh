@@ -388,11 +388,8 @@ ssh_init () {
 	NODE_USER=$(nvram get http_username)
 	SSH_PORT=$(nvram get sshd_port)
 	SSH_PORT=${SSH_PORT:-22}
-	if [ -f "/root/.ssh/id_dropbear" ]; then
-		SSH_KEY="/root/.ssh/id_dropbear"
-	else
-		SSH_KEY=""
-	fi
+	if [ -f "/root/.ssh/id_dropbear" ]; then SSH_KEY="/root/.ssh/id_dropbear"
+	else SSH_KEY=""; fi
 }
 
 check_ssh() {
@@ -1013,11 +1010,8 @@ set_options() {
                 ;;
             v|V)
                 echo -e "\n${BL}================== CONFIG ======================${NC}\n"
-                if [ -f "$CONFIG" ]; then
-                    cat "$CONFIG"
-                else
-                    echo -e "${GR}[!] No CONFIG file found.${NC}"
-                fi
+                if [ -f "$CONFIG" ]; then cat "$CONFIG"
+                else echo -e "${GR}[!] No CONFIG file found.${NC}"; fi
                 echo -e "\n${BL}==================================================${NC}"
                 pause
                 continue
@@ -2065,8 +2059,10 @@ for line in $SSH_NODES; do
 		export NODE_NUM
 		if [ "$HOST_COLOR" = "1" ]; then
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}</span>"
+			IP_COLOR=""
         else
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
+			IP_COLOR="color: #64d2ff;" 
 		fi
 		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
 		node_temp_load "$NODE_OUT"
@@ -2163,7 +2159,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; cursor: pointer; }
 	table.report_table { width: 100%; border-collapse: collapse; }
 	table.report_table.show-ip .m-val { display: none !important; }
-	table.report_table.show-ip .i-val { display: inline !important; color: #64d2ff; }
+	table.report_table.show-ip .i-val { display: inline !important; $IP_COLOR; }
 	table.report_table.show-iface .s-val { display: none !important; }
 	table.report_table.show-iface .if-val { display: inline !important; color: #64d2ff; }
 	table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; cursor: pointer; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
