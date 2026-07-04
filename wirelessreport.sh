@@ -150,12 +150,12 @@ menu_vars() {
     if [ "$RTIME" = "0" ]; then RTM="$OFF"; else RTM="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}
     if [ "$BACKHAUL" = "no" ]; then WB_STAT="$OFF"; else WB_STAT="$ON"; fi
-    : "${PULSE_MINS:=15}"
+    PULSE_MINS=${PULSE_MINS:-15}
     if [ "$PULSE_MINS" = "0" ]; then UP_STAT="$OFF"; else UP_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
     RS_HIST=${RS_HIST:-0}
-    : "${CUR_RS_HIST:=$RS_HIST}"
-    : "${CUR_ENTRIES:=${RS_HIST_ENTRIES:-5}}"
-    : "${CUR_DATE:=${RS_HIST_DATE:-0}}"
+    CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}
+	CUR_ENTRIES=${CUR_ENTRIES:-${RS_HIST_ENTRIES:-5}}
+	CUR_DATE=${CUR_DATE:-${RS_HIST_DATE:-0}}
     if [ "$RS_HIST" = "1" ]; then RH_STAT="$ON"; else RH_STAT="$OFF"; fi
 	if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
 	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
@@ -166,7 +166,7 @@ menu_vars() {
 	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
 	else PD_STAT="${RD}Disabled${NC}"; fi
-	: "${HOST_COLOR:=0}"
+	HOST_COLOR=${HOST_COLOR:-0}
 	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored Hostnames${NC}"
 	else HN_STAT="${BL}Numbered Hostnames${NC}"; fi
 }
@@ -430,33 +430,24 @@ check_ssh() {
                 ;;
             3)
                 echo -e "\n${BL}================ Authorized Keys =================${NC}\n"
-                if [ -f "/root/.ssh/authorized_keys" ]; then
-                    cat /root/.ssh/authorized_keys
-                else
-                    echo -e "${YL}[!] File not found.${NC}"
-                fi
+                if [ -f "/root/.ssh/authorized_keys" ]; then cat /root/.ssh/authorized_keys
+                else echo -e "${YL}[!] File not found.${NC}"; fi
                 echo -e "\n\n${BL}==================================================${NC}"
                 pause
                 continue
                 ;;
             4)
                 echo -e "\n${BL}================== Known Hosts  ==================${NC}\n"
-                if [ -f "/jffs/.ssh/known_hosts" ]; then
-                    cat /jffs/.ssh/known_hosts
-                else
-                    echo -e "${YL}[!] File not found.${NC}"
-                fi
+                if [ -f "/jffs/.ssh/known_hosts" ]; then cat /jffs/.ssh/known_hosts
+                else echo -e "${YL}[!] File not found.${NC}"; fi
                 echo -e "\n${BL}==================================================${NC}"
                 pause
                 continue
                 ;;
             5)
                 echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
-                if [ -f "$ERROR_LOG" ]; then
-                    cat "$ERROR_LOG"
-                else
-                    echo -e "${YL}[!] File not found.${NC}"
-                fi
+                if [ -f "$ERROR_LOG" ]; then cat "$ERROR_LOG"
+                else echo -e "${YL}[!] File not found.${NC}"; fi
                 echo -e "\n${BL}==================================================${NC}"
                 pause
                 continue
@@ -1102,7 +1093,7 @@ pause() {
 }
 
 do_runtime() {
-	: "${RTIME:=1}"
+	RTIME=${RTIME:-1}
 	if [ "$RTIME" = "1" ]; then
 		END_RUNTIME=$(awk '{print $1}' /proc/uptime)
 		STATS_FILE="$USB_PATH/runtime.db"
@@ -1158,7 +1149,7 @@ header_box() {
 }
 
 do_darkmode() {
-	: "${DARKMODE:=0}"
+	DARKMODE=${DARKMODE:-0}
 	if [ "$DARKMODE" = "1" ]; then
 		DARKCSS=".section-header { background: transparent !important; color: #fff; font: bold 12px/16px sans-serif; padding: 12px; text-align: center; border: 0 !important; box-shadow: 0 !important; }
 		.header-stats-row { margin-top: 15px !important; }
@@ -1611,21 +1602,22 @@ get_bars_rssi_style() {
 	fi
 }
 
-hostcolor_main() {
+hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
-		NAMEN="<span style='color:#0096ff;'>$name</span>"
-		name="$NAMEN"
+		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
+		name="$NAME_MAIN"
 	fi
 }
 
-hostcolor_node() {
+hostcolor_node_name() {
     if [ "$HOST_COLOR" = "1" ]; then
-        NAMEN="<span style='color:$NODE_COLOR;'>$name</span>"
+        NAME_NODE="<span style='color:$NODE_COLOR;'>$name</span>"
         NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'><sup>$NUMBERED_NODE</sup></span>"
     else
-        NAMEN="<span style='color:#ffffff;'>$name</span>"
+        NAME_NODE="<span style='color:#ffffff;'>$name</span>"
 		NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
     fi
+	name="$NAME_NODE$NODE_NUM"
 }
 
 get_max_column() {
@@ -1727,7 +1719,7 @@ N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
 DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
-IPPAD=${IPPAD:-1}; : "${HOST_COLOR:=0}"
+IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}
 NODE_DATA_DIR="/tmp/node_data"
 rm -rf "$NODE_DATA_DIR" 2>/dev/null
 mkdir -p "$NODE_DATA_DIR"
@@ -1983,9 +1975,7 @@ for iface in $IFACE_LIST; do
 	if [ -z "$MAC_LIST" ]; then
 		BRIDGE=$(brctl show 2>/dev/null | grep "$iface" | awk '{print $1}')
 		if [ -z "$BRIDGE" ]; then BRIDGE=$(brctl show 2>/dev/null | grep -B1 "$iface" | grep -v "\-\-" | head -n1 | awk '{print $1}'); fi
-		if [ -n "$BRIDGE" ]; then
-			MAC_LIST=$(brctl showmacs "$BRIDGE" 2>/dev/null | grep -v "yes" | awk '{print $2}')
-		fi
+		if [ -n "$BRIDGE" ]; then MAC_LIST=$(brctl showmacs "$BRIDGE" 2>/dev/null | grep -v "yes" | awk '{print $2}'); fi
 	fi
 	for mac in $MAC_LIST; do
 		if [ -z "$mac" ] || [ "$mac" = "mac" ]; then continue; fi
@@ -1995,21 +1985,10 @@ for iface in $IFACE_LIST; do
 		if [ -z "$raw_info" ]; then raw_info=$(wl -i "$data_iface" sta_info "$mac" 2>/dev/null); fi
 		sta_parsed=$(parse_main_sta "$raw_info")
 		parse_main "$sta_parsed"
-		if [ -z "$rssi" ]; then
-			rssi=$(wl -i "$iface" rssi "$mac_address" 2>/dev/null)
-			rssi="${rssi%% *}"
-		fi
-		if [ -z "$width" ]; then
-			local hex=$(echo "$raw_info" | grep -o '0x[0-9a-fA-F]*' | head -n 1)
-			case "$hex" in
-				0x10*|0xd0*) width="20" ;;
-				0x11*|0xd1*) width="40" ;;
-				0xe0*)       width="80" ;;
-				0xe8*|0xe9*) width="160" ;;
-				0xf0*)       width="320" ;;
-				*)           width="20" ;;
-			esac
-		fi
+		if [ -z "$rssi" ]; then rssi=$(wl -i "$iface" rssi "$mac_address" 2>/dev/null); rssi="${rssi%% *}"; fi
+		[ -z "$width" ] && case "0x${raw_info##*0x}" in
+		0x10*|0xd0*|*) width="20" ;; 0x11*|0xd1*) width="40" ;; 0xe0*) width="80" ;;
+		0xe8*|0xe9*) width="160" ;; 0xf0*) width="320" ;; esac
 		if [ -z "$rx" ] || [ "$rx" = "0" ]; then rx_disp="?"; else rx_disp="${rx%.*}"; fi
 		if [ -z "$tx" ] || [ "$tx" = "0" ]; then tx_disp="${max:-?}"; else tx_disp="${tx%.*}"; fi
 		if [ "$rx_disp" = "?" ]; then rx_disp="1"; fi
@@ -2026,7 +2005,7 @@ for iface in $IFACE_LIST; do
 		uptime=$(fmt_uptime "$uptime")
 		get_bars_rssi_style
 		get_max_column
-		hostcolor_main
+		hostcolor_main_name
 		get_row
 		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
 		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
@@ -2092,8 +2071,7 @@ for line in $SSH_NODES; do
 			uptime=$(fmt_uptime "$uptime")
 			get_bars_rssi_style
 			get_max_column
-			hostcolor_node
-			name="$NAMEN$NODE_NUM"
+			hostcolor_node_name
             get_row
             NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
 			NODE_DEVICES=$((NODE_DEVICES + 1))
