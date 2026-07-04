@@ -116,21 +116,21 @@ $\color{blue}{\Large\text{KEY FEATURES + NAVIGATION}}$
         <tbody>
           <tr>
             <td><strong>Temp (°C)</strong></td>
-            <td>$\color{blue}{\text{Under 68°C}}$</td>
-            <td>$\color{orange}{\text{68°C to 75°C}}$</td>
-            <td>$\color{maroon}{\text{Over 75°C}}$</td>
+            <td>$\color{blue}{\text{Under 75°C}}$</td>
+            <td>$\color{orange}{\text{75°C to 90°C}}$</td>
+            <td>$\color{maroon}{\text{Over 90°C}}$</td>
           </tr>
           <tr>
             <td><strong>Temp (°F)</strong></td>
-            <td>$\color{blue}{\text{Under 155°F}}$</td>
-            <td>$\color{orange}{\text{155°F to 167°F}}$</td>
-            <td>$\color{maroon}{\text{Over 167°F}}$</td>
+            <td>$\color{blue}{\text{Under 167°F}}$</td>
+            <td>$\color{orange}{\text{167°F to 194°F}}$</td>
+            <td>$\color{maroon}{\text{Over 194°F}}$</td>
           </tr>
           <tr>
             <td><strong>CPU Load</strong></td>
-            <td>$\color{blue}{\text{Under 1.0}}$</td>
-            <td>$\color{orange}{\text{1.0 to 2.0}}$</td>
-            <td>$\color{maroon}{\text{Over 2.0}}$</td>
+            <td>$\color{blue}{\text{Under 1.5}}$</td>
+            <td>$\color{orange}{\text{1.5 to 4.0}}$</td>
+            <td>$\color{maroon}{\text{Over 4.0}}$</td>
           </tr>
         </tbody>
       </table>
