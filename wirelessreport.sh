@@ -134,8 +134,7 @@ menu_vars() {
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
-	NE="${BL}(e)${NC}"; NU="${BL}(u)${NC}"; NV="${BL}(v)${NC}"; NQ="${BL}(c)${NC}"
-	ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
+	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
     SYSTEM_MENU="/www/require/modules/menuTree.js"
 	TEMP_MENU="/tmp/menuTree.js"
 	SS_FILE="/jffs/scripts/services-start"
@@ -1083,13 +1082,13 @@ rssi_submenu() {
 restart_httpd() {
     service restart_httpd >/dev/null 2>&1
     killall -HUP httpd >/dev/null 2>&1
-	
+
 }
 
 pause() {
     printf "\nPress ${BL}[Enter]${NC} to return..."
     read discard
-	
+
 }
 
 do_runtime() {
@@ -1547,39 +1546,39 @@ fmt_uptime() {
 }
 
 get_temp_unit() {
-    local raw_c=$1
-    if [ -z "$raw_c" ] || case "$raw_c" in -[0-9]*|[0-9]*) false ;; *) true ;; esac; then
-        echo "--"
-        return
-    fi
+    local t_unit=$1
+    case "$t_unit" in ""|*[!0-9.]*) echo "--"; return ;; esac
     if [ "$TEMP_UNIT" = "C" ]; then
-        echo "${raw_c}°C"
+        echo "${t_unit}°C"
     else
-        echo "$raw_c" | awk '{printf "%.0f°F", ($1 * 1.8) + 32}'
+        local f_temp=$(( (t_unit * 9 + (t_unit >= 0 ? 2 : -2)) / 5 + 32 ))
+        echo "${f_temp}°F"
     fi
 }
 
 get_temp_class() {
-    local temp_str=$1
-    if [ "$temp_str" = "--" ]; then echo "stat-cool"; return; fi
-    local val="${temp_str%%[^0-9]*}"
+    local temp=$1
+	local val="${temp%%[^0-9]*}"
+    case "$val" in ""|*[!0-9]*) echo "stat-cool"; return ;; esac
     if [ "$REPORT_UNIT" = "C" ]; then
-        if [ "$val" -gt 75 ]; then echo "stat-hot"
-        elif [ "$val" -gt 68 ]; then echo "stat-warm"
+        if [ "$val" -ge 90 ]; then echo "stat-hot"
+        elif [ "$val" -ge 75 ]; then echo "stat-warm"
         else echo "stat-cool"; fi
     else
-        if [ "$val" -gt 167 ]; then echo "stat-hot"
-        elif [ "$val" -gt 155 ]; then echo "stat-warm"
+        if [ "$val" -ge 194 ]; then echo "stat-hot"
+        elif [ "$val" -ge 167 ]; then echo "stat-warm"
         else echo "stat-cool"; fi
     fi
 }
 
 get_load_class() {
-    local l=$1
-    if [ "$l" = "--" ]; then echo "stat-cool"; return; fi
-    echo "" | awk -v l="$l" 'BEGIN {
-        print (l>2.0 ? "stat-hot" : (l>1.0 ? "stat-warm" : "stat-cool"))
-    }'
+    local load=$1
+    case "$load" in ""|*[!0-9.]*) echo "stat-cool"; return ;; esac
+    case "$load" in
+        [4-9].*|[1-3][0-9].*) echo "stat-hot" ;;
+        1.[5-9]*|[2-3].*)     echo "stat-warm" ;;
+        *)                    echo "stat-cool" ;;
+    esac
 }
 
 get_bars_rssi_style() {
@@ -1651,7 +1650,7 @@ get_row() {
 final_chk() {
 	if [ -z "$ssid" ]; then ssid="Wireless"; fi
     if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
-	
+
 }
 
 check_qca_up() {
@@ -2143,7 +2142,7 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
-	/* Hostnames Left-Aligned to match column 
+	/* Hostnames Left-Aligned to match column
 	table.report_table tr td:first-child { text-align: left; padding-left: 10px; }
 	table.report_table thead th:first-child { text-align: left; padding-left: 10px; }
 	*/
