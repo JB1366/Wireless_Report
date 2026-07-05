@@ -742,11 +742,9 @@ do_uninstall() {
 	logger -p user.info -t "Wireless_Report" "(v$LOCAL_VERSION) successfully uninstalled."
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
-	echo -e "\n${GR}[!] Restarting script to apply changes...${NC}\n"
-	sleep 2
-	exec "$REPORT_SCRIPT" install "$@"
-	echo "${RD}Error: Failed to restart script!${NC}" >&2
-	exit 1
+	echo -e "\n${GR}[!] run AMTM to reinstall script...${NC}\n"
+	hasta
+	exit 0
 }
 
 set_temp_date() {
