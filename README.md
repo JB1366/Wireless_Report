@@ -149,15 +149,23 @@ $\color{blue}{\Large\text{PRO-TIP: ALTERNATE VIEWS}}$<br>
 Remember that your UI is interactive! You can toggle between IP vs. MAC and SSID vs. Interface by clicking the respective column headers to customize your view on the fly.<br>
 \
 \
-$\color{blue}{\Large\text{STACKED VIEW - DARK MODE}}$<br>
+$\color{blue}{\Large\text{STACKED VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
 
 ![Instructions6](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions6.png)<br>
 
-$\color{blue}{\Large\text{ALL-DEVICES VIEW - DARK MODE}}$<br>
+$\color{blue}{\Large\text{STACKED VIEW - NUMBERED HOSTNAMES - DEFAULT MODE}}$<br>
+
+![Instructions6](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions11.png)<br>
+
+$\color{blue}{\Large\text{ALL-DEVICES VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
 
 ![Instructions7](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions7.png)<br>
 
-$\color{blue}{\Large\text{SIDE-BY-SIDE VIEW - DARK MODE}}$<br>
+$\color{blue}{\Large\text{ALL-DEVICES VIEW - NUMBERED HOSTNAMES - DARK MODE}}$<br>
+
+![Instructions7](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions12.png)<br>
+
+$\color{blue}{\Large\text{SIDE-BY-SIDE VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
 
 ![Instructions8](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions8.png)
 
