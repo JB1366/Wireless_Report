@@ -206,12 +206,13 @@ do_install() {
 	fi
 	do_update || return 1
 	if [ "$is_update" = "1" ]; then
-		clear
 		echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
-		echo -e "\n${GR}[!] Restart script to apply changes...${NC}\n"
+		echo -e "\n${GR}[!] Restarting script to apply changes...${NC}\n"
+		sleep 2
 		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-		hasta
-		exit 0
+		exec "$REPORT_SCRIPT" install "$@"
+		echo "${RD}Error: Failed to restart script!${NC}" >&2
+		exit 1
 	fi
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
