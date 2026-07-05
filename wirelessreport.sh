@@ -721,13 +721,9 @@ do_uninstall() {
 		umount -l "$SYSTEM_MENU" >/dev/null 2>&1
 		sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
 		sed -i '/tabName:[[:space:]]*"Wireless Report"/d' "$TEMP_MENU" 2>/dev/null
-		if grep -q "tabName" "$TEMP_MENU"; then
-			mount --bind "$TEMP_MENU" "$SYSTEM_MENU"
-			logger -p user.info -t "Wireless_Report" "Unmounting Wireless Report Tab."
-			echo -e "\n${BL}[*] Removing Wireless Report Tab...${NC}\n"
-		else
-			echo -e "${BL}[*] Wireless Menu restored to default.${NC}"
-		fi
+		mount --bind "$TEMP_MENU" "$SYSTEM_MENU"
+		logger -p user.info -t "Wireless_Report" "Unmounting Wireless Report Tab."
+		echo -e "\n${BL}[*] Removing Wireless Report Tab and restoring defaults...${NC}\n"
 	fi
 	if [ -n "$INSTALLED_PAGE" ]; then
 		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
