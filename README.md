@@ -110,7 +110,7 @@ $\color{blue}{\Large\text{KEY FEATURES + NAVIGATION}}$
             <td><strong>Metric</strong></td>
             <th>$\color{blue}{\text{Cool Blue (Optimal)}}$</th>
             <th>$\color{orange}{\text{Warm Orange (Elevated)}}$</th>
-            <th>$\color{maroon}{\text{Hot Red (Action Required)}}$</th>
+            <th>$\color{red}{\text{Hot Red (Action Required)}}$</th>
           </tr>
         </thead>
         <tbody>
@@ -118,19 +118,19 @@ $\color{blue}{\Large\text{KEY FEATURES + NAVIGATION}}$
             <td><strong>Temp (°C)</strong></td>
             <td>$\color{blue}{\text{Under 75°C}}$</td>
             <td>$\color{orange}{\text{75°C to 90°C}}$</td>
-            <td>$\color{maroon}{\text{Over 90°C}}$</td>
+            <td>$\color{red}{\text{Over 90°C}}$</td>
           </tr>
           <tr>
             <td><strong>Temp (°F)</strong></td>
             <td>$\color{blue}{\text{Under 167°F}}$</td>
             <td>$\color{orange}{\text{167°F to 194°F}}$</td>
-            <td>$\color{maroon}{\text{Over 194°F}}$</td>
+            <td>$\color{red}{\text{Over 194°F}}$</td>
           </tr>
           <tr>
             <td><strong>CPU Load</strong></td>
             <td>$\color{blue}{\text{Under 1.5}}$</td>
             <td>$\color{orange}{\text{1.5 to 4.0}}$</td>
-            <td>$\color{maroon}{\text{Over 4.0}}$</td>
+            <td>$\color{red}{\text{Over 4.0}}$</td>
           </tr>
         </tbody>
       </table>
