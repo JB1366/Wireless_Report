@@ -241,7 +241,7 @@ TUF-AX4200(MTK), RT-AX1800S(MTK), ZENWIFI_XD4_PLUS(MTK)
 ```
 \
 \
-Wireless Report AiMesh is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0)  (GPL 3.0).<br>
+Wireless Report AiMesh is free to use under the [GNU General Public License version GPL 3.0](LICENSE)<br>
 \
 \
 If you have any questions, please feel free to post in this thread [Wireless Report AiMesh @ SNB Forums](https://www.snbforums.com/threads/96861/latest)<br>
