@@ -742,7 +742,11 @@ do_uninstall() {
 	logger -p user.info -t "Wireless_Report" "(v$LOCAL_VERSION) successfully uninstalled."
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
-	pause
+	echo -e "\n${GR}[!] Restarting script to apply changes...${NC}\n"
+	sleep 2
+	exec "$REPORT_SCRIPT" install "$@"
+	echo "${RD}Error: Failed to restart script!${NC}" >&2
+	exit 1
 }
 
 set_temp_date() {
@@ -1377,7 +1381,7 @@ get_ip() {
     if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$DHCPSTATIC_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
 	if [ -z "$ip" ]; then ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1); fi
 	case "$name" in *-BH*) ip="" ;; esac
-	if [ -z "$ip" ] || [ "$ip" = "---" ]; then ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE"); fi
+	case "$ip" in ""|*[!0-9.]*) ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE") ;; esac
 	if [ "$IPPAD" = "1" ]; then
 		ip=$(printf "%s.%03d" "${ip%.*}" "${ip##*.}")
 	elif [ "$IPPAD" = "2" ]; then
