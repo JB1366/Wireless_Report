@@ -375,13 +375,9 @@ check_github() {
 		REMOTE_VERSION=""; REMOTE_HASH=""
 	fi
 	rm -f "$REMOTE_TMP"
-	if [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-		VERHASH="[$REMOTE_VERSION]"
-	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-		VERHASH="[Hash]"
-	else
-		VERHASH=""
-	fi
+	if [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then VERHASH="[$REMOTE_VERSION]"
+	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then VERHASH="[Hash]"
+	else VERHASH=""; fi
 }
 
 ssh_init () {
@@ -473,11 +469,7 @@ check_ssh() {
 
 node_auth() {
 	check_installed || return 1
-	if [ ! -s "$SSH_KEY" ]; then
-		echo -e "\n${YL}[!] Main Router SSH Key not found.${NC}"
-		sleep 3
-		return
-	fi
+	if [ ! -s "$SSH_KEY" ]; then echo -e "\n${YL}[!] Main Router SSH Key not found.${NC}"; sleep 3; return; fi
 	sed -i '/^SSH_NODES=/d' "$CONFIG"
 	echo -e "\n${GR}[✓] Main Router SSH Key found at: ${WH}$SSH_KEY${NC}\n"
 	echo -e "${BL}==================================================${NC}"
