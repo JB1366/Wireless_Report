@@ -741,8 +741,9 @@ do_uninstall() {
 	case "$USB_PATH" in *wirelessreport*) rm -rf "$USB_PATH" 2>/dev/null ;; esac
 	logger -p user.info -t "Wireless_Report" "(v$LOCAL_VERSION) successfully uninstalled."
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
+	sleep 3
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
-	echo -e "\n${GR}[!] run AMTM to reinstall script...${NC}\n"
+	echo -e "\n${YL}[!] run AMTM to reinstall script...${NC}\n"
 	hasta
 	exit 0
 }
