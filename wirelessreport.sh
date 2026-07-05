@@ -228,7 +228,7 @@ do_install() {
 		sleep 5
 		check_ssh || return 1
 	fi
-    echo -e "${GR}[+] Processing Wireless Report Files...${NC}\n"
+    echo -e "\n${GR}[+] Processing Wireless Report Files...${NC}\n"
     if [ -f "$TEMP_MENU" ]; then sed -i '/Wireless Report/d' "$TEMP_MENU" 2>/dev/null; fi
     if [ -f "$CONFIG" ]; then
         OLD_PAGE=$(grep "INSTALLED_PAGE=" "$CONFIG" | cut -d'=' -f2)
