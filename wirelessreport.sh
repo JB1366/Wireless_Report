@@ -472,6 +472,7 @@ check_ssh() {
 }
 
 node_auth() {
+	check_installed || return 1
 	if [ ! -s "$SSH_KEY" ]; then
 		echo -e "\n${YL}[!] Main Router SSH Key not found.${NC}"
 		sleep 3
