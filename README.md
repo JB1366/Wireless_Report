@@ -84,7 +84,7 @@ $\color{green}{\text{Option (6):}}$ Node Authentication: Streamlines node manage
 
 $\color{green}{\text{Option (7):}}$ SSH Enviroment Setup:<br>
 * $\color{blue}{\text{Create RSA Keys + Setup AiMesh Nodes:}}$ Generates new RSA key pairs and configures authentication between your primary router and all connected AiMesh nodes. This is the primary setup step for enabling secure, passwordless SSH communication across your mesh network.
-
+* $\color{blue}{\text{Delete RSA Keys:}}$ Purges existing RSA key pairs from the primary router's storage, memory, and NVRAM configuration. Use this option to completely reset your secure SSH environment or clear out old credentials before a clean reinstall.
 * $\color{blue}{\text{Router-Only Setup:}}$ Standalone Dashboard: A consolidated view for single-router setups. Select this if you do not have AiMesh nodes and want to display all connected devices grouped on a single screen.
 * $\color{blue}{\text{View Authorized Keys:}}$ Displays the contents of the authorized_keys file. This allows you to verify which public keys are currently permitted to access your router via SSH.
 * $\color{blue}{\text{View Known Hosts:}}$ Shows the list of hosts that your router has connected to and verified. This is useful for troubleshooting SSH "Host Key" verification errors when connecting between nodes.
