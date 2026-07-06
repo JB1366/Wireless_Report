@@ -689,21 +689,18 @@ del_ssh_keys() {
 inject_menu() {
 	. /usr/sbin/helper.sh
 	menu_vars; TAB_LABEL="Wireless Report"
-	if [ -f "$CONFIG" ]; then
-		sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
-	else
-		touch "$CONFIG"
-	fi
+	if [ -f "$CONFIG" ]; then sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
+	else touch "$CONFIG"; fi
     if ! nvram get rc_support | grep -q am_addons; then
-		logger -p user.info -t "Wireless Report:" "This firmware does not support addons!"
+		logger -p user.info -t "Wireless_Report" "This firmware does not support addons!"
 		exit 5
 	fi
     if [ ! -f "$WEB_PAGE" ]; then
-		echo "<html><body>Wireless Report Loading...</body></html>" > "$WEB_PAGE"
+		echo "<html><body>$TAB_LABEL Loading...</body></html>" > "$WEB_PAGE"
 	fi
 	am_get_webui_page "$WEB_PAGE"
 	if [ "$am_webui_page" = "none" ]; then
-		logger -p user.info -t "Wireless Report:" "Unable to install Wireless Report"
+		logger -p user.info -t "Wireless_Report" "Unable to install $TAB_LABEL"
 		exit 5
 	fi
 	cp "$WEB_PAGE" "/www/user/$am_webui_page" 2>/dev/null
@@ -725,10 +722,10 @@ inject_menu() {
 		\n},"
 		sed -i "/^.*{[[:space:]]*$/ { N; /menuName: \"<#1558#>\",/ i $INSERT_DATA
 		}" "$TEMP_MENU"
-		logger -p user.info -t "Wireless_Report" "Mounting Menu[Wireless Report] as $am_webui_page"
+		logger -p user.info -t "Wireless_Report" "Mounting Menu [$TAB_LABEL] as $am_webui_page"
 	else
 		sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ s|{url: \"NULL\", tabName: \"__INHERIT__\"}|{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\n&|" "$TEMP_MENU"
-		logger -p user.info -t "Wireless_Report" "Mounting Menu[Wireless] TAB[Wireless Report] as $am_webui_page"
+		logger -p user.info -t "Wireless_Report" "Mounting Menu [Wireless] TAB [$TAB_LABEL] as $am_webui_page"
 	fi
 	umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 	umount "/www/user/$am_webui_page" 2>/dev/null
