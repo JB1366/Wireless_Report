@@ -399,11 +399,12 @@ check_ssh() {
 		echo -e "${BL}==================================================${NC}"
 		echo -e "                                                            "
 		echo -e "  $N1  Create RSA Keys & Setup AiMesh Nodes                 "
-		echo -e "  $N2  Router-Only Setup                                    "
-		echo -e "  $N3  View Authorized Keys                                 "
-		echo -e "  $N4  View Known Hosts                                     "
-		echo -e "  $N5  View SSH Error Log                                   "
-		echo -e "  $N6  Node Authentication                                  "
+		echo -e "  $N2  Delete RSA Keys                                      "
+		echo -e "  $N3  Router-Only Setup                                    "
+		echo -e "  $N4  View Authorized Keys                                 "
+		echo -e "  $N5  View Known Hosts                                     "
+		echo -e "  $N6  View SSH Error Log                                   "
+		echo -e "  $N7  Node Authentication                                  "
 		echo -e "                                                            "
 		echo -e "  $NE  Exit to main menu                                    "
 		echo -e "                                                            "
@@ -417,6 +418,10 @@ check_ssh() {
                 continue
                 ;;
             2)
+				del_ssh_keys
+				continue
+				;;
+			3)
                 echo -e "\n${YL}[i] Setting Up Router-Only...${NC}"
                 sed -i '/^SSH_NODES=/d' "$CONFIG"
                 echo 'SSH_NODES=" "' >> "$CONFIG"
@@ -424,7 +429,7 @@ check_ssh() {
 				pause
                 continue
                 ;;
-            3)
+            4)
                 echo -e "\n${BL}================ Authorized Keys =================${NC}\n"
                 if [ -f "/root/.ssh/authorized_keys" ]; then cat /root/.ssh/authorized_keys
                 else echo -e "${YL}[!] File not found.${NC}"; fi
@@ -432,7 +437,7 @@ check_ssh() {
                 pause
                 continue
                 ;;
-            4)
+            5)
                 echo -e "\n${BL}================== Known Hosts  ==================${NC}\n"
                 if [ -f "/jffs/.ssh/known_hosts" ]; then cat /jffs/.ssh/known_hosts
                 else echo -e "${YL}[!] File not found.${NC}"; fi
@@ -440,7 +445,7 @@ check_ssh() {
                 pause
                 continue
                 ;;
-            5)
+            6)
                 echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
                 if [ -f "$ERROR_LOG" ]; then cat "$ERROR_LOG"
                 else echo -e "${YL}[!] File not found.${NC}"; fi
@@ -448,7 +453,7 @@ check_ssh() {
                 pause
                 continue
                 ;;
-            6)
+            7)
                 if [ "$install" = "1" ]; then
                     echo -e "\n${YL}[i] You must run option #1 first.${NC}"
                     pause
@@ -548,7 +553,7 @@ node_auth() {
         echo -e "\n${GR}[✓] All nodes ($any_success/$TOTAL_NODES) authenticated successfully!${NC}"
         if [ "$new_nodes" -gt 0 ]; then
             [ "$new_nodes" -eq 1 ] && suffix="" || suffix="s"
-            echo -e "${YL}[!] $new_nodes new node$suffix successfully authenticated.${NC}"
+            echo -e "\n${YL}[!] $new_nodes new node$suffix successfully authenticated.${NC}"
         fi
         [ "$1" = "pause" ] && pause
 		return
@@ -645,6 +650,40 @@ ssh_keys() {
 	echo -ne "\n[*] Press ${BL}[ENTER]${NC} to begin authentication check..."
 	read
 	node_auth "pause"
+}
+
+del_ssh_keys() {
+	if [ -f "$SSH_KEY" ]; then
+		echo -e "\n${YL}[!] Main Router SSH Key exists.${NC}\n"
+		printf "Do you want to delete Key? (y/n): "
+		read -r delete
+		case "$delete" in [yY]*) ;; *) return ;; esac
+	else
+		echo -e "\n${YL}[!] No active RSA key found to delete.${NC}"
+		pause
+		return
+	fi
+	echo -e "\n${YL}[i] Purging RSA key footprint from environment...${NC}"
+	if [ -f "/jffs/.ssh/id_dropbear.pub" ]; then
+		PUB_STRING=$(awk '{print $2}' /jffs/.ssh/id_dropbear.pub)
+	else
+		PUB_STRING=""
+	fi
+	if [ -n "$PUB_STRING" ] && [ -f "/root/.ssh/authorized_keys" ]; then
+		sed -i "\|$PUB_STRING|d" /root/.ssh/authorized_keys
+	fi
+	NVRAM_KEYS=$(nvram get sshd_authkeys)
+	if [ -n "$PUB_STRING" ] && echo "$NVRAM_KEYS" | grep -q "$PUB_STRING"; then
+		CLEANED_KEYS=$(echo "$NVRAM_KEYS" | grep -v "$PUB_STRING")
+		nvram set sshd_authkeys="$CLEANED_KEYS"
+		nvram commit
+	fi
+	rm -f "/jffs/.ssh/id_dropbear" "/jffs/.ssh/id_dropbear.pub" "/root/.ssh/id_dropbear"
+	nvram get sshd_authkeys > /root/.ssh/authorized_keys
+	chmod 600 /root/.ssh/authorized_keys
+	echo -e "\n${GR}[✓] RSA Keys removed successfully.${NC}"
+	ssh_init
+	pause
 }
 
 inject_menu() {
