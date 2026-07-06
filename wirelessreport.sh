@@ -729,7 +729,7 @@ do_uninstall() {
 	rm -rf "$WEB_PAGE" 2>/dev/null
 	case "$USB_PATH" in *wirelessreport*) rm -rf "$USB_PATH" 2>/dev/null ;; esac
 	logger -p user.info -t "Wireless_Report" "(v$LOCAL_VERSION) successfully uninstalled."
-	ssh_init; RTIME=""; BACKHAUL=""; RS_HIST=""; HOST_COLOR=""
+	ssh_init; unset RTIME BACKHAUL RS_HIST HOST_COLOR DARKMODE IPPAD PULSE_MINS DISPLAY_UNIT
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
 	pause
