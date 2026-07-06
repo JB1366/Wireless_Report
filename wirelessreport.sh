@@ -1195,7 +1195,6 @@ do_darkmode() {
 }
 
 do_numbered_node() {
-	REPORT_TITLE="WIRELESS REPORT"
 	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='dash-sep'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
@@ -2502,7 +2501,7 @@ document.addEventListener('mouseout', function(e) {
     <td valign="top">
       <div id="tabMenu" class="submenuBlock"></div>
       <div id="wifiReportContainer" style="padding:10px;">
-      <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">$REPORT_TITLE</h1><span class="header-box">$HOVER_TEXT</span></div></div>
+      <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
         <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL</span></div>
 		<div class="top-controls">
 			<div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
