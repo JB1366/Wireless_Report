@@ -1196,6 +1196,8 @@ do_darkmode() {
 
 do_numbered_node() {
 	REPORT_TITLE="WIRELESS REPORT"
+	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
+	else NTOTAL="<span class='dash-sep'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
 		TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$DOT$NODE_TOTALS"
 	else
@@ -2558,7 +2560,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                   $N_NAMES <span class="router-branding"></span><br>
                   <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
                   <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> <span class="dash-sep">—›</span> $NODE_TOTALS</div>
+                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
                 </div>
                 <table id="nodeTable" class="report_table show-ip">
                   <thead><tr>
