@@ -446,13 +446,24 @@ check_ssh() {
                 continue
                 ;;
             6)
-                echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
-                if [ -f "$ERROR_LOG" ]; then cat "$ERROR_LOG"
-                else echo -e "${YL}[!] File not found.${NC}"; fi
-                echo -e "\n${BL}==================================================${NC}"
-                pause
-                continue
-                ;;
+				echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
+				if [ -f "$ERROR_LOG" ]; then
+					cat "$ERROR_LOG"
+					echo -e "\n\n${BL}==================================================${NC}"
+					printf "\nRemove error log? (y/n): "
+					read -r rm_log
+					if [ "$rm_log" = "y" ] || [ "$rm_log" = "Y" ]; then
+						rm -f "$ERROR_LOG"
+						echo -e "\n${GR}[✓] Error log removed.${NC}"
+						pause
+					fi
+				else
+					echo -e "${YL}[!] File not found.${NC}"
+					echo -e "\n${BL}==================================================${NC}"
+					pause
+				fi
+				continue
+				;;
             7)
                 if [ "$install" = "1" ]; then
                     echo -e "\n${YL}[i] You must run option #1 first.${NC}"
