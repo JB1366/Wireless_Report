@@ -1736,12 +1736,6 @@ $1
 ROW
 }
 
-parse_node() {
-    IFS='|' read -r _ mac rssi iface uptime ssid lrd_val lrd width _ <<ROW
-$1
-ROW
-}
-
 parse_node_out() {
     N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
     while IFS='|' read -r key val; do
@@ -1754,6 +1748,12 @@ parse_node_out() {
     done <<EOF
 $1
 EOF
+}
+
+parse_node() {
+    IFS='|' read -r _ mac rssi iface uptime ssid lrd_val lrd width _ <<ROW
+$1
+ROW
 }
 
 check_github; ssh_init
@@ -2454,26 +2454,15 @@ function openPopout() {
         else th.onclick = function() { sortTable(i, 'popNodeTable'); };
     });
     var mainWrapper = document.createElement('div');
-    mainWrapper.style.display = "flex";
-    mainWrapper.style.flexDirection = "column";
-    mainWrapper.style.flex = "1";
-    mainWrapper.style.maxWidth = "49.5%";
-    mCol.style.maxWidth = "100%";
-    mCol.style.width = "100%";
+    Object.assign(mainWrapper.style, { display: "flex", flexDirection: "column", flex: "1", maxWidth: "49.5%" });
+    Object.assign(mCol.style, { maxWidth: "100%", width: "100%" });
     mainWrapper.appendChild(mCol);
     var originalBar = document.querySelector('.quality-bar');
     if (originalBar) {
         var popoutBar = originalBar.cloneNode(true);
         popoutBar.id = "popoutQualityBar";
-        var wrapperRow = document.createElement('div');
-        wrapperRow.style.width = "100%";
-        wrapperRow.style.paddingTop = "15px";
-        wrapperRow.style.display = "flex";
-        wrapperRow.style.justifyContent = "center";
-        popoutBar.style.margin = "0 auto";
-        popoutBar.style.display = "flex";
-        wrapperRow.appendChild(popoutBar);
-        mainWrapper.appendChild(wrapperRow);
+        Object.assign(popoutBar.style, { display: "flex", justifyContent: "center", margin: "15px auto 0 auto", width: "100%" });
+        mainWrapper.appendChild(popoutBar);
     }
     body.appendChild(mainWrapper);
     body.appendChild(nCol);
