@@ -239,7 +239,7 @@ do_install() {
     fi
     if [ -f "$REPORT_SCRIPT" ]; then
         inject_menu
-		echo -e "${GR}[+] Mounting Menu[Wireless] Tab[Wireless Report]${NC}"
+		echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}"
         if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
         sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
         echo "sh $REPORT_SCRIPT inject # Inject Wireless Report" >> "$SS_FILE"
@@ -1189,14 +1189,14 @@ header_box() {
 do_darkmode() {
 	DARKMODE=${DARKMODE:-0}
 	if [ "$DARKMODE" = "1" ]; then
-		DARKCSS=".section-header { background: transparent !important; color: #fff; font: bold 12px/16px sans-serif; padding: 12px; text-align: center; border: 0 !important; box-shadow: 0 !important; }
+		DARK_CSS=".section-header { background: transparent !important; color: #fff; font: bold 12px/16px sans-serif; padding: 12px; text-align: center; border: 0 !important; box-shadow: 0 !important; }
 		.header-stats-row { margin-top: 15px !important; }
 		.modal-grid .section-header { min-height: 85px !important; }
 		.report-column { width: 100%; background: transparent !important; border: 1px solid #475a68; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
 		table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; background: transparent !important; vertical-align: middle; text-align: center; }
 		table.report_table tfoot td { border-top: none !important; border-bottom: none !important; box-shadow: none !important; padding: 12px 10px !important; font-weight: bold; background: #171b1f; color: #fff; }"
 	else
-		DARKCSS=".section-header { background: linear-gradient(to bottom, #171b1f, #354961); color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
+		DARK_CSS=".section-header { background: linear-gradient(to bottom, #171b1f, #354961); color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
 		.report-column { width: 100%; background: #1c232b; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
 		table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; background: #1c232b; vertical-align: middle; text-align: center; }
 		table.report_table tfoot td { border-top: 1px solid #475a68; padding: 12px 10px !important; font-weight: bold; background: #171b1f; color: #fff; }"
@@ -1718,20 +1718,6 @@ get_row() {
 	ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 }
 
-node_temp_load() {
-    N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
-    while IFS='|' read -r key val; do
-        case "$key" in
-            "TEMP")       N_TEMP_RAW=$val ;;
-            "LOAD")       N_LOAD=$val ;;
-            "UPTIME_RAW") N_UPTIME_RAW=$val ;;
-            "UPTIME_VAL") N_UPTIME=$val ;;
-        esac
-    done <<EOF
-$1
-EOF
-}
-
 parse_main_sta() {
     local raw_info="$1"
     printf "%s\n" "$raw_info" | awk '
@@ -1754,6 +1740,20 @@ parse_node() {
     IFS='|' read -r _ mac rssi iface uptime ssid lrd_val lrd width _ <<ROW
 $1
 ROW
+}
+
+parse_node_out() {
+    N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
+    while IFS='|' read -r key val; do
+        case "$key" in
+            "TEMP")       N_TEMP_RAW=$val ;;
+            "LOAD")       N_LOAD=$val ;;
+            "UPTIME_RAW") N_UPTIME_RAW=$val ;;
+            "UPTIME_VAL") N_UPTIME=$val ;;
+        esac
+    done <<EOF
+$1
+EOF
 }
 
 check_github; ssh_init
@@ -2093,7 +2093,7 @@ for line in $SSH_NODES; do
 			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
 		fi
 		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
-		node_temp_load "$NODE_OUT"
+		parse_node_out "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
 		NC_TEMP=$(get_temp_class "$N_TEMP")
@@ -2182,7 +2182,7 @@ cat <<HTML >> "$WEB_PAGE"
 	#countdown { margin-left: 6px; font-weight: bold; }
 	#refreshRate:focus { outline: none; border: none; background: #000; }
 	.grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
-	${DARKCSS}
+	${DARK_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; cursor: pointer; }
 	table.report_table { width: 100%; border-collapse: collapse; }
 	table.report_table.show-ip .m-val { display: none !important; }
@@ -2528,88 +2528,88 @@ cat <<BUTTONSHTML >> "$WEB_PAGE"
 			<button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Stacked</button>
 			<button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
 			<button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
+		</div>
 BUTTONSHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
-		</div>
-          <div class="grid-container">
-          <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
-              <div id="mainCol" class="report-column">
-                <div class="section-header">
-                  $MAIN_LABEL<br>
-                  <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-                  <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
-                </div>
-                <table id="mainTable" class="report_table show-ip">
-                  <thead><tr>
-                    <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
-                    <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-					<th onclick="sortTable(2, 'mainTable')">RSSI</th>
-					<th onclick="sortTable(3, 'mainTable')">RX/TX</th>
-                    <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                    <th onclick="sortTable(5, 'mainTable')">BAND</th>
-                    <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
-                  </tr></thead>
-                  <tbody>$MAIN_ROWS</tbody>
-                  <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span>&ensp;Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
-                </table>
-              </div>
-			  <div class="quality-bar">
-				  <div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-				  <div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-				  <div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-				  <div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+		<div class="grid-container">
+		<div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
+			<div id="mainCol" class="report-column">
+			  <div class="section-header">
+				$MAIN_LABEL<br>
+				<span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+				<hr class="sep-line">
+				<div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
 			  </div>
+			  <table id="mainTable" class="report_table show-ip">
+				<thead><tr>
+				  <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
+				  <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+				  <th onclick="sortTable(2, 'mainTable')">RSSI</th>
+				  <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
+				  <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+				  <th onclick="sortTable(5, 'mainTable')">BAND</th>
+				  <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
+				</tr></thead>
+				<tbody>$MAIN_ROWS</tbody>
+				<tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span>&ensp;Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
+			  </table>
+			</div>
+			<div class="quality-bar">
+				<div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
+				<div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+				<div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+				<div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+			</div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<NODEHTML >> "$WEB_PAGE"
-			  <div id="nodeCol" class="report-column">
-                <div class="section-header">
-                  $N_NAMES <span class="router-branding"></span><br>
-                  <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-                  <hr class="sep-line">
-                  <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
-                </div>
-                <table id="nodeTable" class="report_table show-ip">
-                  <thead><tr>
-                    <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
-                    <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-                    <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
-                    <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
-                    <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                    <th onclick="sortTable(5, 'nodeTable')">BAND</th>
-                    <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
-                  </tr></thead>
-                  <tbody>$NODE_ROWS</tbody>
-                  <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
-                </table>
-              </div>
+			<div id="nodeCol" class="report-column">
+			  <div class="section-header">
+				$N_NAMES <span class="router-branding"></span><br>
+				<span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+				<hr class="sep-line">
+				<div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
+			  </div>
+			  <table id="nodeTable" class="report_table show-ip">
+				<thead><tr>
+				  <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
+				  <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+				  <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
+				  <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
+				  <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+				  <th onclick="sortTable(5, 'nodeTable')">BAND</th>
+			  <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
+				</tr></thead>
+				<tbody>$NODE_ROWS</tbody>
+				<tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
+			  </table>
+			</div>
+		</div>
 NODEHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
-          </div>
-          <div id="allCol" class="report-column">
-            <div class="section-header">
-              $BRAND_LINE_ALL<br>
-              <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-              <hr class="sep-line">
-              <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
+            <div id="allCol" class="report-column">
+              <div class="section-header">
+                $BRAND_LINE_ALL<br>
+                <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                <hr class="sep-line">
+                <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
+              </div>
+              <table id="allTable" class="report_table show-ip">
+                <thead><tr>
+                  <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
+                  <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                  <th onclick="sortTable(2, 'allTable')">RSSI</th>
+                  <th onclick="sortTable(3, 'allTable')">RX/TX</th>
+                  <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                  <th onclick="sortTable(5, 'allTable')">BAND</th>
+                  <th onclick="sortTable(6, 'allTable')">UPTIME</th>
+                </tr></thead>
+                <tbody>$ALL_ROWS</tbody>
+                <tfoot><tr><td colspan="7" style="$UPTIME_STYLE">Uptime: $TOTAL_UPTIME&ensp;Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
+              </table>
             </div>
-            <table id="allTable" class="report_table show-ip">
-              <thead><tr>
-                <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
-                <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-                <th onclick="sortTable(2, 'allTable')">RSSI</th>
-                <th onclick="sortTable(3, 'allTable')">RX/TX</th>
-                <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                <th onclick="sortTable(5, 'allTable')">BAND</th>
-                <th onclick="sortTable(6, 'allTable')">UPTIME</th>
-              </tr></thead>
-              <tbody>$ALL_ROWS</tbody>
-              <tfoot><tr><td colspan="7" style="$UPTIME_STYLE">Uptime: $TOTAL_UPTIME&ensp;Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
-            </table>
-          </div>
         </div>
       </div>
     </td>
