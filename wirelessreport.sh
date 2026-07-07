@@ -2453,7 +2453,30 @@ function openPopout() {
         else if(i===4) th.onclick = function() { toggleCols('popNodeTable', 'show-iface', this, 'SSID', 'IFACE'); };
         else th.onclick = function() { sortTable(i, 'popNodeTable'); };
     });
-    body.appendChild(mCol); body.appendChild(nCol);
+    var mainWrapper = document.createElement('div');
+    mainWrapper.style.display = "flex";
+    mainWrapper.style.flexDirection = "column";
+    mainWrapper.style.flex = "1";
+    mainWrapper.style.maxWidth = "49.5%";
+    mCol.style.maxWidth = "100%";
+    mCol.style.width = "100%";
+    mainWrapper.appendChild(mCol);
+    var originalBar = document.querySelector('.quality-bar');
+    if (originalBar) {
+        var popoutBar = originalBar.cloneNode(true);
+        popoutBar.id = "popoutQualityBar";
+        var wrapperRow = document.createElement('div');
+        wrapperRow.style.width = "100%";
+        wrapperRow.style.paddingTop = "15px";
+        wrapperRow.style.display = "flex";
+        wrapperRow.style.justifyContent = "center";
+        popoutBar.style.margin = "0 auto";
+        popoutBar.style.display = "flex";
+        wrapperRow.appendChild(popoutBar);
+        mainWrapper.appendChild(wrapperRow);
+    }
+    body.appendChild(mainWrapper);
+    body.appendChild(nCol);
     document.getElementById('popoutModal').style.display = 'flex';
 }
 function closePopout() {
