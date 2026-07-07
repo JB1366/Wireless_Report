@@ -2314,14 +2314,17 @@ function switchTab(view) {
     var all = document.getElementById('allCol');
     var btnStack = document.getElementById('btnStack');
     var btnAll = document.getElementById('btnAll');
+	var allBar = document.getElementById('allDevicesQualityBar');
     if(view === 'all') {
         if (split) split.style.display = 'none';
         if (all) all.style.display = 'flex';
+		if (allBar) allBar.style.display = 'flex';
         if (btnAll) btnAll.classList.add('active');
         if (btnStack) btnStack.classList.remove('active');
     } else {
         if (split) split.style.display = 'flex';
         if (all) all.style.display = 'none';
+		if (allBar) allBar.style.display = 'none';
         if (btnStack) btnStack.classList.add('active');
         if (btnAll) btnAll.classList.remove('active');
     }
@@ -2608,8 +2611,14 @@ cat <<HTML >> "$WEB_PAGE"
                 </tr></thead>
                 <tbody>$ALL_ROWS</tbody>
                 <tfoot><tr><td colspan="7" style="$UPTIME_STYLE">Uptime: $TOTAL_UPTIME&ensp;Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
-              </table>
+			  </table>
             </div>
+			<div id="allDevicesQualityBar" class="quality-bar">
+				<div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
+				<div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+				<div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+				<div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+			</div>
         </div>
       </div>
     </td>
