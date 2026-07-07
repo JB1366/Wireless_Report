@@ -1255,79 +1255,40 @@ update_time() {
     CUR_TIME=$(date "$T_FMT")
 }
 
-get_trend() {
-    local mac="$1"
-    local current_rssi="$2"
-    local rssi_name="${3:-""}"
-	if [ "$RS_HIST" = "1" ]; then
-		local rband=$(get_band "$iface" "$width" "$ROUTER" "band")
-		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
-		local history_str="${entry#*|}"
-		local prev_entry="${history_str##*,}"
-		local prev_rssi="${prev_entry%%|*}"
-		local trend_icon=""
-		if [ -z "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box'>•</span>"
-		elif [ "$current_rssi" -gt "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box trend-up sig-exc'>↑</span>"
-		elif [ "$current_rssi" -lt "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box trend-down sig-poor'>↓</span>"
-		else
-			trend_icon="<span class='trend-box'>•</span>"
-		fi
-		if [ "$RS_HIST_DATE" = "1" ]; then
-            local new_entry="$current_rssi|$rssi_name|$rband|$CUR_TIME"
-        else
-            local new_entry="$current_rssi|$rssi_name|$rband"
-        fi
-		local new_history="${history_str:+$history_str,}$new_entry"
-		local final_history="$new_history"
-		local commas_only="${final_history//[^,]/}"
-		local count=$(( ${#commas_only} + 1 ))
-		while [ "$count" -gt "$RS_HIST_ENTRIES" ]; do
-			final_history="${final_history#*,}"
-			count=$((count - 1))
-		done
-		echo "$mac|$final_history" >> "$NEW_HISTORY"
-		local rssi_history=""
-		local IFS=','
-		for entry in $final_history; do
-			rssi="${entry%%|*}"
-			rest="${entry#*|}"
-			name="${rest%%|*}"
-			rest="${rest#*|}"
-			if [ "$RS_HIST_DATE" = "1" ]; then
-                rband_val="${rest%%|*}"
-                time="${rest#*|}"
-            else
-                rband_val="$rest"
-                time=""
-            fi
-			if [ "$time" = "$rest" ]; then time=""; fi
-			if [ "$rssi" -ge -50 ]; then style="color: #30d158; font-weight: bold;"
-			elif [ "$rssi" -ge -60 ]; then style="color: #64d2ff; font-weight: bold;"
-			elif [ "$rssi" -ge -70 ]; then style="color: #ffd60a; font-weight: bold;"
-			else style="color: #ff453a; font-weight: bold;"; fi
-			rssi_history="${rssi_history}${rssi_history:+<br>}<span style='$style'>$rssi [$name] [$rband_val]${time:+ $time}</span>"
-		done
-		unset IFS
-		echo -n "$trend_icon<span class='rssi-tooltip'>$rssi_history</span>"
-	else
-		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
-		local old="${entry##*|}"
-		echo "$mac|$current_rssi" >> "$NEW_HISTORY"
-		if [ -z "$old" ] || [ "$old" -eq 0 ]; then
-            echo "<span class='trend-box'>•</span>"
-            return
-        fi
-        if [ "$current_rssi" -gt "$old" ]; then
-            echo "<span class='trend-box trend-up sig-exc'>↑</span>"
-        elif [ "$current_rssi" -lt "$old" ]; then
-            echo "<span class='trend-box trend-down sig-poor'>↓</span>"
-        else
-            echo "<span class='trend-box'>•</span>"
-        fi
-	fi
+get_temp_unit() {
+    local t_unit=$1
+    case "$t_unit" in ""|*[!0-9.]*) echo "--"; return ;; esac
+    if [ "$TEMP_UNIT" = "C" ]; then
+        echo "${t_unit}°C"
+    else
+        local f_temp=$(( (t_unit * 9 + (t_unit >= 0 ? 2 : -2)) / 5 + 32 ))
+        echo "${f_temp}°F"
+    fi
+}
+
+get_temp_class() {
+    local temp=$1
+	local val="${temp%%[^0-9]*}"
+    case "$val" in ""|*[!0-9]*) echo "stat-cool"; return ;; esac
+    if [ "$REPORT_UNIT" = "C" ]; then
+        if [ "$val" -ge 90 ]; then echo "stat-hot"
+        elif [ "$val" -ge 75 ]; then echo "stat-warm"
+        else echo "stat-cool"; fi
+    else
+        if [ "$val" -ge 194 ]; then echo "stat-hot"
+        elif [ "$val" -ge 167 ]; then echo "stat-warm"
+        else echo "stat-cool"; fi
+    fi
+}
+
+get_load_class() {
+    local load=$1
+    case "$load" in ""|*[!0-9.]*) echo "stat-cool"; return ;; esac
+    case "$load" in
+        [4-9]*|[0-9][0-9]*) echo "stat-hot" ;;
+        1.[5-9]*|[2-3].*)   echo "stat-warm" ;;
+        *)                  echo "stat-cool" ;;
+    esac
 }
 
 get_mac_address() {
@@ -1427,16 +1388,6 @@ get_ip() {
     ip_sort="$IP_NUM"
 }
 
-check_new_mac() {
-	local mac="$1"
-    if [ ! -f "$KNOWN_DB" ]; then touch "$KNOWN_DB"; fi
-    if ! grep -qi "^$mac$" "$KNOWN_CACHE"; then
-        echo "$mac" >> "$KNOWN_DB"
-        echo "$mac" >> "$KNOWN_CACHE"
-        echo "new-device-row"
-    fi
-}
-
 ip_to_num() {
     local ip="$1" o1 o2 o3 o4
     o1="${ip%%.*}"; local rest="${ip#*.}"
@@ -1451,6 +1402,103 @@ ip_to_num() {
     o3=${o3#${o3%%[!0]*}}; [ -z "$o3" ] && o3=0
     o4=${o4#${o4%%[!0]*}}; [ -z "$o4" ] && o4=0
     IP_NUM=$(printf "%03d%03d%03d%03d" "$o1" "$o2" "$o3" "$o4")
+}
+
+final_chk() {
+    if [ -z "$ssid" ]; then ssid="Wireless"; fi
+    case "$rssi" in
+        *[!0-9-]*|""|"-") 
+            rssi="N/A" 
+            ;;
+        *)
+            if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
+            ;;
+    esac
+}
+
+check_new_mac() {
+	local mac="$1"
+    if [ ! -f "$KNOWN_DB" ]; then touch "$KNOWN_DB"; fi
+    if ! grep -qi "^$mac$" "$KNOWN_CACHE"; then
+        echo "$mac" >> "$KNOWN_DB"
+        echo "$mac" >> "$KNOWN_CACHE"
+        echo "new-device-row"
+    fi
+}
+
+get_trend() {
+    local mac="$1"
+    local current_rssi="$2"
+    local rssi_name="${3:-""}"
+	if [ "$RS_HIST" = "1" ]; then
+		local rband=$(get_band "$iface" "$width" "$ROUTER" "band")
+		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
+		local history_str="${entry#*|}"
+		local prev_entry="${history_str##*,}"
+		local prev_rssi="${prev_entry%%|*}"
+		local trend_icon=""
+		if [ -z "$prev_rssi" ]; then
+			trend_icon="<span class='trend-box'>•</span>"
+		elif [ "$current_rssi" -gt "$prev_rssi" ]; then
+			trend_icon="<span class='trend-box trend-up sig-exc'>↑</span>"
+		elif [ "$current_rssi" -lt "$prev_rssi" ]; then
+			trend_icon="<span class='trend-box trend-down sig-poor'>↓</span>"
+		else
+			trend_icon="<span class='trend-box'>•</span>"
+		fi
+		if [ "$RS_HIST_DATE" = "1" ]; then
+            local new_entry="$current_rssi|$rssi_name|$rband|$CUR_TIME"
+        else
+            local new_entry="$current_rssi|$rssi_name|$rband"
+        fi
+		local new_history="${history_str:+$history_str,}$new_entry"
+		local final_history="$new_history"
+		local commas_only="${final_history//[^,]/}"
+		local count=$(( ${#commas_only} + 1 ))
+		while [ "$count" -gt "$RS_HIST_ENTRIES" ]; do
+			final_history="${final_history#*,}"
+			count=$((count - 1))
+		done
+		echo "$mac|$final_history" >> "$NEW_HISTORY"
+		local rssi_history=""
+		local IFS=','
+		for entry in $final_history; do
+			rssi="${entry%%|*}"
+			rest="${entry#*|}"
+			name="${rest%%|*}"
+			rest="${rest#*|}"
+			if [ "$RS_HIST_DATE" = "1" ]; then
+                rband_val="${rest%%|*}"
+                time="${rest#*|}"
+            else
+                rband_val="$rest"
+                time=""
+            fi
+			if [ "$time" = "$rest" ]; then time=""; fi
+			if [ "$rssi" -ge -50 ]; then style="color: #30d158; font-weight: bold;"
+			elif [ "$rssi" -ge -60 ]; then style="color: #64d2ff; font-weight: bold;"
+			elif [ "$rssi" -ge -70 ]; then style="color: #ffd60a; font-weight: bold;"
+			else style="color: #ff453a; font-weight: bold;"; fi
+			rssi_history="${rssi_history}${rssi_history:+<br>}<span style='$style'>$rssi [$name] [$rband_val]${time:+ $time}</span>"
+		done
+		unset IFS
+		echo -n "$trend_icon<span class='rssi-tooltip'>$rssi_history</span>"
+	else
+		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
+		local old="${entry##*|}"
+		echo "$mac|$current_rssi" >> "$NEW_HISTORY"
+		if [ -z "$old" ] || [ "$old" -eq 0 ]; then
+            echo "<span class='trend-box'>•</span>"
+            return
+        fi
+        if [ "$current_rssi" -gt "$old" ]; then
+            echo "<span class='trend-box trend-up sig-exc'>↑</span>"
+        elif [ "$current_rssi" -lt "$old" ]; then
+            echo "<span class='trend-box trend-down sig-poor'>↓</span>"
+        else
+            echo "<span class='trend-box'>•</span>"
+        fi
+	fi
 }
 
 get_band() {
@@ -1561,6 +1609,21 @@ get_band() {
 	fi
 }
 
+check_qca_up() {
+	if [ "$uptime" = "UP_QCA" ]; then case "$iface" in *ath*)
+		NOW=$(date +%s)
+		CLEAN_MAC="$mac_address"
+		START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
+		if [ "$START_TS" -gt 0 ]; then
+			uptime=$((NOW - START_TS))
+			if [ "$uptime" -lt 0 ]; then uptime=$((START_TS - NOW)); fi
+		else
+			uptime="0"
+		fi
+		;;
+	esac; fi
+}
+
 fmt_uptime() {
     local T=$1
     if [ -z "$T" ] || case "$T" in *[!0-9]*) true ;; *) false ;; esac; then
@@ -1584,51 +1647,12 @@ fmt_uptime() {
     fi
 }
 
-get_temp_unit() {
-    local t_unit=$1
-    case "$t_unit" in ""|*[!0-9.]*) echo "--"; return ;; esac
-    if [ "$TEMP_UNIT" = "C" ]; then
-        echo "${t_unit}°C"
-    else
-        local f_temp=$(( (t_unit * 9 + (t_unit >= 0 ? 2 : -2)) / 5 + 32 ))
-        echo "${f_temp}°F"
-    fi
-}
-
-get_temp_class() {
-    local temp=$1
-	local val="${temp%%[^0-9]*}"
-    case "$val" in ""|*[!0-9]*) echo "stat-cool"; return ;; esac
-    if [ "$REPORT_UNIT" = "C" ]; then
-        if [ "$val" -ge 90 ]; then echo "stat-hot"
-        elif [ "$val" -ge 75 ]; then echo "stat-warm"
-        else echo "stat-cool"; fi
-    else
-        if [ "$val" -ge 194 ]; then echo "stat-hot"
-        elif [ "$val" -ge 167 ]; then echo "stat-warm"
-        else echo "stat-cool"; fi
-    fi
-}
-
-get_load_class() {
-    local load=$1
-    case "$load" in ""|*[!0-9.]*) echo "stat-cool"; return ;; esac
-    case "$load" in
-        [4-9]*|[0-9][0-9]*) echo "stat-hot" ;;
-        1.[5-9]*|[2-3].*)   echo "stat-warm" ;;
-        *)                  echo "stat-cool" ;;
-    esac
-}
-
 get_bars_rssi_style() {
-    case "$rssi" in
-        *[!0-9-]*|""|"-")
-            bars="<span class='bar-box'></span>"
-            rssi_style="color: #8e8e93;"
-            rssi="N/A"
-            return
-            ;;
-    esac
+    if [ "$rssi" = "N/A" ]; then
+        bars="<span class='bar-box'></span>"
+        rssi_style="color: #8e8e93;"
+        return
+    fi
     if [ "$rssi" -ge -50 ]; then
         bars="<span class='bar-box sig-exc'>||||</span>"
         rssi_style="color: #30d158; font-weight: bold;"
@@ -1648,6 +1672,13 @@ get_bars_rssi_style() {
     fi
 }
 
+get_max_column() {
+	if [ "${#name}" -gt 20 ]; then name="${name:0:20}"; fi
+	if [ "${#mac}"  -gt 17 ]; then mac="${mac:0:17}"; fi
+	if [ "${#ip}"   -gt 15 ]; then ip="${ip:0:15}"; fi
+	if [ "${#ssid}" -gt 15 ]; then ssid="${ssid:0:15}"; fi
+}
+
 hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
@@ -1664,13 +1695,6 @@ hostcolor_node_name() {
 		NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
     fi
 	name="$NAME_NODE$NODE_NUM"
-}
-
-get_max_column() {
-	if [ "${#name}" -gt 20 ]; then name="${name:0:20}"; fi
-	if [ "${#mac}"  -gt 17 ]; then mac="${mac:0:17}"; fi
-	if [ "${#ip}"   -gt 15 ]; then ip="${ip:0:15}"; fi
-	if [ "${#ssid}" -gt 15 ]; then ssid="${ssid:0:15}"; fi
 }
 
 get_row() {
@@ -1694,29 +1718,18 @@ get_row() {
 	ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 }
 
-final_chk() {
-    if [ -z "$ssid" ]; then ssid="Wireless"; fi
-    case "$rssi" in
-        *[!0-9-]*|""|"-") ;;
-        *)
-            if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
-            ;;
-    esac
-}
-
-check_qca_up() {
-	if [ "$uptime" = "UP_QCA" ]; then case "$iface" in *ath*)
-		NOW=$(date +%s)
-		CLEAN_MAC="$mac_address"
-		START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
-		if [ "$START_TS" -gt 0 ]; then
-			uptime=$((NOW - START_TS))
-			if [ "$uptime" -lt 0 ]; then uptime=$((START_TS - NOW)); fi
-		else
-			uptime="0"
-		fi
-		;;
-	esac; fi
+node_temp_load() {
+    N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
+    while IFS='|' read -r key val; do
+        case "$key" in
+            "TEMP")       N_TEMP_RAW=$val ;;
+            "LOAD")       N_LOAD=$val ;;
+            "UPTIME_RAW") N_UPTIME_RAW=$val ;;
+            "UPTIME_VAL") N_UPTIME=$val ;;
+        esac
+    done <<EOF
+$1
+EOF
 }
 
 parse_main_sta() {
@@ -1743,20 +1756,6 @@ $1
 ROW
 }
 
-node_temp_load() {
-    N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
-    while IFS='|' read -r key val; do
-        case "$key" in
-            "TEMP")       N_TEMP_RAW=$val ;;
-            "LOAD")       N_LOAD=$val ;;
-            "UPTIME_RAW") N_UPTIME_RAW=$val ;;
-            "UPTIME_VAL") N_UPTIME=$val ;;
-        esac
-    done <<EOF
-$1
-EOF
-}
-
 check_github; ssh_init
 update_time; get_usb
 
@@ -1765,6 +1764,7 @@ run_report() {
 #  Node Scan(s)   #
 #=================#
 read -r START_RUNTIME _ < /proc/uptime
+# N_COLORS="lime-green medium-purple yellow skyblue orange red"
 N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
 DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
