@@ -1407,8 +1407,8 @@ ip_to_num() {
 final_chk() {
     if [ -z "$ssid" ]; then ssid="Wireless"; fi
     case "$rssi" in
-        *[!0-9-]*|""|"-") 
-            rssi="N/A" 
+        *[!0-9-]*|""|"-")
+            rssi="N/A"
             ;;
         *)
             if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
