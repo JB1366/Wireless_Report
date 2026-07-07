@@ -301,7 +301,8 @@ ScriptUpdateFromAMTM() {
 
 get_usb() {
 	if [ -n "$USB_PATH" ]; then return; fi
-	local BUP=$(cut -d. -f1 /proc/uptime)
+	read -r uptime_val _ < /proc/uptime
+	local BUP="${uptime_val%%.*}"
     local mount
     local FOUND=0
     for mount in /tmp/mnt/*; do
@@ -544,9 +545,9 @@ node_auth() {
 					fi
 				fi
 			else
-				if grep -q "No auth methods" "$ERROR_LOG"; then
+				if echo "$SSH_ERR" | grep -q "No auth methods"; then
 					echo -e "${RD}[✗] Failed: Invalid Username or SSH Key.${NC}"
-				elif grep -q "Connection refused" "$ERROR_LOG"; then
+				elif echo "$SSH_ERR" | grep -q "Connection refused"; then
 					echo -e "${RD}[✗] Failed: SSH Connection refused.${NC}"
 				else
 					echo -e "${RD}[✗] Failed: Unknown connection issue.${NC}"
@@ -1132,7 +1133,7 @@ pause() {
 do_runtime() {
 	RTIME=${RTIME:-1}
 	if [ "$RTIME" = "1" ]; then
-		END_RUNTIME=$(awk '{print $1}' /proc/uptime)
+		read -r END_RUNTIME _ < /proc/uptime
 		STATS_FILE="$USB_PATH/runtime.db"
 		DIFF=$(awk "BEGIN {printf \"%.2f\", $END_RUNTIME - $START_RUNTIME}")
 		RUNTIME="${DIFF}s"
@@ -1413,7 +1414,6 @@ get_ip() {
     if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$LEASES_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
     if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$YAZ_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
     if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$DHCPSTATIC_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
-	if [ -z "$ip" ]; then ip=$(arp -an | grep -i "$mac" | awk '{print $2}' | tr -d '()' | head -n 1); fi
 	case "$name" in *-BH*) ip="" ;; esac
 	case "$ip" in ""|*[!0-9.]*) ip=$(printf "900.000.000.00%d" "$NUMBERED_NODE") ;; esac
 	if [ "$IPPAD" = "1" ]; then
@@ -1614,30 +1614,38 @@ get_load_class() {
     local load=$1
     case "$load" in ""|*[!0-9.]*) echo "stat-cool"; return ;; esac
     case "$load" in
-        [4-9].*|[1-3][0-9].*) echo "stat-hot" ;;
-        1.[5-9]*|[2-3].*)     echo "stat-warm" ;;
-        *)                    echo "stat-cool" ;;
+        [4-9]*|[0-9][0-9]*) echo "stat-hot" ;;
+        1.[5-9]*|[2-3].*)   echo "stat-warm" ;;
+        *)                  echo "stat-cool" ;;
     esac
 }
 
 get_bars_rssi_style() {
-	if [ "$rssi" -ge -50 ]; then
-		bars="<span class='bar-box sig-exc'>||||</span>"
-		rssi_style="color: #30d158; font-weight: bold;"
-		T_EXC=$((T_EXC+1))
-	elif [ "$rssi" -ge -60 ]; then
-		bars="<span class='bar-box sig-good'>|||</span>"
-		rssi_style="color: #64d2ff; font-weight: bold;"
-		T_GOOD=$((T_GOOD+1))
-	elif [ "$rssi" -ge -70 ]; then
-		bars="<span class='bar-box sig-fair'>||</span>"
-		rssi_style="color: #ffd60a; font-weight: bold;"
-		T_FAIR=$((T_FAIR+1))
-	else
-		bars="<span class='bar-box sig-poor'>|</span>"
-		rssi_style="color: #ff453a; font-weight: bold;"
-		T_POOR=$((T_POOR+1))
-	fi
+    case "$rssi" in
+        *[!0-9-]*|""|"-")
+            bars="<span class='bar-box'></span>"
+            rssi_style="color: #8e8e93;"
+            rssi="N/A"
+            return
+            ;;
+    esac
+    if [ "$rssi" -ge -50 ]; then
+        bars="<span class='bar-box sig-exc'>||||</span>"
+        rssi_style="color: #30d158; font-weight: bold;"
+        T_EXC=$((T_EXC+1))
+    elif [ "$rssi" -ge -60 ]; then
+        bars="<span class='bar-box sig-good'>|||</span>"
+        rssi_style="color: #64d2ff; font-weight: bold;"
+        T_GOOD=$((T_GOOD+1))
+    elif [ "$rssi" -ge -70 ]; then
+        bars="<span class='bar-box sig-fair'>||</span>"
+        rssi_style="color: #ffd60a; font-weight: bold;"
+        T_FAIR=$((T_FAIR+1))
+    else
+        bars="<span class='bar-box sig-poor'>|</span>"
+        rssi_style="color: #ff453a; font-weight: bold;"
+        T_POOR=$((T_POOR+1))
+    fi
 }
 
 hostcolor_main_name() {
@@ -1687,9 +1695,13 @@ get_row() {
 }
 
 final_chk() {
-	if [ -z "$ssid" ]; then ssid="Wireless"; fi
-    if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
-
+    if [ -z "$ssid" ]; then ssid="Wireless"; fi
+    case "$rssi" in
+        *[!0-9-]*|""|"-") ;;
+        *)
+            if [ "$rssi" -ge 0 ] && [ "$rssi" -le 1 ]; then rssi=-54; fi
+            ;;
+    esac
 }
 
 check_qca_up() {
@@ -1752,8 +1764,8 @@ run_report() {
 #=================#
 #  Node Scan(s)   #
 #=================#
-START_RUNTIME=$(awk '{print $1}' /proc/uptime)
-N_COLORS="#64d2ff #30d158 #ffd60a #bf40bf #ff9500 #ff453a"
+read -r START_RUNTIME _ < /proc/uptime
+N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
 DOT=" <span style='color:white;'>•</span> "
 N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
@@ -2181,10 +2193,6 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
-	/* Hostnames Left-Aligned to match column
-	table.report_table tr td:first-child { text-align: left; padding-left: 10px; }
-	table.report_table thead th:first-child { text-align: left; padding-left: 10px; }
-	*/
 	.f-res { color: #0096ff; }
 	.sep-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
@@ -2214,11 +2222,9 @@ cat <<HTML >> "$WEB_PAGE"
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
 	.row-break { flex-basis: 100%; height: 0; margin: 0; }
 	sup { font-size: 0.6em; margin-left: 2px; }
-	/* RSSI History Tooltip */
 	.rssi-container { position: relative; cursor: help; vertical-align: middle; }
 	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; background: #000; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
 	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
-	/* RSSI History Tooltip */
 </style>
 <script>
 function initial() {
@@ -2451,7 +2457,6 @@ function closePopout() {
     document.getElementById('popoutModal').style.display = 'none';
     localStorage.setItem('wifiReportPopoutOpen', 'false');
 }
-/* Right-Click Node-Hostnames */
 document.addEventListener('contextmenu', function(e) {
     var h = e.target.closest('th');
     if (h && Array.prototype.indexOf.call(h.parentNode.children, h) === 0) {
@@ -2464,8 +2469,6 @@ document.addEventListener('contextmenu', function(e) {
         sortTable(0, table.id, false, false);
     }
 });
-/* Right-Click Node-Hostnames */
-/* RSSI History Tooltip */
 document.addEventListener('mouseover', function(e) {
     const container = e.target.closest('.rssi-container');
     if (container) {
@@ -2496,7 +2499,6 @@ document.addEventListener('mouseout', function(e) {
         }
     }
 });
-/* RSSI History Tooltip */
 </script>
 </head>
 <body onload="initial();">
