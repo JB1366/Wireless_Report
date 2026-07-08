@@ -2540,7 +2540,7 @@ document.addEventListener('mouseout', function(e) {
 			onclick="triggerRefresh()">Refresh <span style="color: white;">${RUNTIME}</span></button>
 				<span style="font-size:12px; margin-left:5px; color: #0096ff;">Auto: </span>
 				<select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="background:#000; font-weight:bold; color:white; border:0px solid #444; margin-left:5px; font-size:12px; height:20px;">
-					<option value="0">Off</option><option value="30">30s</option><option value="60">1m</option><option value="120">2m</option><option value="300">5m</option><option value="600">10m</option><option value="1200">20m</option><option value="1800">30m</option>
+				<option value="0">Off</option><option value="30">30s</option><option value="60">1m</option><option value="120">2m</option><option value="300">5m</option><option value="600">10m</option><option value="1200">20m</option><option value="1800">30m</option>
 				</select><span style="color: #0096ff;" id="countdown"></span>
 			</div>
 HTML
@@ -2549,10 +2549,10 @@ cat <<BUTTONSHTML >> "$WEB_PAGE"
 			<button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Stacked</button>
 			<button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
 			<button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
-		</div>
 BUTTONSHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
+		</div>
 		<div class="grid-container">
 		<div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
 			<div id="mainCol" class="report-column">
