@@ -2208,8 +2208,8 @@ cat <<HTML >> "$WEB_PAGE"
 	.router-branding { color: #0096ff; font-size: 1.4em; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
 	.header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
 	.m-val, .s-val { display: inline; } .i-val, .if-val { display: none; }
-	.text-24 { color: #ffa500 !important; font-weight: bold; }
-	.text-5g { color: #0096ff !important; font-weight: bold; }
+	.text-24 { color: #0096ff !important; font-weight: bold; }
+	.text-5g { color: #30d158 !important; font-weight: bold; }
 	.text-6g { color: #bf40bf !important; font-weight: bold; }
 	.modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 	.modal-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
