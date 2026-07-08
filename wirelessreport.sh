@@ -728,7 +728,7 @@ inject_menu() {
 		\nmenuName: \"$TAB_LABEL\",\
 		\nindex: \"menu_AiMesh\",\
 		\ntab: [\
-		\n{url: \"$am_webui_page\", tabName: \"__HIDE__\"},\
+		\n{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\
 		\n{url: \"NULL\", tabName: \"__INHERIT__\"}\
 		\n]\
 		\n},"
