@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="1.9.9"
+SCRIPT_VERSION="2.0.0"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1681,8 +1681,11 @@ get_max_column() {
 
 hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
+		IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
 		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAME_MAIN"
+	else
+		IP_COLOR="color: #64d2ff;"; MAC_COLOR=""
 	fi
 }
 
@@ -1983,8 +1986,6 @@ ROUTER_IP=$(nvram get lan_ipaddr)
 ROUTER=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"
 if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
-if [ "$HOST_COLOR" = "1" ]; then IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
-else IP_COLOR="color: #64d2ff;"; MAC_COLOR=""; fi
 MAIN_LABEL="<span class='router-branding'>$MAIN_NAME</span>"
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
