@@ -1983,7 +1983,8 @@ ROUTER_IP=$(nvram get lan_ipaddr)
 ROUTER=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"
 if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
-if [ "$HOST_COLOR" = "1" ]; then IP_COLOR=""; else IP_COLOR="color: #64d2ff;"; fi
+if [ "$HOST_COLOR" = "1" ]; then IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
+else IP_COLOR="color: #64d2ff;"; MAC_COLOR=""; fi
 MAIN_LABEL="<span class='router-branding'>$MAIN_NAME</span>"
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
@@ -2185,8 +2186,12 @@ cat <<HTML >> "$WEB_PAGE"
 	${DARK_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; cursor: pointer; }
 	table.report_table { width: 100%; border-collapse: collapse; }
+	table.report_table .m-val { $MAC_COLOR; }
+	table.report_table .i-val { $IP_COLOR; }
 	table.report_table.show-ip .m-val { display: none !important; }
-	table.report_table.show-ip .i-val { display: inline !important; $IP_COLOR; }
+	table.report_table.show-ip .i-val { display: inline !important; }
+	table.report_table.show-mac .m-val { display: inline !important; }
+	table.report_table.show-mac .i-val { display: none !important; }
 	table.report_table.show-iface .s-val { display: none !important; }
 	table.report_table.show-iface .if-val { display: inline !important; color: #64d2ff; }
 	table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; cursor: pointer; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
