@@ -1692,10 +1692,10 @@ hostcolor_main_name() {
 hostcolor_node_name() {
     if [ "$HOST_COLOR" = "1" ]; then
         NAME_NODE="<span style='color:$NODE_COLOR;'>$name</span>"
-        NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'><sup>$NUMBERED_NODE</sup></span>"
+        NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'>$SUPNN</span>"
     else
         NAME_NODE="<span style='color:#ffffff;'>$name</span>"
-		NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
+		NODE_NUM="<span style='color:$NODE_COLOR;'>$SUPNN</span>"
     fi
 	name="$NAME_NODE$NODE_NUM"
 }
@@ -2087,13 +2087,11 @@ for line in $SSH_NODES; do
 		COLOR_INDEX=$((COLOR_INDEX + 1))
         NODE_COLOR=$(echo $N_COLORS | cut -d' ' -f$((COLOR_INDEX)))
 		if [ -z "$NODE_COLOR" ]; then NODE_COLOR="#ffffff"; fi
-        NODE_NUM="<span style='color:$NODE_COLOR;'><sup>$NUMBERED_NODE</sup></span>"
+        SUPNN="<sup>$NUMBERED_NODE</sup>"
+        NODE_NUM="<span style='color:$NODE_COLOR;'>$SUPNN</span>"
 		export NODE_NUM
-		if [ "$HOST_COLOR" = "1" ]; then
-			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}</span>"
-        else
-			NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}<sup>$NUMBERED_NODE</sup></span>"
-		fi
+		if [ "$HOST_COLOR" = "1" ]; then NN=""; else NN="$SUPNN"; fi
+        NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}$NN</span>"
 		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
 		parse_node_out "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
