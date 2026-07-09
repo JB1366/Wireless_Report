@@ -166,8 +166,8 @@ menu_vars() {
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
 	else PD_STAT="${RD}Disabled${NC}"; fi
 	HOST_COLOR=${HOST_COLOR:-0}
-	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored Hostnames${NC}"
-	else HN_STAT="${BL}Numbered Hostnames${NC}"; fi
+	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored${NC}"
+	else HN_STAT="${BL}Numbered${NC}"; fi
 }
 
 check_installed() {
