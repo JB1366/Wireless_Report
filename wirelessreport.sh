@@ -2523,136 +2523,144 @@ document.addEventListener('mouseout', function(e) {
 </script>
 </head>
 <body onload="initial();">
-<div id="TopBanner"></div>
-<div id="Loading" class="popup_bg"></div>
-<table class="content" align="center" cellpadding="0" cellspacing="0">
-  <tr>
-    <td width="17">&nbsp;</td>
-    <td valign="top" width="202"><div id="mainMenu"></div><div id="subMenu"></div></td>
-    <td valign="top">
-      <div id="tabMenu" class="submenuBlock"></div>
-      <div id="wifiReportContainer" style="padding:10px;">
-      <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
-        <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL</span></div>
-		<div class="top-controls">
-			<div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
-			<button class="btn-manual btn-black-blue" style="border:none; height:100%; line-height:inherit; padding:0 8px;"
-			onclick="triggerRefresh()">Refresh <span style="color: white;">${RUNTIME}</span></button>
-				<span style="font-size:12px; margin-left:5px; color: #0096ff;">Auto: </span>
-				<select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="background:#000; font-weight:bold; color:white; border:0px solid #444; margin-left:5px; font-size:12px; height:20px;">
-				<option value="0">Off</option><option value="30">30s</option><option value="60">1m</option><option value="120">2m</option><option value="300">5m</option><option value="600">10m</option><option value="1200">20m</option><option value="1800">30m</option>
-				</select><span style="color: #0096ff;" id="countdown"></span>
-			</div>
+    <div id="TopBanner"></div>
+    <div id="Loading" class="popup_bg"></div>
+    <table class="content" align="center" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="17">&nbsp;</td>
+            <td valign="top" width="202"><div id="mainMenu"></div><div id="subMenu"></div></td>
+            <td valign="top">
+                <div id="tabMenu" class="submenuBlock"></div>
+                <div id="wifiReportContainer" style="padding:10px;">
+                    <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
+                    <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL</span></div>
+                    <div class="top-controls">
+                        <div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
+                            <button class="btn-manual btn-black-blue" style="border:none; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
+                                Refresh <span style="color: white;">${RUNTIME}</span>
+                            </button>
+                            <span style="font-size:12px; margin-left:5px; color: #0096ff;">Auto: </span>
+                            <select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="background:#000; font-weight:bold; color:white; border:0px solid #444; margin-left:5px; font-size:12px; height:20px;">
+                                <option value="0">Off</option>
+                                <option value="30">30s</option>
+                                <option value="60">1m</option>
+                                <option value="120">2m</option>
+                                <option value="300">5m</option>
+                                <option value="600">10m</option>
+                                <option value="1200">20m</option>
+                                <option value="1800">30m</option>
+                            </select>
+                            <span style="color: #0096ff;" id="countdown"></span>
+                        </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<BUTTONSHTML >> "$WEB_PAGE"
-			<button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Stacked</button>
-			<button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
-			<button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
+                        <button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Stacked</button>
+                        <button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
+                        <button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
 BUTTONSHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
-		</div>
-		<div class="grid-container">
-		<div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
-			<div id="mainCol" class="report-column">
-			  <div class="section-header">
-				$MAIN_LABEL<br>
-				<span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-				<hr class="sep-line">
-				<div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
-			  </div>
-			  <table id="mainTable" class="report_table show-ip">
-				<thead><tr>
-				  <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
-				  <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-				  <th onclick="sortTable(2, 'mainTable')">RSSI</th>
-				  <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
-				  <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-				  <th onclick="sortTable(5, 'mainTable')">BAND</th>
-				  <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
-				</tr></thead>
-				<tbody>$MAIN_ROWS</tbody>
-				<tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span>&ensp;Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
-			  </table>
-			</div>
-			<div class="quality-bar">
-				<div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-				<div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-				<div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-				<div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
-			</div>
+                    </div>
+                    <div class="grid-container">
+                        <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
+                            <div id="mainCol" class="report-column">
+                                <div class="section-header">
+                                    $MAIN_LABEL<br>
+                                    <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                    <hr class="sep-line">
+                                    <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
+                                </div>
+                                <table id="mainTable" class="report_table show-ip">
+                                    <thead><tr>
+                                        <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
+                                        <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                        <th onclick="sortTable(2, 'mainTable')">RSSI</th>
+                                        <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
+                                        <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                        <th onclick="sortTable(5, 'mainTable')">BAND</th>
+                                        <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
+                                    </tr></thead>
+                                    <tbody>$MAIN_ROWS</tbody>
+                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span>&ensp;Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
+                                </table>
+                            </div>
+                            <div class="quality-bar">
+                                <div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
+                                <div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+                                <div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+                                <div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+                            </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<NODEHTML >> "$WEB_PAGE"
-			<div id="nodeCol" class="report-column">
-			  <div class="section-header">
-				$N_NAMES <span class="router-branding"></span><br>
-				<span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-				<hr class="sep-line">
-				<div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
-			  </div>
-			  <table id="nodeTable" class="report_table show-ip">
-				<thead><tr>
-				  <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
-				  <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-				  <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
-				  <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
-				  <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-				  <th onclick="sortTable(5, 'nodeTable')">BAND</th>
-			  <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
-				</tr></thead>
-				<tbody>$NODE_ROWS</tbody>
-				<tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
-			  </table>
-			</div>
-		</div>
+                            <div id="nodeCol" class="report-column">
+                                <div class="section-header">
+                                    $N_NAMES <span class="router-branding"></span><br>
+                                    <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                    <hr class="sep-line">
+                                    <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
+                                </div>
+                                <table id="nodeTable" class="report_table show-ip">
+                                    <thead><tr>
+                                        <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
+                                        <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                        <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
+                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
+                                        <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                        <th onclick="sortTable(5, 'nodeTable')">BAND</th>
+                                        <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
+                                    </tr></thead>
+                                    <tbody>$NODE_ROWS</tbody>
+                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
+                                </table>
+                            </div>
+                        </div>
 NODEHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
-            <div id="allCol" class="report-column">
-              <div class="section-header">
-                $BRAND_LINE_ALL<br>
-                <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-                <hr class="sep-line">
-                <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
-              </div>
-              <table id="allTable" class="report_table show-ip">
-                <thead><tr>
-                  <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
-                  <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-                  <th onclick="sortTable(2, 'allTable')">RSSI</th>
-                  <th onclick="sortTable(3, 'allTable')">RX/TX</th>
-                  <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                  <th onclick="sortTable(5, 'allTable')">BAND</th>
-                  <th onclick="sortTable(6, 'allTable')">UPTIME</th>
-                </tr></thead>
-                <tbody>$ALL_ROWS</tbody>
-                <tfoot><tr><td colspan="7" style="$UPTIME_STYLE">Uptime: $TOTAL_UPTIME&ensp;Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
-			  </table>
+                        <div id="allCol" class="report-column">
+                            <div class="section-header">
+                                $BRAND_LINE_ALL<br>
+                                <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                <hr class="sep-line">
+                                <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
+                            </div>
+                            <table id="allTable" class="report_table show-ip">
+                                <thead><tr>
+                                    <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
+                                    <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                    <th onclick="sortTable(2, 'allTable')">RSSI</th>
+                                    <th onclick="sortTable(3, 'allTable')">RX/TX</th>
+                                    <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                    <th onclick="sortTable(5, 'allTable')">BAND</th>
+                                    <th onclick="sortTable(6, 'allTable')">UPTIME</th>
+                                </tr></thead>
+                                <tbody>$ALL_ROWS</tbody>
+                                <tfoot><tr><td colspan="7" style="$UPTIME_STYLE">Uptime: $TOTAL_UPTIME&ensp;Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
+                            </table>
+                        </div>
+                        <div id="allDevicesQualityBar" class="quality-bar">
+                            <div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
+                            <div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+                            <div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+                            <div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div id="footer"></div>
+    <div id="popoutModal" class="modal-overlay" onclick="closePopout()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div style="height: 40px; position: relative;">
+                <span class="close-x" onclick="closePopout()">&times;</span>
             </div>
-			<div id="allDevicesQualityBar" class="quality-bar">
-				<div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-				<div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-				<div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-				<div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
-			</div>
+            <div id="popoutBody" class="modal-grid"></div>
         </div>
-      </div>
-    </td>
-  </tr>
-</table>
-<div id="footer"></div>
-<div id="popoutModal" class="modal-overlay" onclick="closePopout()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <div style="height: 40px; position: relative;">
-      <span class="close-x" onclick="closePopout()">&times;</span>
     </div>
-    <div id="popoutBody" class="modal-grid"></div>
-  </div>
-</div>
 </body>
-</html>
 HTML
 rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$NODE_DATA_DIR" 2>/dev/null
 }
