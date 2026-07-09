@@ -239,7 +239,7 @@ do_install() {
     fi
     if [ -f "$REPORT_SCRIPT" ]; then
         inject_menu
-		echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}"
+		echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}\n"
         if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
         sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
         echo "sh $REPORT_SCRIPT inject # Inject Wireless Report" >> "$SS_FILE"
@@ -250,12 +250,12 @@ do_install() {
         chmod +x "$SE_FILE"
 		install=""; LOCAL_VERSION="$REMOTE_VERSION"
 		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-        echo -e "\n${GR}[✓] SUCCESS: Installation complete!${NC}"
-		echo -e "\n${YL}[i] To access Report, navigate to Advanced Settings > Wireless ${NC}"
-		echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}"
-		echo -e "\n${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
-        echo -e "${BL}[i]      Use option #6 in main menu to authenticate new node(s).${NC}"
-		echo -e "\n${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
+        echo -e "${GR}[✓] SUCCESS: Installation complete!${NC}\n"
+		echo -e "${YL}[i] To access Report, navigate to Advanced Settings > Wireless ${NC}"
+		echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}\n"
+		echo -e "${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
+        echo -e "${BL}         Use option #6 in main menu to authenticate new node(s).${NC}\n"
+		echo -e "${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
 	else
         echo -e "${RD}[!] ERROR: Download failed.${NC}"
     fi
@@ -646,15 +646,15 @@ ssh_keys() {
     chmod 600 /root/.ssh/authorized_keys
     if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE" && chmod +x "$SS_FILE"; fi
     if ! grep -q "id_dropbear" "$SS_FILE"; then
-        echo -e "\n${YL}[i] Adding SSH Key to services-start for persistence on reboots...${NC}\n"
-		echo -e "${YL}[i] Adding known_hosts to services-start...${NC}\n"
+        echo -e "\n${YL}[i] Adding SSH Key to services-start for persistence on reboots...${NC}"
+		echo -e "\n${YL}[i] Adding known_hosts to services-start...${NC}\n"
 		echo "cp /jffs/.ssh/id_dropbear /tmp/home/root/.ssh/id_dropbear # sshpairs" >> "$SS_FILE"
         echo "cp /jffs/.ssh/known_hosts /tmp/home/root/.ssh/known_hosts # sshpairs persistence" >> "$SS_FILE"
     fi
 	echo -e "${BL}==================================================${NC}"
 	echo -e "${YL}               ACTION REQUIRED NOW                ${NC}"
-    echo -e "${BL}==================================================${NC}"
-	echo -e "\n${BL}[*] STEP 1: Go to Asus WebGUI > AiMesh > Management${NC}"
+    echo -e "${BL}==================================================${NC}\n"
+	echo -e "${BL}[*] STEP 1: Go to Asus WebGUI > AiMesh > Management${NC}"
 	echo -e "${BL}[*] STEP 2: Click 'Reboot Node' for each node${NC}\n"
 	echo -e "${YL}[!] Do not press [Enter] until Nodes are confirmed to be back online.${NC}\n"
 	echo -e "${BL}[*] TIP: If a node is missing after authentication,${NC}"
@@ -790,7 +790,7 @@ set_temp_date() {
         echo -e "${BL}==================================================${NC}"
         echo -e "${BL}                  Set Temp/Date                   ${NC}"
         echo -e "${BL}==================================================${NC}"
-        echo -e "  ${BL}Unit:${NC} $DU              ${BL}Date:${NC} $CT      "
+        echo -e "${BL}  Unit:${NC} $DU              ${BL}Date:${NC} $CT      "
         echo -e "${BL}==================================================${NC}"
         echo -e "                                                            "
         echo -e "  $N1  Fahrenheit (°F) / USA  ($DATE_USA)                   "
@@ -1612,7 +1612,7 @@ get_band() {
 check_qca_up() {
 	if [ "$uptime" = "UP_QCA" ]; then case "$iface" in *ath*)
 		NOW=$(date +%s)
-		CLEAN_MAC="$mac_address"
+		CLEAN_MAC="$mac"
 		START_TS=$(jq -r ".\"$CLEAN_MAC\".start // 0" "/jffs/wlcnt.json")
 		if [ "$START_TS" -gt 0 ]; then
 			uptime=$((NOW - START_TS))
