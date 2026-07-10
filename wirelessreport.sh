@@ -2105,6 +2105,8 @@ for line in $SSH_NODES; do
 		N_LOADS="${N_LOADS}${N_LOADS:+$BULLET}<span class='${NC_LOAD}'>$N_LOAD</span>"
         N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
 		N_BOOTS="${N_BOOTS}${N_BOOTS:+$BULLET}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
+        if [ -n "$N_UPTIMES" ]; then NODE_FOOTER="Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS"
+        else NODE_FOOTER="Offline"; fi
         NODE_DEVICES=0
 		while read -r ssh_node_data; do
 			if [ -z "$ssh_node_data" ]; then continue; fi
@@ -2210,6 +2212,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
 	.router-branding { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
 	.header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
+    .updated-time { font-size:13px; font-weight:bold; }
 	.text-24 { color: #0096ff !important; font-weight: bold; }
 	.text-5g { color: #30d158 !important; font-weight: bold; }
 	.text-6g { color: #bf40bf !important; font-weight: bold; }
@@ -2561,8 +2564,8 @@ cat <<HTML >> "$WEB_PAGE"
                         <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
                             <div id="mainCol" class="report-column">
                                 <div class="section-header">
-                                    <span class='router-branding'>$MAIN_NAME</span><br>
-                                    <span style="font-size:13px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                    <span class="router-branding">$MAIN_NAME</span><br>
+                                    <span class="updated-time">Updated: $CUR_TIME</span>
                                     <hr class="seperator-line">
                                     <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
                                 </div>
@@ -2592,7 +2595,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                             <div id="nodeCol" class="report-column">
                                 <div class="section-header">
                                     $N_NAMES<br>
-                                    <span style="font-size:13px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                    <span class="updated-time">Updated: $CUR_TIME</span>
                                     <hr class="seperator-line">
                                     <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
                                 </div>
@@ -2607,7 +2610,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                         <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody>$NODE_ROWS</tbody>
-                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">$( [ -n "$N_UPTIMES" ] && echo "Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS" || echo "Offline" )</td></tr></tfoot>
+                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">$NODE_FOOTER</td></tr></tfoot>
                                 </table>
                             </div>
                         </div>
@@ -2617,7 +2620,7 @@ cat <<HTML >> "$WEB_PAGE"
                         <div id="allCol" class="report-column">
                             <div class="section-header">
                                 $BRAND_LINE_ALL<br>
-                                <span style="font-size:13px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                <span class="updated-time">Updated: $CUR_TIME</span>
                                 <hr class="seperator-line">
                                 <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
                             </div>
