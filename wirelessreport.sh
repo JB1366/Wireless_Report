@@ -1440,9 +1440,9 @@ get_trend() {
 		if [ -z "$prev_rssi" ]; then
 			trend_icon="<span class='trend-box'>•</span>"
 		elif [ "$current_rssi" -gt "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box trend-up sig-exc'>↑</span>"
+			trend_icon="<span class='trend-box trend-up rssi-exc'>↑</span>"
 		elif [ "$current_rssi" -lt "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box trend-down sig-poor'>↓</span>"
+			trend_icon="<span class='trend-box trend-down rssi-poor'>↓</span>"
 		else
 			trend_icon="<span class='trend-box'>•</span>"
 		fi
@@ -1492,9 +1492,9 @@ get_trend() {
             return
         fi
         if [ "$current_rssi" -gt "$old" ]; then
-            echo "<span class='trend-box trend-up sig-exc'>↑</span>"
+            echo "<span class='trend-box trend-up rssi-exc'>↑</span>"
         elif [ "$current_rssi" -lt "$old" ]; then
-            echo "<span class='trend-box trend-down sig-poor'>↓</span>"
+            echo "<span class='trend-box trend-down rssi-poor'>↓</span>"
         else
             echo "<span class='trend-box'>•</span>"
         fi
@@ -1654,19 +1654,19 @@ get_bars_rssi_style() {
         return
     fi
     if [ "$rssi" -ge -50 ]; then
-        bars="<span class='bar-box sig-exc'>||||</span>"
+        bars="<span class='bar-box rssi-exc'>||||</span>"
         rssi_style="color: #30d158; font-weight: bold;"
         T_EXC=$((T_EXC+1))
     elif [ "$rssi" -ge -60 ]; then
-        bars="<span class='bar-box sig-good'>|||</span>"
+        bars="<span class='bar-box rssi-good'>|||</span>"
         rssi_style="color: #64d2ff; font-weight: bold;"
         T_GOOD=$((T_GOOD+1))
     elif [ "$rssi" -ge -70 ]; then
-        bars="<span class='bar-box sig-fair'>||</span>"
+        bars="<span class='bar-box rssi-fair'>||</span>"
         rssi_style="color: #ffd60a; font-weight: bold;"
         T_FAIR=$((T_FAIR+1))
     else
-        bars="<span class='bar-box sig-poor'>|</span>"
+        bars="<span class='bar-box rssi-poor'>|</span>"
         rssi_style="color: #ff453a; font-weight: bold;"
         T_POOR=$((T_POOR+1))
     fi
@@ -1704,16 +1704,16 @@ get_row() {
 	ROW="<tr class='$is_mac_new'>
 		<td style='text-align:left;'>$name</td>
 		<td>
-			<span class='m-val' data-sort='$mac'>$mac</span>
-			<span class='i-val' data-sort='$ip_sort'>$ip</span>
+			<span class='mac-val' data-sort='$mac'>$mac</span>
+			<span class='ip-val' data-sort='$ip_sort'>$ip</span>
 		</td>
 		<td data-sort='$rssi' class='rssi-container'>
 			$bars <span style='$rssi_style'>$rssi</span> $trend
 		</td>
 		<td data-sort='$lrd_val' style='$rssi_style; text-align:center;'>$lrd</td>
 		<td>
-			<span class='s-val' data-sort='$ssid'>$ssid</span>
-			<span class='if-val' data-sort='$iface'>$iface</span>
+			<span class='ssid-val' data-sort='$ssid'>$ssid</span>
+			<span class='iface-val' data-sort='$iface'>$iface</span>
 		</td>
 		$band
 		<td>$uptime</td>
@@ -2086,10 +2086,8 @@ for line in $SSH_NODES; do
         NUMBERED_NODE=$((NUMBERED_NODE + 1))
 		COLOR_INDEX=$((COLOR_INDEX + 1))
         NODE_COLOR=$(echo $N_COLORS | cut -d' ' -f$((COLOR_INDEX)))
-		if [ -z "$NODE_COLOR" ]; then NODE_COLOR="#ffffff"; fi
         SUPNN="<sup>$NUMBERED_NODE</sup>"
         NODE_NUM="<span style='color:$NODE_COLOR;'>$SUPNN</span>"
-		export NODE_NUM
 		if [ "$HOST_COLOR" = "1" ]; then NN=""; else NN="$SUPNN"; fi
         NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}$NN</span>"
 		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
@@ -2185,39 +2183,39 @@ cat <<HTML >> "$WEB_PAGE"
 	${DARK_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; cursor: pointer; }
 	table.report_table { width: 100%; border-collapse: collapse; }
-	table.report_table .m-val { $MAC_COLOR; }
-	table.report_table .i-val { $IP_COLOR; }
-	table.report_table.show-ip .m-val { display: none !important; }
-	table.report_table.show-ip .i-val { display: inline !important; }
-	table.report_table.show-mac .m-val { display: inline !important; }
-	table.report_table.show-mac .i-val { display: none !important; }
-	table.report_table.show-iface .s-val { display: none !important; }
-	table.report_table.show-iface .if-val { display: inline !important; color: #64d2ff; }
+	table.report_table .mac-val { $MAC_COLOR; }
+	table.report_table .ip-val { $IP_COLOR; }
+	table.report_table.show-ip .mac-val { display: none !important; }
+	table.report_table.show-ip .ip-val { display: inline !important; }
+	table.report_table.show-mac .mac-val { display: inline !important; }
+	table.report_table.show-mac .ip-val { display: none !important; }
+	table.report_table.show-iface .ssid-val { display: none !important; }
+	table.report_table.show-iface .iface-val { display: inline !important; color: #64d2ff; }
 	table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; cursor: pointer; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
 	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
-	.m-footer { color: #0096ff; }
-	.sep-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
+	.mac-val, .ssid-val { display: inline; }
+    .ip-val, .iface-val { display: none; }
+    .seperator-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
 	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 	.new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
 	.val-blue { color: #0096ff !important; font-weight: bold; }
-	.sig-exc { color: #30d158; } .sig-good { color: #64d2ff; }
-	.sig-fair { color: #ffd60a; } .sig-poor { color: #ff453a; }
+	.rssi-exc { color: #30d158; } .rssi-good { color: #64d2ff; }
+	.rssi-fair { color: #ffd60a; } .rssi-poor { color: #ff453a; }
 	.stat-warm { color: #ffa500 !important; font-weight: bold; }
 	.stat-hot { color: #ff453a !important; font-weight: bold; }
 	.stat-cool { color: #0096ff !important; font-weight: bold; }
 	.bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
 	.router-branding { color: #0096ff; font-size: 1.4em; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
 	.header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
-	.m-val, .s-val { display: inline; } .i-val, .if-val { display: none; }
 	.text-24 { color: #0096ff !important; font-weight: bold; }
 	.text-5g { color: #30d158 !important; font-weight: bold; }
 	.text-6g { color: #bf40bf !important; font-weight: bold; }
 	.modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 	.modal-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
-	.close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; font-weight: bold; }
+	.modal-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; font-weight: bold; }
 	.modal-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
 	.modal-grid .report-column { flex: 1; max-width: 49.5%; }
 	#popoutModal th, #popoutModal td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
@@ -2403,14 +2401,14 @@ function sortTable(n, tId, keepDir, forceDesc) {
 			return dir === "asc" ? txtA.localeCompare(txtB) : txtB.localeCompare(txtA);
 		}
         if (n === 1) {
-            var sel = table.classList.contains('show-ip') ? '.i-val' : '.m-val';
+            var sel = table.classList.contains('show-ip') ? '.ip-val' : '.mac-val';
             valA = cellA.querySelector(sel).getAttribute('data-sort');
             valB = cellB.querySelector(sel).getAttribute('data-sort');
-            if (sel === '.m-val') {
+            if (sel === '.mac-val') {
                 return dir === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
             }
         } else if (n === 4) {
-            var sel = table.classList.contains('show-iface') ? '.if-val' : '.s-val';
+            var sel = table.classList.contains('show-iface') ? '.iface-val' : '.ssid-val';
             valA = cellA.querySelector(sel).innerText.trim().toLowerCase();
             valB = cellB.querySelector(sel).innerText.trim().toLowerCase();
         } else if (n === 6) {
@@ -2565,7 +2563,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 <div class="section-header">
                                     $MAIN_LABEL<br>
                                     <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-                                    <hr class="sep-line">
+                                    <hr class="seperator-line">
                                     <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
                                 </div>
                                 <table id="mainTable" class="report_table show-ip">
@@ -2579,14 +2577,14 @@ cat <<HTML >> "$WEB_PAGE"
                                         <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody>$MAIN_ROWS</tbody>
-                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="m-footer">$M_UPTIME</span>&ensp;Reboot: <span class="m-footer">$M_BOOT</span></td></tr></tfoot>
+                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="val-blue">$M_UPTIME</span>&ensp;Reboot: <span class="val-blue">$M_BOOT</span></td></tr></tfoot>
                                 </table>
                             </div>
                             <div class="quality-bar">
-                                <div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-                                <div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-                                <div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-                                <div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+                                <div class="quality-box rssi-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
+                                <div class="quality-box rssi-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+                                <div class="quality-box rssi-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+                                <div class="quality-box rssi-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
                             </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
@@ -2595,7 +2593,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                 <div class="section-header">
                                     $N_NAMES <span class="router-branding"></span><br>
                                     <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-                                    <hr class="sep-line">
+                                    <hr class="seperator-line">
                                     <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
                                 </div>
                                 <table id="nodeTable" class="report_table show-ip">
@@ -2620,7 +2618,7 @@ cat <<HTML >> "$WEB_PAGE"
                             <div class="section-header">
                                 $BRAND_LINE_ALL<br>
                                 <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
-                                <hr class="sep-line">
+                                <hr class="seperator-line">
                                 <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
                             </div>
                             <table id="allTable" class="report_table show-ip">
@@ -2638,10 +2636,10 @@ cat <<HTML >> "$WEB_PAGE"
                             </table>
                         </div>
                         <div id="allDevicesQualityBar" class="quality-bar">
-                            <div class="quality-box sig-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-                            <div class="quality-box sig-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-                            <div class="quality-box sig-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-                            <div class="quality-box sig-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+                            <div class="quality-box rssi-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
+                            <div class="quality-box rssi-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+                            <div class="quality-box rssi-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+                            <div class="quality-box rssi-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
                         </div>
                     </div>
                 </div>
@@ -2652,7 +2650,7 @@ cat <<HTML >> "$WEB_PAGE"
     <div id="popoutModal" class="modal-overlay" onclick="closePopout()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div style="height: 40px; position: relative;">
-                <span class="close-x" onclick="closePopout()">&times;</span>
+                <span class="modal-close-x" onclick="closePopout()">&times;</span>
             </div>
             <div id="popoutBody" class="modal-grid"></div>
         </div>
