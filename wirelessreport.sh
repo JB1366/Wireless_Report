@@ -2582,9 +2582,9 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                             <div class="quality-bar">
                                 <div class="quality-box rssi-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-                                <div class="quality-box rssi-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-                                <div class="quality-box rssi-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-                                <div class="quality-box rssi-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+                                <div class="quality-box rssi-good">Good: <span style="background:#64d2ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+                                <div class="quality-box rssi-fair">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+                                <div class="quality-box rssi-poor">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
                             </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
@@ -2637,9 +2637,9 @@ cat <<HTML >> "$WEB_PAGE"
                         </div>
                         <div id="allDevicesQualityBar" class="quality-bar">
                             <div class="quality-box rssi-exc">Excellent: <span style="background:#30d158; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_EXC</span></div>
-                            <div class="quality-box rssi-good">Good: <span style="background:#0096ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
-                            <div class="quality-box rssi-fair" style="color:#ffd60a;">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
-                            <div class="quality-box rssi-poor" style="color:#ff453a;">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
+                            <div class="quality-box rssi-good">Good: <span style="background:#64d2ff; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_GOOD</span></div>
+                            <div class="quality-box rssi-fair">Fair: <span style="background:#ffd60a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_FAIR</span></div>
+                            <div class="quality-box rssi-poor">Poor: <span style="background:#ff453a; color:#000; padding:1px 5px; border-radius:3px; margin-left:4px;">$T_POOR</span></div>
                         </div>
                     </div>
                 </div>
