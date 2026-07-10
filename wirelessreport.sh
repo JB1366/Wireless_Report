@@ -2197,7 +2197,7 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
-	.f-res { color: #0096ff; }
+	.m-footer { color: #0096ff; }
 	.sep-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
 	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -2224,7 +2224,6 @@ cat <<HTML >> "$WEB_PAGE"
 	.dash-sep { color: rgba(255,255,255,0.4); font-size: 0.9em; margin: 0 4px; animation: sep-glow 3s infinite ease-in-out; }
 	@keyframes sep-glow { 0% { color: rgba(255,255,255,0.2); } 50% { color: #0096ff; text-shadow: 0 0 5px #0096ff; } 100% { color: rgba(255,255,255,0.2); } }
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
-	.row-break { flex-basis: 100%; height: 0; margin: 0; }
 	sup { font-size: 0.6em; margin-left: 2px; }
 	.rssi-container { position: relative; cursor: help; vertical-align: middle; }
 	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; background: #000; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
@@ -2580,7 +2579,7 @@ cat <<HTML >> "$WEB_PAGE"
                                         <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody>$MAIN_ROWS</tbody>
-                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="f-res">$M_UPTIME</span>&ensp;Reboot: <span class="f-res">$M_BOOT</span></td></tr></tfoot>
+                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="m-footer">$M_UPTIME</span>&ensp;Reboot: <span class="m-footer">$M_BOOT</span></td></tr></tfoot>
                                 </table>
                             </div>
                             <div class="quality-bar">
