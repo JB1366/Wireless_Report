@@ -1982,7 +1982,6 @@ ROUTER_IP=$(nvram get lan_ipaddr)
 ROUTER=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"
 if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
-MAIN_LABEL="<span class='router-branding'>$MAIN_NAME</span>"
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
 NL=$'\n'; MAIN_ROWS=""; NODE_ROWS=""; ALL_ROWS=""
@@ -2161,9 +2160,9 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/validator.js"></script>
 <style>
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
-	.report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 1.8em; font-weight: bold; width: 100%; position: static; margin-left: 0; }
+	.report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 28px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
 	.top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
-	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 11px; font-weight: bold; letter-spacing: 0.5px; }
+	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
 	.header-box { visibility: hidden; width: var(--v-width, 190px); background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
@@ -2209,7 +2208,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.stat-hot { color: #ff453a !important; font-weight: bold; }
 	.stat-cool { color: #0096ff !important; font-weight: bold; }
 	.bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
-	.router-branding { color: #0096ff; font-size: 1.4em; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
+	.router-branding { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
 	.header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
 	.text-24 { color: #0096ff !important; font-weight: bold; }
 	.text-5g { color: #30d158 !important; font-weight: bold; }
@@ -2562,8 +2561,8 @@ cat <<HTML >> "$WEB_PAGE"
                         <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
                             <div id="mainCol" class="report-column">
                                 <div class="section-header">
-                                    $MAIN_LABEL<br>
-                                    <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                    <span class='router-branding'>$MAIN_NAME</span><br>
+                                    <span style="font-size:13px; font-weight:bold;">Updated: $CUR_TIME</span>
                                     <hr class="seperator-line">
                                     <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
                                 </div>
@@ -2592,8 +2591,8 @@ if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<NODEHTML >> "$WEB_PAGE"
                             <div id="nodeCol" class="report-column">
                                 <div class="section-header">
-                                    $N_NAMES <span class="router-branding"></span><br>
-                                    <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                    $N_NAMES<br>
+                                    <span style="font-size:13px; font-weight:bold;">Updated: $CUR_TIME</span>
                                     <hr class="seperator-line">
                                     <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
                                 </div>
@@ -2618,7 +2617,7 @@ cat <<HTML >> "$WEB_PAGE"
                         <div id="allCol" class="report-column">
                             <div class="section-header">
                                 $BRAND_LINE_ALL<br>
-                                <span style="font-size:11px; font-weight:bold;">Updated: $CUR_TIME</span>
+                                <span style="font-size:13px; font-weight:bold;">Updated: $CUR_TIME</span>
                                 <hr class="seperator-line">
                                 <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
                             </div>
