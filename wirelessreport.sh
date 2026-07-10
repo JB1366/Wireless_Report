@@ -1205,9 +1205,9 @@ do_darkmode() {
 
 do_numbered_node() {
 	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
-	else NTOTAL="<span class='dash-sep'>—›</span> $NODE_TOTALS"; fi
+	else NTOTAL="<span class='r-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='dash-sep'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$DOT$NODE_TOTALS"
+		TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='r-arrow'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
 	else
 		TOTAL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
 	fi
@@ -1692,10 +1692,10 @@ hostcolor_main_name() {
 hostcolor_node_name() {
     if [ "$HOST_COLOR" = "1" ]; then
         NAME_NODE="<span style='color:$NODE_COLOR;'>$name</span>"
-        NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'>$SUPNN</span>"
+        NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'>$NODE_SUP</span>"
     else
         NAME_NODE="<span style='color:#ffffff;'>$name</span>"
-		NODE_NUM="<span style='color:$NODE_COLOR;'>$SUPNN</span>"
+		NODE_NUM="<span style='color:$NODE_COLOR;'>$NODE_SUP</span>"
     fi
 	name="$NAME_NODE$NODE_NUM"
 }
@@ -1767,12 +1767,6 @@ run_report() {
 #  Node Scan(s)   #
 #=================#
 read -r START_RUNTIME _ < /proc/uptime
-# N_COLORS="lime-green medium-purple yellow skyblue orange red"
-N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
-DOT=" <span style='color:white;'>•</span> "
-N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
-NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
-IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}
 NODE_DATA_DIR="/tmp/node_data"
 rm -rf "$NODE_DATA_DIR" 2>/dev/null
 mkdir -p "$NODE_DATA_DIR"
@@ -1959,6 +1953,7 @@ done
 #=============================#
 #  Main Scan/Device Assembly  #
 #=============================#
+IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}
 YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
 if [ -f "$KNOWN_DB" ]; then cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null; else > "$KNOWN_CACHE"; fi
@@ -2072,6 +2067,11 @@ wait
 #========================#
 #  Node Device Assembly  #
 #========================#
+# N_COLORS="lime-green medium-purple yellow skyblue orange red"
+N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
+BULLET=" <span style='color:white;'>•</span> "
+N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
+NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
 for line in $SSH_NODES; do
 	NODE_OUT=""
 	ROUTER=$(echo "$line" | cut -d'|' -f1)
@@ -2086,25 +2086,25 @@ for line in $SSH_NODES; do
         NUMBERED_NODE=$((NUMBERED_NODE + 1))
 		COLOR_INDEX=$((COLOR_INDEX + 1))
         NODE_COLOR=$(echo $N_COLORS | cut -d' ' -f$((COLOR_INDEX)))
-        SUPNN="<sup>$NUMBERED_NODE</sup>"
-        NODE_NUM="<span style='color:$NODE_COLOR;'>$SUPNN</span>"
-		if [ "$HOST_COLOR" = "1" ]; then NN=""; else NN="$SUPNN"; fi
-        NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}$NN</span>"
-		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$DOT$NODE_BRAND"; fi
+        NODE_SUP="<sup>$NUMBERED_NODE</sup>"
+        NODE_NUM="<span style='color:$NODE_COLOR;'>$NODE_SUP</span>"
+		if [ "$HOST_COLOR" = "1" ]; then NNS=""; else NNS="$NODE_SUP"; fi
+        NODE_BRAND="<span class='router-branding' style='color:$NODE_COLOR;'>${NODE_NAME}$NNS</span>"
+		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$BULLET$NODE_BRAND"; fi
 		parse_node_out "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
 		NC_TEMP=$(get_temp_class "$N_TEMP")
 		NC_LOAD=$(get_load_class "$N_LOAD")
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
-		TOTAL_TEMP="$TOTAL_TEMP$DOT<span class='${NC_TEMP}'>${N_TEMP}</span>"
-        TOTAL_LOAD="$TOTAL_LOAD$DOT<span class='${NC_LOAD}'>${N_LOAD}</span>"
-        TOTAL_UPTIME="$TOTAL_UPTIME$DOT<span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
-        TOTAL_BOOTTIME="$TOTAL_BOOTTIME$DOT<span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
-		N_TEMPS="${N_TEMPS}${N_TEMPS:+$DOT}<span class='${NC_TEMP}'>$N_TEMP</span>"
-		N_LOADS="${N_LOADS}${N_LOADS:+$DOT}<span class='${NC_LOAD}'>$N_LOAD</span>"
-        N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$DOT}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
-		N_BOOTS="${N_BOOTS}${N_BOOTS:+$DOT}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
+		TOTAL_TEMP="$TOTAL_TEMP$BULLET<span class='${NC_TEMP}'>${N_TEMP}</span>"
+        TOTAL_LOAD="$TOTAL_LOAD$BULLET<span class='${NC_LOAD}'>${N_LOAD}</span>"
+        TOTAL_UPTIME="$TOTAL_UPTIME$BULLET<span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
+        TOTAL_BOOTTIME="$TOTAL_BOOTTIME$BULLET<span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
+		N_TEMPS="${N_TEMPS}${N_TEMPS:+$BULLET}<span class='${NC_TEMP}'>$N_TEMP</span>"
+		N_LOADS="${N_LOADS}${N_LOADS:+$BULLET}<span class='${NC_LOAD}'>$N_LOAD</span>"
+        N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
+		N_BOOTS="${N_BOOTS}${N_BOOTS:+$BULLET}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
         NODE_DEVICES=0
 		while read -r ssh_node_data; do
 			if [ -z "$ssh_node_data" ]; then continue; fi
@@ -2127,11 +2127,11 @@ for line in $SSH_NODES; do
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
-NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$DOT}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
+NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$BULLET}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
 GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
-BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>$DOT$N_NAMES"
+BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>$BULLET$N_NAMES"
 do_numbered_node; do_runtime; header_box; do_darkmode
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
@@ -2219,8 +2219,8 @@ cat <<HTML >> "$WEB_PAGE"
 	.modal-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
 	.modal-grid .report-column { flex: 1; max-width: 49.5%; }
 	#popoutModal th, #popoutModal td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
-	.dash-sep { color: rgba(255,255,255,0.4); font-size: 0.9em; margin: 0 4px; animation: sep-glow 3s infinite ease-in-out; }
-	@keyframes sep-glow { 0% { color: rgba(255,255,255,0.2); } 50% { color: #0096ff; text-shadow: 0 0 5px #0096ff; } 100% { color: rgba(255,255,255,0.2); } }
+	.r-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: r-arrow-glow 3s infinite ease-in-out; }
+	@keyframes r-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
 	.rssi-container { position: relative; cursor: help; vertical-align: middle; }
