@@ -1182,7 +1182,6 @@ do_darkmode() {
 	DARKMODE=${DARKMODE:-0}
 	if [ "$DARKMODE" = "1" ]; then
 		DARK_CSS=".section-header { background: transparent !important; color: #fff; font: bold 12px/16px sans-serif; padding: 12px; text-align: center; border: 0 !important; box-shadow: 0 !important; }
-		.header-stats-row { margin-top: 15px !important; }
 		.modal-grid .section-header { min-height: 85px !important; }
 		.report-column { width: 100%; background: transparent !important; border: 1px solid #475a68; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
 		table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; background: transparent !important; vertical-align: middle; text-align: center; }
@@ -2204,7 +2203,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.stat-cool { color: #0096ff !important; font-weight: bold; }
 	.bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
 	.router-branding { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
-	.header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
+    .header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 11px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
 	.text-24 { color: #0096ff !important; font-weight: bold; }
 	.text-5g { color: #30d158 !important; font-weight: bold; }
 	.text-6g { color: #bf40bf !important; font-weight: bold; }
@@ -2213,7 +2212,10 @@ cat <<HTML >> "$WEB_PAGE"
 	.modal-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; font-weight: bold; }
 	.modal-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
 	.modal-grid .report-column { flex: 1; max-width: 49.5%; }
-	#popoutModal th, #popoutModal td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
+	#popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
+    #popoutModal table.report_table thead th { white-space: nowrap; font-size: 14px !important; font-weight: bold !important; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
+    #popoutModal .report-column .section-header .header-stats-row { font-size: 14px !important; }
+    #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; }
 	.r-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: r-arrow-glow 3s infinite ease-in-out; }
 	@keyframes r-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
@@ -2437,6 +2439,12 @@ function openPopout() {
     if (!mCol || !nCol) return;
     mCol = mCol.cloneNode(true);
     nCol = nCol.cloneNode(true);
+    [mCol, nCol].forEach(c => {
+        let h = c.querySelector('.header-stats-row'), s = c.querySelector('.section-header'), r = c.querySelector('.separator-line');
+        if(h) Object.assign(h.style, { fontSize: "14px", lineHeight: "1.1", padding: "1px 0", margin: "0", height: "auto" });
+        if(s) Object.assign(s.style, { paddingBottom: "0px", height: "auto" });
+        if(r) Object.assign(r.style, { margin: "8px -11px 2px -11px" });
+    });
     mCol.querySelector('table').id = "popMainTable";
     nCol.querySelector('table').id = "popNodeTable";
     mCol.querySelectorAll('th').forEach(function(th, i) {
