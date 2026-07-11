@@ -1677,7 +1677,7 @@ hostcolor_main_name() {
 		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAME_MAIN"
 	else
-		IP_COLOR="color: #64d2ff;"MAC_COLOR=""
+		IP_COLOR="color: #64d2ff; "MAC_COLOR=""
 	fi
 }
 
