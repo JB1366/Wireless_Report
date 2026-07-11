@@ -125,11 +125,6 @@ check_version() {
 
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-	if [ -z "$RS_HIST_ENTRIES" ] && [ -n "$RS_HIST_DAYS" ]; then
-		RS_HIST_ENTRIES="$RS_HIST_DAYS"
-		sed -i 's/RS_HIST_DAYS/RS_HIST_ENTRIES/g' "$CONFIG" 2>/dev/null
-	fi
-	update_time
 	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
     UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG="\e[42;37m"
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
@@ -178,7 +173,6 @@ check_installed() {
         pause
         return 1
     fi
-    if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
     return 0
 }
 
@@ -346,11 +340,9 @@ get_usb() {
     KNOWN_DB="$USB_PATH/known_macs.db"
 	HISTORY_DB="$USB_PATH/rssi_history.db"
     ERROR_LOG="$USB_PATH/ssh_error.log"
-	export USB_PATH KNOWN_DB HISTORY_DB ERROR_LOG
 }
 
 check_storage() {
-    get_usb
 	echo -e "\n${BL}[*] Checking for Storage...${NC}"
     sleep 3
 	if echo "$USB_PATH" | grep -q "/tmp/mnt/"; then
@@ -393,7 +385,7 @@ ssh_init () {
 check_ssh() {
 	if [ "$1" = "pause" ]; then check_installed || return 1; fi
 	while true; do
-		show_header; get_usb
+		show_header
 		echo -e "${BL}==================================================${NC}"
 		echo -e "${BL}                 SSH Environment                  ${NC}"
 		echo -e "${BL}==================================================${NC}"
@@ -758,7 +750,6 @@ do_uninstall() {
     read -r confirm
     case "$confirm" in [nN]) return ;; esac
 	if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-	get_usb
 	if mount | grep -q "menuTree.js"; then
 		umount -l "$SYSTEM_MENU" >/dev/null 2>&1
 		sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
@@ -929,7 +920,7 @@ set_nicknames() {
 set_options() {
     check_installed || return 1
     while true; do
-        show_header; get_usb
+        show_header
         echo -e "${BL}==================================================${NC}"
         echo -e "${BL}                    Set Options                   ${NC}"
         echo -e "${BL}==================================================${NC}"
@@ -1686,7 +1677,7 @@ hostcolor_main_name() {
 		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAME_MAIN"
 	else
-		IP_COLOR="color: #64d2ff;"; MAC_COLOR=""
+		IP_COLOR="color: #64d2ff;"MAC_COLOR=""
 	fi
 }
 
@@ -2553,7 +2544,7 @@ document.addEventListener('mouseout', function(e) {
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<BUTTONSHTML >> "$WEB_PAGE"
-                        <button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Stacked</button>
+                        <button id="btnStack" class="btn-black-blue active" onclick="switchTab('split')">Main</button>
                         <button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
                         <button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
 BUTTONSHTML
