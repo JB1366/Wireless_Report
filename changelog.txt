@@ -2,12 +2,13 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v2.0.1-minor updates.
 v2.0.0-visual UI updates.
 v1.9.9-added RSA key deleton, minor updates.
 v1.9.8-added New Node Hostname Display option.
 v1.9.7-added new IP Padding option.
 v1.9.6-minor updates, rebranded Wireless Report.
-v1.9.5-minor updates
+v1.9.5-minor updates.
 v1.9.4-added Dark Mode, hash version checking.
 v1.9.3-added Robust RSSI History Management.
 v1.9.2-add band to RSSI Tooltip.
