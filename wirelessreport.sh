@@ -1199,7 +1199,7 @@ do_numbered_node() {
 	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='r-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL</span> <span class='r-arrow'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
+		TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL_DEVICES</span> <span class='r-arrow'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
 	else
 		TOTAL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
 	fi
@@ -2049,6 +2049,7 @@ for iface in $IFACE_LIST; do
 		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
 	done
 done
+MAIN_NAME="<span class='router-branding'>$MAIN_NAME</span>"
 TOTAL_TEMP="<span class='${MC_TEMP}'>${M_TEMP}</span>"
 TOTAL_LOAD="<span class='${MC_LOAD}'>${M_LOAD}</span>"
 TOTAL_UPTIME="<span class='val-blue'>${M_UPTIME}</span>"
@@ -2123,8 +2124,9 @@ EOF
 NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$BULLET}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
-GRAND_TOTAL=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
-BRAND_LINE_ALL="<span class='router-branding'>$MAIN_NAME</span>$BULLET$N_NAMES"
+GRAND_TOTAL_DEVICES=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
+ALL_NAMES="$MAIN_NAME$BULLET$N_NAMES"
+UPDATED_TIME="<span style='font-size:13px; font-weight:bold;'>Updated: $CUR_TIME</span>"
 do_numbered_node; do_runtime; header_box; do_darkmode
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
@@ -2190,7 +2192,7 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	.mac-val, .ssid-val { display: inline; }
     .ip-val, .iface-val { display: none; }
-    .seperator-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
+    .separator-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
 	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 	.new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
@@ -2203,7 +2205,6 @@ cat <<HTML >> "$WEB_PAGE"
 	.bar-box { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
 	.router-branding { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
 	.header-stats-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 5px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
-    .updated-time { font-size:13px; font-weight:bold; }
 	.text-24 { color: #0096ff !important; font-weight: bold; }
 	.text-5g { color: #30d158 !important; font-weight: bold; }
 	.text-6g { color: #bf40bf !important; font-weight: bold; }
@@ -2522,7 +2523,7 @@ document.addEventListener('mouseout', function(e) {
                 <div id="tabMenu" class="submenuBlock"></div>
                 <div id="wifiReportContainer" style="padding:10px;">
                     <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
-                    <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL</span></div>
+                    <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL_DEVICES</span></div>
                     <div class="top-controls">
                         <div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
                             <button class="btn-manual btn-black-blue" style="border:none; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
@@ -2555,9 +2556,9 @@ cat <<HTML >> "$WEB_PAGE"
                         <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
                             <div id="mainCol" class="report-column">
                                 <div class="section-header">
-                                    <span class="router-branding">$MAIN_NAME</span><br>
-                                    <span class="updated-time">Updated: $CUR_TIME</span>
-                                    <hr class="seperator-line">
+                                    $MAIN_NAME<br>
+                                    $UPDATED_TIME
+                                    <hr class="separator-line">
                                     <div class="header-stats-row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
                                 </div>
                                 <table id="mainTable" class="report_table show-ip">
@@ -2586,8 +2587,8 @@ cat <<NODEHTML >> "$WEB_PAGE"
                             <div id="nodeCol" class="report-column">
                                 <div class="section-header">
                                     $N_NAMES<br>
-                                    <span class="updated-time">Updated: $CUR_TIME</span>
-                                    <hr class="seperator-line">
+                                    $UPDATED_TIME
+                                    <hr class="separator-line">
                                     <div class="header-stats-row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
                                 </div>
                                 <table id="nodeTable" class="report_table show-ip">
@@ -2610,9 +2611,9 @@ fi
 cat <<HTML >> "$WEB_PAGE"
                         <div id="allCol" class="report-column">
                             <div class="section-header">
-                                $BRAND_LINE_ALL<br>
-                                <span class="updated-time">Updated: $CUR_TIME</span>
-                                <hr class="seperator-line">
+                                $ALL_NAMES<br>
+                                $UPDATED_TIME
+                                <hr class="separator-line">
                                 <div class="header-stats-row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
                             </div>
                             <table id="allTable" class="report_table show-ip">
