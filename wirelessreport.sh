@@ -1646,7 +1646,7 @@ get_bars_rssi_style() {
     if [ "$rssi" -ge -50 ]; then
         bars="<span class='bar-box rssi-excl'>||||</span>"
         rssi_style="color: #30d158; font-weight: bold;"
-        T_EXC=$((T_EXC+1))
+        T_EXCL=$((T_EXCL+1))
     elif [ "$rssi" -ge -60 ]; then
         bars="<span class='bar-box rssi-good'>|||</span>"
         rssi_style="color: #64d2ff; font-weight: bold;"
@@ -1974,7 +1974,7 @@ if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
 NL=$'\n'; MAIN_ROWS=""; NODE_ROWS=""; ALL_ROWS=""
-T_EXC=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MAIN_DEVICE_TOTAL=0; NODE_DEVICE_TOTAL=0
+T_EXCL=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MAIN_DEVICE_TOTAL=0; NODE_DEVICE_TOTAL=0
 WL_BASES=$(nvram get wl_ifnames)
 WL0_PHYS=$(echo "$WL_BASES" | awk '{print $1}')
 WL1_PHYS=$(echo "$WL_BASES" | awk '{print $2}')
@@ -2586,7 +2586,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 </table>
                             </div>
                             <div class="quality-bar">
-                                <div class="quality-box rssi-excl">Excellent: <span style="background:#30d158;" class="rssi-font">$T_EXC</span></div>
+                                <div class="quality-box rssi-excl">Excellent: <span style="background:#30d158;" class="rssi-font">$T_EXCL</span></div>
                                 <div class="quality-box rssi-good">Good: <span style="background:#64d2ff;" class="rssi-font">$T_GOOD</span></div>
                                 <div class="quality-box rssi-fair">Fair: <span style="background:#ffd60a;" class="rssi-font">$T_FAIR</span></div>
                                 <div class="quality-box rssi-poor">Poor: <span style="background:#ff453a;" class="rssi-font">$T_POOR</span></div>
@@ -2641,7 +2641,7 @@ cat <<HTML >> "$WEB_PAGE"
                             </table>
                         </div>
                         <div id="allDevicesQualityBar" class="quality-bar">
-                            <div class="quality-box rssi-excl">Excellent: <span style="background:#30d158;" class="rssi-font">$T_EXC</span></div>
+                            <div class="quality-box rssi-excl">Excellent: <span style="background:#30d158;" class="rssi-font">$T_EXCL</span></div>
                             <div class="quality-box rssi-good">Good: <span style="background:#64d2ff;" class="rssi-font">$T_GOOD</span></div>
                             <div class="quality-box rssi-fair">Fair: <span style="background:#ffd60a;" class="rssi-font">$T_FAIR</span></div>
                             <div class="quality-box rssi-poor">Poor: <span style="background:#ff453a;" class="rssi-font">$T_POOR</span></div>
