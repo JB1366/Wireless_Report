@@ -2152,6 +2152,7 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/help.js"></script>
 <script src="/validator.js"></script>
 <style>
+    body { cursor: pointer !important; }
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
 	.report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
 	.top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
@@ -2159,11 +2160,11 @@ cat <<HTML >> "$WEB_PAGE"
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
 	.header-box { visibility: hidden; width: var(--v-width, 190px); background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
-	.header-tip { position: relative; cursor: pointer; display: inline-block; }
+	.header-tip { position: relative; display: inline-block; }
 	.header-tip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
 	.rssi-quality-bar { display: flex; justify-content: center; gap: 12px; align-items: center; width: 100%; margin: -5px auto -5px auto; padding: 0; background: transparent; border: none; height: auto; }
 	.rssi-quality-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
-	.rssi-quality-box:hover { border-color: var(--hover-color, #0096ff); box-shadow: 0 0 10px var(--glow-color, rgba(0,150,255,0.4)); cursor: pointer; }
+	.rssi-quality-box:hover { border-color: var(--hover-color, #0096ff); box-shadow: 0 0 10px var(--glow-color, rgba(0,150,255,0.4)); }
     .rssi_bars { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
     .rssi-font { color:#000; padding:1px 5px; border-radius:3px; margin-left:4px; }
     .rssi-excl { color: #30d158; --hover-color: #30d158; --glow-color: rgba(48,209,88,0.4); }
@@ -2171,17 +2172,17 @@ cat <<HTML >> "$WEB_PAGE"
     .rssi-fair { color: #ffd60a; --hover-color: #ffd60a; --glow-color: rgba(255,214,10,0.4); }
     .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
 	.refresh-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
-	.refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); cursor: pointer; }
+	.refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
 	${RUNTIME_CSS}
-	.btn-black-blue { background: rgba(0,0,0,0.6); border: 1px solid #475a68; color: white; cursor: pointer; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
+	.btn-black-blue { background: rgba(0,0,0,0.6); border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
 	.btn-black-blue:hover, .btn-black-blue.active { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); color: #0096ff; }
 	.btn-black-blue.active { background: rgba(0,150,255,0.15); }
 	#countdown { margin-left: 6px; font-weight: bold; }
 	#refreshRate:focus { outline: none; border: none; background: #000; }
-    #refreshRate option { color: white !important; font-weight: bold; background: #000; }
+    #refreshRate, #refreshRate option { color: white !important; font-weight: bold; background: #000; cursor: pointer !important; }
 	.grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
 	${DARK_CSS}
-	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; cursor: pointer; }
+	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; }
 	table.report_table { width: 100%; border-collapse: collapse; }
 	table.report_table .mac-val { $MAC_COLOR; }
 	table.report_table .ip-val { $IP_COLOR; }
@@ -2191,7 +2192,7 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table.show-mac .ip-val { display: none !important; }
 	table.report_table.show-iface .ssid-val { display: none !important; }
 	table.report_table.show-iface .iface-val { display: inline !important; color: #64d2ff; }
-	table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; cursor: pointer; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
+	table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
 	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
@@ -2212,7 +2213,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
 	.popout-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 	.popout-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
-	.popout-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; font-weight: bold; }
+	.popout-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; font-weight: bold; }
 	.popout-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
 	.popout-grid .report-column { flex: 1; max-width: 49.5%; }
 	#popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
@@ -2225,7 +2226,7 @@ cat <<HTML >> "$WEB_PAGE"
 	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
-	.rssi-container { position: relative; cursor: help; vertical-align: middle; }
+	.rssi-container { position: relative; vertical-align: middle; }
 	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; background: #000; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
 	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
 </style>
