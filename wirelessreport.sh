@@ -2178,6 +2178,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.btn-black-blue.active { background: rgba(0,150,255,0.15); }
 	#countdown { margin-left: 6px; font-weight: bold; }
 	#refreshRate:focus { outline: none; border: none; background: #000; }
+    #refreshRate option { color: white !important; font-weight: bold; background: #000; }
 	.grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
 	${DARK_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; cursor: pointer; }
