@@ -2215,12 +2215,12 @@ cat <<HTML >> "$WEB_PAGE"
 	.popout-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
 	.popout-grid .report-column { flex: 1; max-width: 49.5%; }
 	#popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
-    #popoutModal table.report_table thead th { white-space: nowrap; font-size: 12px !important; font-weight: bold !important; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
-    #popoutModal table.report_table td { font-size: 12px !important; font-weight: normal !important; }
-    #popoutModal .report-column .section-header .temp_load_row { font-size: 14px !important; font-weight: bold !important; }
-    #popoutModal table.report_table th, #popoutModal table.report_table td { font-size: 12px !important; font-weight: normal !important; }
+    #popoutModal table.report_table tbody td:not([style*="font-weight: bold"]) { font-size: 12px !important; font-weight: normal !important; }
+    #popoutModal table.report_table tbody td[style*="font-weight: bold"] { font-size: 12px !important; }
+    #popoutModal table.report_table thead th { font-size: 12px !important; font-weight: bold !important; white-space: nowrap; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
+    #popoutModal .report-column .section-header .temp_load_row { font-size: 14px !important; font-weight: normal !important; }
     #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; }
-	.right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
+    .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
 	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
