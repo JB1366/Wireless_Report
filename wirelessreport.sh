@@ -2538,7 +2538,7 @@ document.addEventListener('mouseout', function(e) {
                     <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL_DEVICES</span></div>
                     <div class="top-controls">
                         <div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
-                            <button class="btn-manual btn-black-blue" style="border:none; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
+                            <button class="btn-manual btn-black-blue" style="color: #0096ff; border:none; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
                                 Refresh <span style="color: white;">${RUNTIME}</span>
                             </button>
                             <span style="font-size:12px; margin-left:5px; color: #0096ff;">Auto: </span>
