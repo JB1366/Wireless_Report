@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v2.0.2-minor updates & visual enhancements.
 v2.0.1-minor updates.
 v2.0.0-visual UI updates.
 v1.9.9-added RSA key deleton, minor updates.
