@@ -268,18 +268,22 @@ do_update() {
         return 0
     else
         rm -f "$TEMP_SCRIPT"
-        if [ -f "$0" ]; then
-            if [ "$(realpath "$0" 2>/dev/null)" != "$(realpath "$REPORT_SCRIPT" 2>/dev/null)" ]; then
-                echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
-                cp "$0" "$REPORT_SCRIPT"
-                chmod +x "$REPORT_SCRIPT" 2>/dev/null
-                return 0
-            else
-                echo -e "${RD}[!] GitHub unreachable and script is already in place.${NC}"
-                return 1
-            fi
-        else
+        if [ ! -f "$0" ]; then
             echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
+            return 1
+        fi
+        local CURRENT_PATH; local TARGET_PATH
+        CURRENT_PATH=$(readlink -f "$0" 2>/dev/null)
+        [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
+        TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null)
+        [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
+        if [ "$CURRENT_PATH" != "$TARGET_PATH" ]; then
+            echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
+            cp "$0" "$REPORT_SCRIPT"
+            chmod +x "$REPORT_SCRIPT" 2>/dev/null
+            return 0
+        else
+            echo -e "${RD}[!] GitHub unreachable and script is already in place.${NC}"
             return 1
         fi
     fi
