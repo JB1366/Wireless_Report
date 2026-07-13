@@ -2152,7 +2152,6 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/help.js"></script>
 <script src="/validator.js"></script>
 <style>
-    body { cursor: pointer !important; }
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
 	.report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
 	.top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
@@ -2173,10 +2172,10 @@ cat <<HTML >> "$WEB_PAGE"
     .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
 	.refresh-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
 	.refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
-    @keyframes blueTextPulse { 0%, 100% { color: #0044cc; text-shadow: 0 0 2px #0044cc; } 50% { color: #0096ff; text-shadow: 0 0 10px #0096ff; } }
-    .refreshing-pulse { background-color: #000 !important; animation: blueTextPulse 1.5s infinite ease-in-out !important; pointer-events: none; }
+    @keyframes refresh-pulse-blue { 0%, 100% { color: #0044cc; text-shadow: 0 0 2px #0044cc; } 50% { color: #0096ff; text-shadow: 0 0 10px #0096ff; } }
+    .refresh-pulse { background-color: #000 !important; animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
 	${RUNTIME_CSS}
-	.btn-black-blue { background: rgba(0,0,0,0.6); border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
+	.btn-black-blue { background: rgba(0,0,0,0.6); border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
 	.btn-black-blue:hover, .btn-black-blue.active { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); color: #0096ff; }
 	.btn-black-blue.active { background: rgba(0,150,255,0.15); }
 	#countdown { margin-left: 6px; font-weight: bold; }
@@ -2228,6 +2227,7 @@ cat <<HTML >> "$WEB_PAGE"
 	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
 	#allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
+    body { cursor: pointer !important; }
 	.rssi-container { position: relative; vertical-align: middle; }
 	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; background: #000; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
 	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
@@ -2289,7 +2289,7 @@ function triggerRefresh() {
     var btn = document.querySelector('.btn-manual');
     if (btn) {
         btn.innerText = "Refreshing...";
-        btn.classList.add('refreshing-pulse');
+        btn.classList.add('refresh-pulse');
     }
     var expires = new Date(Date.now() + 30000).toUTCString();
     document.cookie = "report_done=true; expires=" + expires + "; path=/";
