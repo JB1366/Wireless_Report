@@ -130,6 +130,7 @@ menu_vars() {
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
+    TEMP_SCRIPT="/tmp/wirelessreport.sh"
     SYSTEM_MENU="/www/require/modules/menuTree.js"
 	TEMP_MENU="/tmp/menuTree.js"
 	SS_FILE="/jffs/scripts/services-start"
@@ -260,16 +261,23 @@ do_update() {
     local prefix="\n"
     if [ "$amtm" = "1" ]; then prefix="\n${BG} wr${NC} "; fi
     echo -e "${prefix}${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
-    if curl -sfL --retry 3 "$GITHUB" -o "$REPORT_SCRIPT"; then
+    if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" && [ -s "$TEMP_SCRIPT" ]; then
+        mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
         chmod +x "$REPORT_SCRIPT" 2>/dev/null
         sleep 2
-		return 0
+        return 0
     else
+        rm -f "$TEMP_SCRIPT"
         if [ -f "$0" ]; then
-            echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
-            cp "$0" "$REPORT_SCRIPT"
-            chmod +x "$REPORT_SCRIPT" 2>/dev/null
-            return 0
+            if [ "$(realpath "$0" 2>/dev/null)" != "$(realpath "$REPORT_SCRIPT" 2>/dev/null)" ]; then
+                echo -e "\n${YL}[!] GitHub unreachable. Installing current local copy...${NC}\n"
+                cp "$0" "$REPORT_SCRIPT"
+                chmod +x "$REPORT_SCRIPT" 2>/dev/null
+                return 0
+            else
+                echo -e "${RD}[!] GitHub unreachable and script is already in place.${NC}"
+                return 1
+            fi
         else
             echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
             return 1
