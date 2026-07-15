@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.0.2"
+SCRIPT_VERSION="2.0.3"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -85,7 +85,7 @@ install_menu() {
 		echo -e "  $N2  Uninstall                                            "
 		echo -e "  $N3  Temp/Date ($DU) ($CT)                                "
 		echo -e "  $N4  Router/Node Nicknames                                "
-		echo -e "  $N5  Set Options  RT:($RTM) BH:($WB_STAT) RH:($RH_STAT)   "
+		echo -e "  $N5  Set Options  Theme:($TM_STAT)                        "
 		echo -e "  $N6  Node Authentication                                  "
 		echo -e "  $N7  Setup SSH Environment (SSH-KEY:$KEY)                 "
 		echo -e "  $NE  Exit                                                 "
@@ -113,6 +113,8 @@ check_version() {
         echo -e " ${BL}STATUS:${NC} ${RD}[Offline]${NC} Could not reach GitHub"
     elif [ "$LOCAL_VERSION" = "Not Installed" ]; then
         echo -e " ${BL}STATUS:${NC} ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"
+    elif [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
+        echo -e " ${BL}STATUS:${NC} [Up to date] ${GR}Current: v$LOCAL_VERSION${NC}"
     elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
         echo -e " ${BL}STATUS:${NC} [v$REMOTE_VERSION Available] ${GR}Current: v$LOCAL_VERSION${NC}"
 	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
@@ -124,13 +126,20 @@ check_version() {
 
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
+    if grep -q "^DARKMODE=" "$CONFIG"; then
+        OLD_DM=$(grep "^DARKMODE=" "$CONFIG" | cut -d'"' -f2)
+        [ "$OLD_DM" = "0" ] && NEW_THEME="1" || NEW_THEME="2"
+        sed -i -e "s/^DARKMODE=.*/THEME=\"$NEW_THEME\"/" -e "s/^THEME=.*/THEME=\"$NEW_THEME\"/" "$CONFIG"
+        sed -i "/^DARKMODE=/d" "$CONFIG"
+        THEME="$NEW_THEME"
+    fi
 	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
     UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG="\e[42;37m"
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
-    TEMP_SCRIPT="/tmp/wirelessreport.sh"
+	TEMP_SCRIPT="/tmp/wirelessreport.sh"
     SYSTEM_MENU="/www/require/modules/menuTree.js"
 	TEMP_MENU="/tmp/menuTree.js"
 	SS_FILE="/jffs/scripts/services-start"
@@ -155,8 +164,10 @@ menu_vars() {
 	if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
 	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
 	CE="${GR}$CUR_ENTRIES${NC}"
-    DARKMODE=${DARKMODE:-0}
-    if [ "$DARKMODE" = "1" ]; then DM_STAT="$ON"; else DM_STAT="$OFF"; fi
+    THEME=${THEME:-1}
+    if [ "$THEME" = "1" ]; then TM_STAT="${BL}ORIGINAL${NC}"; fi
+    if [ "$THEME" = "2" ]; then TM_STAT="${BL}DARKMODE${NC}"; fi
+    if [ "$THEME" = "3" ]; then TM_STAT="${BL}ASUS WEBUI${NC}"; fi
 	IPPAD=${IPPAD:-1}
 	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
@@ -288,6 +299,7 @@ do_update() {
         fi
     fi
 }
+
 
 ScriptUpdateFromAMTM() {
     if [ "$doScriptUpdateFromAMTM" != "true" ]; then
@@ -780,7 +792,7 @@ do_uninstall() {
 	rm -rf "$WEB_PAGE" 2>/dev/null
 	case "$USB_PATH" in *wirelessreport*) rm -rf "$USB_PATH" 2>/dev/null ;; esac
 	logger -p user.info -t "Wireless_Report" "(v$LOCAL_VERSION) successfully uninstalled."
-	ssh_init; unset RTIME BACKHAUL RS_HIST HOST_COLOR DARKMODE IPPAD PULSE_MINS DISPLAY_UNIT
+	ssh_init; unset RTIME BACKHAUL RS_HIST HOST_COLOR THEME IPPAD PULSE_MINS DISPLAY_UNIT
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
 	pause
@@ -940,7 +952,7 @@ set_options() {
         echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)                   "
         echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                       "
         echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
-        echo -e "  $N5  Enable Dark Mode: ($DM_STAT)                         "
+        echo -e "  $N5  Set Theme: ($TM_STAT)                                "
 		echo -e "  $N6  Enable IP Padding: ($PD_STAT)                        "
 		echo -e "  $N7  Node Hostname Display: ($HN_STAT)                    "
 		echo -e "                                                            "
@@ -995,13 +1007,7 @@ set_options() {
             4)
                 rssi_submenu ;;
             5)
-                if grep -q "DARKMODE=" "$CONFIG"; then
-                    if [ "$DARKMODE" = "1" ]; then NEW_DM="0"; else NEW_DM="1"; fi
-                    sed -i "s/DARKMODE=.*/DARKMODE=\"$NEW_DM\"/" "$CONFIG"
-                else
-                    echo 'DARKMODE="1"' >> "$CONFIG"
-                fi
-                ;;
+                theme_submenu ;;
 			6)
                 if grep -q "IPPAD=" "$CONFIG"; then
                     if [ "$IPPAD" = "1" ]; then
@@ -1121,6 +1127,51 @@ rssi_submenu() {
     done
 }
 
+theme_submenu() {
+    while true; do
+        show_header
+        echo -e "${BL}==============================================${NC}"
+        echo -e "${BL}  Set Theme                Current: $TM_STAT  ${NC}"
+        echo -e "${BL}==============================================${NC}"
+        echo -e "                                                        "
+        echo -e " $N1 Original Theme                                     "
+        echo -e " $N2 Darkmode Theme                                     "
+        echo -e " $N3 Asus WebUI Theme                                   "
+        echo -e "                                                        "
+        echo -e " $NE Exit                                               "
+        echo -e "                                                        "
+        echo -e "${BL}==============================================${NC}"
+        printf "\n ${BL}Selection:${NC} "
+        read -r theme_choice
+        case "$theme_choice" in
+            1)
+                if grep -q "^THEME=" "$CONFIG"; then
+                    sed -i "s/^THEME=.*/THEME=\"1\"/" "$CONFIG"
+                else
+                    echo 'THEME="1"' >> "$CONFIG"
+                fi
+                ;;
+            2)
+                if grep -q "^THEME=" "$CONFIG"; then
+                    sed -i "s/^THEME=.*/THEME=\"2\"/" "$CONFIG"
+                else
+                    echo 'THEME="2"' >> "$CONFIG"
+                fi
+                ;;
+            3)
+                if grep -q "^THEME=" "$CONFIG"; then
+                    sed -i "s/^THEME=.*/THEME=\"3\"/" "$CONFIG"
+                else
+                    echo 'THEME="3"' >> "$CONFIG"
+                fi
+                ;;
+            e|E)
+                break
+                ;;
+        esac
+    done
+}
+
 restart_httpd() {
     service restart_httpd >/dev/null 2>&1
     killall -HUP httpd >/dev/null 2>&1
@@ -1150,17 +1201,18 @@ do_runtime() {
 		echo "$NEW_TOTAL $NEW_COUNT $NEW_MIN $NEW_MAX" > "$STATS_FILE"
 		logger -p user.info -t "Wireless_Report" "Report completed in $RUNTIME. AVG: ${AVERAGE}s (L: ${NEW_MIN}s/H: ${NEW_MAX}s) over $NEW_COUNT scans."
 		RUNTIME_CSS=".refresh-box:hover select, .refresh-box:hover .btn-manual { color: #0096ff !important; }
-			.refresh-box, .refresh-box select, .refresh-box .btn-manual { position: relative; display: inline-block; }
-			.refresh-box:before, .refresh-box .btn-manual:before, .refresh-box select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: rgba(10,10,10,0.95); color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
-			.refresh-box:after, .refresh-box .btn-manual:after, .refresh-box select:after { content: \"\"; position: absolute; width: 4px; height: 4px; background: #0096ff; border-radius: 50%; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 101; pointer-events: none; }
-			.refresh-box:before { content: \"Avg: ${AVERAGE}s over $NEW_COUNT scans\"; left: -110px; bottom: 185%; }
-			.refresh-box:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
-			.refresh-box .btn-manual:before, .refresh-box select:before { content: \"High: ${NEW_MAX}s   Low: ${NEW_MIN}s\"; left: -114px; top: 185%; }
-			.refresh-box .btn-manual:after, .refresh-box select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
-			.refresh-box:has(.btn-manual:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
-			.refresh-box:has(.btn-manual:hover):after { opacity: 1; visibility: visible; }
-			.refresh-box:has(.btn-manual:hover) .btn-manual:before, .refresh-box:has(select:hover) select:before { opacity: 1; visibility: visible; top: 190%; }
-			.refresh-box:has(.btn-manual:hover) .btn-manual:after, .refresh-box:has(select:hover) select:after { opacity: 1; visibility: visible; }"
+        .refresh-box, .refresh-box select, .refresh-box .btn-manual { position: relative; display: inline-block; }
+        .refresh-box:before, .refresh-box .btn-manual:before, .refresh-box select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
+        .refresh-box:after, .refresh-box .btn-manual:after, .refresh-box select:after { content: \"\"; position: absolute; width: 4px; height: 4px; background: #0096ff; border-radius: 50%; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 101; pointer-events: none; }
+        .refresh-box:before { content: \"Avg: ${AVERAGE}s over $NEW_COUNT scans\"; left: -110px; bottom: 185%; }
+        .refresh-box:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
+        .refresh-box .btn-manual:before, .refresh-box select:before { content: \"High: ${NEW_MAX}s   Low: ${NEW_MIN}s\"; left: -114px; top: 185%; }
+        .refresh-box .btn-manual:after, .refresh-box select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
+        .refresh-box:has(.btn-manual:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
+        .refresh-box:has(.btn-manual:hover):after { opacity: 1; visibility: visible; }
+        .refresh-box:has(.btn-manual:hover) .btn-manual:before, .refresh-box:has(select:hover) select:before { opacity: 1; visibility: visible; top: 190%; }
+        .refresh-box:has(.btn-manual:hover) .btn-manual:after, .refresh-box:has(select:hover) select:after { opacity: 1; visibility: visible; }"
+        RUNTIME_CSS=$(echo "$RUNTIME_CSS" | sed 's/^    //')
 	else
 		RUNTIME_CSS=""; RUNTIME=""
 		if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
@@ -1177,7 +1229,10 @@ ssh_error() {
 }
 
 header_box() {
-    if [ -n "$REMOTE_VERSION" ] && [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
+    if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
+        HOVER_TEXT="Current v$SCRIPT_VERSION"
+        V_WIDTH="100px"
+    elif [ -n "$REMOTE_VERSION" ] && [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"
         V_WIDTH="190px"
     elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
@@ -1189,20 +1244,73 @@ header_box() {
     fi
 }
 
-do_darkmode() {
-	DARKMODE=${DARKMODE:-0}
-	if [ "$DARKMODE" = "1" ]; then
-		DARK_CSS=".section-header { background: transparent !important; color: #fff; font: bold 12px/16px sans-serif; padding: 12px; text-align: center; border: 0 !important; box-shadow: 0 !important; }
-		.popout-grid .section-header { min-height: 85px !important; }
-		.report-column { width: 100%; background: transparent !important; border: 1px solid #475a68; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
-		table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; background: transparent !important; vertical-align: middle; text-align: center; }
-		table.report_table tfoot td { border-top: none !important; border-bottom: none !important; box-shadow: none !important; padding: 12px 10px !important; font-weight: bold; background: #171b1f; color: #fff; }"
-	else
-		DARK_CSS=".section-header { background: linear-gradient(to bottom, #171b1f, #354961); color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
-		.report-column { width: 100%; background: #1c232b; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
-		table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; background: #1c232b; vertical-align: middle; text-align: center; }
-		table.report_table tfoot td { border-top: 1px solid #475a68; padding: 12px 10px !important; font-weight: bold; background: #171b1f; color: #fff; }"
+set_theme() {
+	if grep -q "^DARKMODE=" "$CONFIG"; then
+        OLD_DM=$(grep "^DARKMODE=" "$CONFIG" | cut -d'"' -f2)
+        [ "$OLD_DM" = "0" ] && NEW_THEME="1" || NEW_THEME="2"
+        sed -i -e "s/^DARKMODE=.*/THEME=\"$NEW_THEME\"/" -e "s/^THEME=.*/THEME=\"$NEW_THEME\"/" "$CONFIG"
+        sed -i "/^DARKMODE=/d" "$CONFIG"
+        THEME="$NEW_THEME"
+    fi
+    THEME=${THEME:-1}
+    if [ "$THEME" = "1" ]; then # [ORIGINAL THEME]
+        THEME_CSS=".top-panel { background: transparent !important; }
+        .header-box { background: rgba(0,0,0,0.9); }
+        .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
+        .btn-auto { background: transparent !important; }
+        .btn-black-blue { background: transparent !important; }
+        .btn-black-blue:hover, .btn-black-blue.active { color: #0096ff; }
+        .report-column { background: #1c232b; }
+        table.report_table td { background: #1c232b; }
+        table.report_table tfoot td { border-top: 1px solid #475a68; background: #171b1f; }
+        table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
+        table.report_table th:hover { background: #00e5ff; }
+        .separator-line { border: 0; border-top: 1px solid #475a68; }
+        .refresh-box { background: rgba(0,0,0,0.4); box-sizing: border-box; }
+        #refreshRate:focus { background: #000; }
+        #refreshRate, #refreshRate option { background: #000; }
+        .rssi-tooltip { background: #000; }"
+        RT_TOOLTIP="#000000"
 	fi
+    if [ "$THEME" = "2" ]; then # [DARKMODE THEME]
+        THEME_CSS=".top-panel { background: transparent !important; }
+        .header-box { background: rgba(0,0,0,0.9); }
+        .section-header { background: transparent !important; border: 0 !important; box-shadow: 0 !important; }
+        .btn-auto { background: transparent !important; }
+        .btn-black-blue { background: transparent !important; }
+        .btn-black-blue:hover, .btn-black-blue.active { color: #0096ff; }
+        .report-column { background: transparent !important; }
+        table.report_table td { background: transparent !important; }
+        table.report_table tfoot td { border-top: none !important; background: #171b1f; }
+        table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
+        table.report_table th:hover { background: #00e5ff; }
+        .separator-line { border: 0; border-top: 1px solid #475a68; }
+        .refresh-box { background: rgba(0,0,0,0.4); box-sizing: border-box; }
+        #refreshRate:focus { background: #000; }
+        #refreshRate, #refreshRate option { background: #000; }
+        .popout-grid .section-header { min-height: 85px !important; }
+        .rssi-tooltip { background: #000; }"
+        RT_TOOLTIP="#000000"
+    fi
+	if [ "$THEME" = "3" ]; then # [ASUS WEBUI THEME]
+        THEME_CSS=".top-panel { background-color: #4D595D; }
+        .header-box { background: #3A4042; }
+        .section-header { background: #4D595D; }
+        .btn-black-blue { background: #3A4042; }
+        .btn-black-blue:hover, .btn-black-blue.active { color: #white; }
+        .btn-auto { background: #3A4042; }
+        .report-column { background: #3A4042; }
+        table.report_table td { background: #1c232b; } /* Table Background */
+        table.report_table tfoot td { border-top: 1px solid #475a68; background: #3A4042; }
+        table.report_table thead th { background: #3A4042; } /* Column Headers */
+        table.report_table th:hover { background: #77A5C6; }
+        .separator-line { border: 0; border-top: 1px solid black; }
+        #refreshRate:focus { background: #3A4042; }
+        #refreshRate, #refreshRate option { background: #3A4042; }
+        .rssi-tooltip { background: #1c232b; }"
+        RT_TOOLTIP="#3A4042"
+    fi
+    THEME_CSS=$(echo "$THEME_CSS" | sed 's/^    //')
 }
 
 do_numbered_node() {
@@ -2137,7 +2245,7 @@ done
 GRAND_TOTAL_DEVICES=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 ALL_NAMES="$MAIN_NAME$BULLET$N_NAMES"
 UPDATED_TIME="<span style='font-size:13px; font-weight:bold;'>Updated: $CUR_TIME</span>"
-do_numbered_node; do_runtime; header_box; do_darkmode
+do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 
@@ -2165,7 +2273,8 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/validator.js"></script>
 <style>
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
-	.report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
+    .top-panel { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
+    .report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
 	.top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
@@ -2173,6 +2282,8 @@ cat <<HTML >> "$WEB_PAGE"
 	.header-box { visibility: hidden; width: var(--v-width, 190px); background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
 	.header-tip { position: relative; display: inline-block; }
 	.header-tip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
+    .section-header { color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
+    .report-column { width: 100%; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
 	.rssi-quality-bar { display: flex; justify-content: center; gap: 12px; align-items: center; width: 100%; margin: -5px auto -5px auto; padding: 0; background: transparent; border: none; height: auto; }
 	.rssi-quality-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
 	.rssi-quality-box:hover { border-color: var(--hover-color, #0096ff); box-shadow: 0 0 10px var(--glow-color, rgba(0,150,255,0.4)); }
@@ -2182,19 +2293,22 @@ cat <<HTML >> "$WEB_PAGE"
     .rssi-good { color: #64d2ff; --hover-color: #64d2ff; --glow-color: rgba(100,210,255,0.4); }
     .rssi-fair { color: #ffd60a; --hover-color: #ffd60a; --glow-color: rgba(255,214,10,0.4); }
     .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
-	.refresh-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
-	.refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
+	.refresh-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; border: 1px solid #475a68; font-weight: bold; transition: all 0.2s ease; }
+    .refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
     @keyframes refresh-pulse-blue { 0%, 100% { color: #0044cc; text-shadow: 0 0 2px #0044cc; } 50% { color: #0096ff; text-shadow: 0 0 10px #0096ff; } }
-    .refresh-pulse { background-color: #000 !important; animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
-	${RUNTIME_CSS}
-	.btn-black-blue { background: rgba(0,0,0,0.6); border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
-	.btn-black-blue:hover, .btn-black-blue.active { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); color: #0096ff; }
-	.btn-black-blue.active { background: rgba(0,150,255,0.15); }
-	#countdown { margin-left: 6px; font-weight: bold; }
-	#refreshRate:focus { outline: none; border: none; background: #000; }
-    #refreshRate, #refreshRate option { color: white !important; font-weight: bold; background: #000; cursor: pointer !important; }
+	.refresh-pulse { animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
+    ${RUNTIME_CSS}
+    .btn-auto { border:0px; margin-left:0px; border-top-left-radius: 0px !important; border-bottom-left-radius: 0px !important; color: #0096ff; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; }
+    .btn-auto:hover, .btn-auto.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); color: #0096ff; position: relative; z-index: 5 }
+    .btn-auto.active { background: rgba(0,150,255,0.15); }
+    .btn-black-blue { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
+    .btn-black-blue:hover, .btn-black-blue.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
+    .btn-black-blue.active { background: rgba(0,150,255,0.15); }
+	#countdown { font-weight: bold; }
+	#refreshRate:focus { outline: none; border: none; }
+    #refreshRate, #refreshRate option { color: #0096ff; font-weight: bold; cursor: pointer !important; }
 	.grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
-	${DARK_CSS}
+	${THEME_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; }
 	table.report_table { width: 100%; border-collapse: collapse; }
 	table.report_table .mac-val { $MAC_COLOR; }
@@ -2205,13 +2319,14 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table.show-mac .ip-val { display: none !important; }
 	table.report_table.show-iface .ssid-val { display: none !important; }
 	table.report_table.show-iface .iface-val { display: inline !important; color: #64d2ff; }
-	table.report_table thead th { position: sticky; top: 0; z-index: 10; background: linear-gradient(to bottom, #0096ff, #0056b3); color: #fff; padding: 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
-	table.report_table th:hover { background: #00e5ff; color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
+    table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; vertical-align: middle; text-align: center; }
+    table.report_table tfoot td { padding: 12px 10px !important; font-weight: bold; color: #fff; }
+    table.report_table thead th { position: sticky; top: 0; z-index: 10; color: #fff; padding: 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
+    table.report_table th:hover { color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	.mac-val, .ssid-val { display: inline; }
     .ip-val, .iface-val { display: none; }
-    .separator-line { border: 0; border-top: 1px solid #475a68; margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
 	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 	.new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
@@ -2224,6 +2339,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.band-24g { color: #0096ff !important; font-weight: bold; }
 	.band-5g { color: #30d158 !important; font-weight: bold; }
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
+    .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.popout-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 	.popout-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
 	.popout-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; font-weight: bold; }
@@ -2241,7 +2357,7 @@ cat <<HTML >> "$WEB_PAGE"
 	sup { font-size: 0.6em; margin-left: 2px; }
     body { cursor: pointer !important; }
 	.rssi-container { position: relative; vertical-align: middle; }
-	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; background: #000; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
+	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
 	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
 </style>
 <script>
@@ -2553,35 +2669,39 @@ document.addEventListener('mouseout', function(e) {
             <td valign="top">
                 <div id="tabMenu" class="submenuBlock"></div>
                 <div id="wifiReportContainer" style="padding:10px;">
-                    <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
-                    <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL_DEVICES</span></div>
-                    <div class="top-controls">
-                        <div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
-                            <button class="btn-manual btn-black-blue" style="color: #0096ff; border:none; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
-                                Refresh <span style="color: white;">${RUNTIME}</span>
-                            </button>
-                            <span style="font-size:12px; margin-left:5px; color: #0096ff;">Auto: </span>
-                            <select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="background:#000; font-weight:bold; color:white; border:0px solid #444; margin-left:5px; font-size:12px; height:20px;">
-                                <option value="0">Off</option>
-                                <option value="30">30s</option>
-                                <option value="60">1m</option>
-                                <option value="120">2m</option>
-                                <option value="300">5m</option>
-                                <option value="600">10m</option>
-                                <option value="1200">20m</option>
-                                <option value="1800">30m</option>
-                            </select>
-                            <span style="color: #0096ff;" id="countdown"></span>
-                        </div>
+                    <div class="top-panel">
+                        <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
+                        <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL_DEVICES</span></div>
+                        <div class="top-controls">
+                            <div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
+                                <button class="btn-manual btn-black-blue" style="color: #0096ff; border:none; border-top-right-radius: 0px; border-bottom-right-radius: 0px; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
+                                    Refresh <span style="color: white;">${RUNTIME}</span>
+                                </button>
+                                <div class="btn-auto" style="display: inline-flex; align-items: center; padding: 0 5px; height: 28px;">
+                                    <span style="color: #0096ff; font-weight: bold; pointer-events: none; user-select: none;">Auto:</span>
+                                    <select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit;">
+                                        <option value="0">Off</option>
+                                        <option value="30">30s</option>
+                                        <option value="60">1m</option>
+                                        <option value="120">2m</option>
+                                        <option value="300">5m</option>
+                                        <option value="600">10m</option>
+                                        <option value="1200">20m</option>
+                                        <option value="1800">30m</option>
+                                    </select>
+                                </div>
+                                <span style="color: #0096ff;" id="countdown"></span>
+                            </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<BUTTONSHTML >> "$WEB_PAGE"
-                        <button id="btnMain" class="btn-black-blue active" onclick="switchTab('split')">Main</button>
-                        <button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
-                        <button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
+                            <button id="btnMain" class="btn-black-blue active" onclick="switchTab('split')">Main</button>
+                            <button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
+                            <button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
 BUTTONSHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
+                        </div>
                     </div>
                     <div class="grid-container">
                         <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
