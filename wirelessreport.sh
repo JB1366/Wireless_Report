@@ -2727,8 +2727,8 @@ document.addEventListener('mouseout', function(e) {
                                         <option value="1200">20m</option>
                                         <option value="1800">30m</option>
                                     </select>
+                                    <span style="color: #0096ff;" id="countdown"></span>
                                 </div>
-                                <span style="color: #0096ff;" id="countdown"></span>
                             </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
