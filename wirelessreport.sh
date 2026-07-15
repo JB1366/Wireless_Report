@@ -175,6 +175,7 @@ menu_vars() {
 	HOST_COLOR=${HOST_COLOR:-0}
 	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored${NC}"
 	else HN_STAT="${BL}Numbered${NC}"; fi
+    NO_TEMP_LOAD=${NO_TEMP_LOAD:-0}
 }
 
 check_installed() {
@@ -1054,6 +1055,25 @@ set_options() {
                 pause
                 continue
                 ;;
+            z|Z)
+                if grep -q "NO_TEMP_LOAD=" "$CONFIG"; then
+                    if [ "$NO_TEMP_LOAD" = "1" ]; then
+                        NEW_TEMP="0"
+                        MSG="\n${GR}[!] No Temp/Load: OFF.${NC}"
+                    else
+                        NEW_TEMP="1"
+                        MSG="\n${GR}[!] No Temp/Load: ON.${NC}"
+                    fi
+                    sed -i "s/NO_TEMP_LOAD=.*/NO_TEMP_LOAD=\"$NEW_TEMP\"/" "$CONFIG"
+                    echo -e "$MSG"
+                else
+                    echo 'NO_TEMP_LOAD="1"' >> "$CONFIG"
+                    echo -e "${GR}[!] No Temp/Load: ON.${NC}"
+                fi
+                NO_TEMP_LOAD="${NEW_TEMP:-1}"
+                pause
+                continue
+                ;;
             e|E)
                 sort -u -o "$CONFIG" "$CONFIG"
                 return
@@ -1789,6 +1809,26 @@ get_max_column() {
 	if [ "${#ssid}" -gt 15 ]; then ssid="${ssid:0:15}"; fi
 }
 
+get_main_notempload() {
+    if [ "$NO_TEMP_LOAD" = "1" ]; then
+        MC_LOAD="val-blue $M_LOAD"
+        MC_TEMP="val-blue $M_TEMP"
+    else
+        MC_LOAD=$(get_load_class "$M_LOAD")
+        MC_TEMP=$(get_temp_class "$M_TEMP")
+    fi
+}
+
+get_node_notempload() {
+    if [ "$NO_TEMP_LOAD" = "1" ]; then
+        NC_LOAD="custom-node-color' style='color: $NODE_COLOR; font-weight: bold; $N_LOAD"
+        NC_TEMP="custom-node-color' style='color: $NODE_COLOR; font-weight: bold; $N_TEMP"
+    else
+        NC_LOAD=$(get_load_class "$N_LOAD")
+        NC_TEMP=$(get_temp_class "$N_TEMP")
+    fi
+}
+
 hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
@@ -2063,7 +2103,7 @@ done
 #=============================#
 #  Main Scan/Device Assembly  #
 #=============================#
-IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}
+IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}; NO_TEMP_LOAD=${NO_TEMP_LOAD:-0}
 YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
 if [ -f "$KNOWN_DB" ]; then cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null; else > "$KNOWN_CACHE"; fi
@@ -2074,11 +2114,10 @@ nvram get dhcp_staticlist | sed 's/>>/  /g; s/[<>]/ /g' | \
 awk '{print toupper($1)"|"$2}' > "$DHCPSTATIC_CACHE" 2>/dev/null || > "$DHCPSTATIC_CACHE"
 nvram get asus_device_list | sed 's/</\n/g' > "$DEVICE_LIST_CACHE" 2>/dev/null || > "$DEVICE_LIST_CACHE"
 nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
+read -r M_LOAD _ < /proc/loadavg
 M_T=$(($(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0) / 1000))
 M_TEMP=$(get_temp_unit "$M_T")
-MC_TEMP=$(get_temp_class "$M_TEMP")
-read -r M_LOAD _ < /proc/loadavg
-MC_LOAD=$(get_load_class "$M_LOAD")
+get_main_notempload
 read -r s _ < /proc/uptime; s=${s%.*}; d=$((s / 86400)); h=$((s % 86400 / 3600)); m=$((s % 3600 / 60))
 if [ $d -gt 0 ]; then M_UPTIME="${d}d ${h}h ${m}m"
 elif [ $h -gt 0 ]; then M_UPTIME="${h}h ${m}m"
@@ -2204,8 +2243,7 @@ for line in $SSH_NODES; do
 		parse_node_out "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
-		NC_TEMP=$(get_temp_class "$N_TEMP")
-		NC_LOAD=$(get_load_class "$N_LOAD")
+		get_node_notempload
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
 		TOTAL_TEMP="$TOTAL_TEMP$BULLET<span class='${NC_TEMP}'>${N_TEMP}</span>"
         TOTAL_LOAD="$TOTAL_LOAD$BULLET<span class='${NC_LOAD}'>${N_LOAD}</span>"
