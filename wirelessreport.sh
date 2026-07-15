@@ -1068,7 +1068,7 @@ set_options() {
                     echo -e "$MSG"
                 else
                     echo 'NO_TEMP_LOAD="1"' >> "$CONFIG"
-                    echo -e "${GR}[!] No Temp/Load: ON.${NC}"
+                    echo -e "\n${GR}[!] No Temp/Load: ON.${NC}"
                 fi
                 NO_TEMP_LOAD="${NEW_TEMP:-1}"
                 pause
