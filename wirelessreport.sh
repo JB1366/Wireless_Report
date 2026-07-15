@@ -133,8 +133,8 @@ menu_vars() {
         sed -i "/^DARKMODE=/d" "$CONFIG"
         THEME="$NEW_THEME"
     fi
-	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
-    UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG="\e[42;37m"
+	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'; YL='\033[0;33m'
+    UL='\033[4m'; WH='\e[1;37m'; BG='\e[42;37m'; GY='\e[38;2;77;89;93m'
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
@@ -165,9 +165,9 @@ menu_vars() {
 	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
 	CE="${GR}$CUR_ENTRIES${NC}"
     THEME=${THEME:-1}
-    if [ "$THEME" = "1" ]; then TM_STAT="${BL}ORIGINAL${NC}"; fi
+    if [ "$THEME" = "1" ]; then TM_STAT="${GR}ORIGINAL${NC}"; fi
     if [ "$THEME" = "2" ]; then TM_STAT="${BL}DARKMODE${NC}"; fi
-    if [ "$THEME" = "3" ]; then TM_STAT="${BL}ASUS WEBUI${NC}"; fi
+    if [ "$THEME" = "3" ]; then TM_STAT="${GY}ASUS WEBUI${NC}"; fi
 	IPPAD=${IPPAD:-1}
 	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
@@ -2282,7 +2282,7 @@ NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$BULLET}<span style='color:$NODE_COLOR
 done
 GRAND_TOTAL_DEVICES=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 ALL_NAMES="$MAIN_NAME$BULLET$N_NAMES"
-UPDATED_TIME="<span style='font-size:13px; font-weight:bold;'>Updated: $CUR_TIME</span>"
+UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
 do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
