@@ -1315,9 +1315,9 @@ do_numbered_node() {
 	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		TOTAL_DEVICES="Devices: <span class='val-blue'>$GRAND_TOTAL_DEVICES</span> <span class='right-arrow'>—›</span> <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
+		TOTAL_DEVICES="Devices: <span class='main-color'>$GRAND_TOTAL_DEVICES</span> <span class='right-arrow'>—›</span> <span class='main-color'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
 	else
-		TOTAL_DEVICES="Devices: <span class='val-blue'>$MAIN_DEVICE_TOTAL</span>"
+		TOTAL_DEVICES="Devices: <span class='main-color'>$MAIN_DEVICE_TOTAL</span>"
 	fi
 	if [ "$NUMBERED_NODE" -gt 3 ]; then
 		TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 13px;"
@@ -2168,8 +2168,8 @@ done
 MAIN_NAME="<span class='router-style'>$MAIN_NAME</span>"
 TOTAL_TEMP="<span class='${MC_TEMP}'>${M_TEMP}</span>"
 TOTAL_LOAD="<span class='${MC_LOAD}'>${M_LOAD}</span>"
-TOTAL_UPTIME="<span class='val-blue'>${M_UPTIME}</span>"
-TOTAL_BOOTTIME="<span class='val-blue'>${M_BOOT}</span>"
+TOTAL_UPTIME="<span class='main-color'>${M_UPTIME}</span>"
+TOTAL_BOOTTIME="<span class='main-color'>${M_BOOT}</span>"
 wait
 
 #========================#
@@ -2294,12 +2294,13 @@ cat <<HTML >> "$WEB_PAGE"
     .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
     .button-refresh { display: inline-flex; align-items: center; height: 28px; line-height: 26px; text-align: center; padding: 0 5px; border-radius: 4px; border: 1px solid #475a68; font-weight: bold; transition: all 0.2s ease; }
     .button-refresh:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
+    .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
+	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
     .refresh-pulse { animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
     @keyframes refresh-pulse-blue { 0%, 100% { color: #0044cc; text-shadow: 0 0 2px #0044cc; } 50% { color: #0096ff; text-shadow: 0 0 10px #0096ff; } }
 	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
 	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
-	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
+    .new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
     ${RUNTIME_CSS}
     .button-auto-refresh { display: inline-flex; align-items: center; padding: 0 5px; height: 28px; border: 0; margin-left: -4px; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: #0096ff; font-size: 12px; font-weight: bold; cursor: pointer !important; }
     .button-auto-refresh > span { color: #0096ff; font-weight: bold; pointer-events: none; user-select: none; }
@@ -2335,15 +2336,12 @@ cat <<HTML >> "$WEB_PAGE"
     .ip-val, .iface-val { display: none; }
     tfoot td { text-align: center; }
     tfoot td > span:not(:last-child) { margin-right: 6px; }
-	.new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
-	.val-blue { color: #0096ff !important; font-weight: bold; }
-	.stat-warm { color: #ffa500 !important; font-weight: bold; }
-	.stat-hot { color: #ff453a !important; font-weight: bold; }
-	.stat-cool { color: #0096ff !important; font-weight: bold; }
 	.router-style { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
     .temp_load_row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 11px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
     .temp_load_row > span:not(:last-child) { margin-right: 1px; }
-	.band-24g { color: #0096ff !important; font-weight: bold; }
+	.stat-warm { color: #ffa500 !important; font-weight: bold; }
+	.stat-hot { color: #ff453a !important; font-weight: bold; }
+    .main-color, .stat-cool, .band-24g { color: #0096ff !important; font-weight: bold; }
 	.band-5g { color: #30d158 !important; font-weight: bold; }
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
@@ -2724,7 +2722,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     <div class="temp_load_row">
                                         <span>Temp: <span class="$MC_TEMP">$M_TEMP</span></span>
                                         <span>Load: <span class="$MC_LOAD">$M_LOAD</span></span>
-                                        <span>Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></span>
+                                        <span>Devices: <span class="main-color">$MAIN_DEVICE_TOTAL</span></span>
                                     </div>
                                 </div>
                                 <table id="mainTable" class="report_table show-ip">
@@ -2741,8 +2739,8 @@ cat <<HTML >> "$WEB_PAGE"
                                     <tfoot>
                                         <tr>
                                             <td colspan="7">
-                                                <span>Uptime: <span class="val-blue">$M_UPTIME</span></span>
-                                                <span>Reboot: <span class="val-blue">$M_BOOT</span></span>
+                                                <span>Uptime: <span class="main-color">$M_UPTIME</span></span>
+                                                <span>Reboot: <span class="main-color">$M_BOOT</span></span>
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -2765,7 +2763,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                     <div class="temp_load_row">
                                         <span>Temp: <span class="${NC_TEMP}">${N_TEMPS:-0}</span></span>
                                         <span>Load: <span class="${NC_LOAD}">${N_LOADS:-0}</span></span>
-                                        <span>Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</span>
+                                        <span>Devices: <span class="main-color">$NODE_DEVICE_TOTAL</span> $NTOTAL</span>
                                     </div>
                                 </div>
                                 <table id="nodeTable" class="report_table show-ip">
