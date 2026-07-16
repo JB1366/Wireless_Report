@@ -173,8 +173,8 @@ menu_vars() {
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
 	else PD_STAT="${RD}Disabled${NC}"; fi
 	HOST_COLOR=${HOST_COLOR:-0}
-	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored${NC}"
-	else HN_STAT="${BL}Numbered${NC}"; fi
+	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${BL}Colored${NC}"
+	else HN_STAT="${BL}Numbered${GR}"; fi
 }
 
 check_installed() {
@@ -1200,18 +1200,18 @@ do_runtime() {
 		NEW_MAX=$(awk "BEGIN {printf \"%.2f\", ($DIFF > $MAX_TIME) ? $DIFF : $MAX_TIME}")
 		echo "$NEW_TOTAL $NEW_COUNT $NEW_MIN $NEW_MAX" > "$STATS_FILE"
 		logger -p user.info -t "Wireless_Report" "Report completed in $RUNTIME. AVG: ${AVERAGE}s (L: ${NEW_MIN}s/H: ${NEW_MAX}s) over $NEW_COUNT scans."
-		RUNTIME_CSS=".refresh-box:hover select, .refresh-box:hover .btn-manual { color: #0096ff !important; }
-        .refresh-box, .refresh-box select, .refresh-box .btn-manual { position: relative; display: inline-block; }
-        .refresh-box:before, .refresh-box .btn-manual:before, .refresh-box select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
-        .refresh-box:after, .refresh-box .btn-manual:after, .refresh-box select:after { content: \"\"; position: absolute; width: 4px; height: 4px; background: #0096ff; border-radius: 50%; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 101; pointer-events: none; }
-        .refresh-box:before { content: \"Avg: ${AVERAGE}s over $NEW_COUNT scans\"; left: -110px; bottom: 185%; }
-        .refresh-box:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
-        .refresh-box .btn-manual:before, .refresh-box select:before { content: \"High: ${NEW_MAX}s   Low: ${NEW_MIN}s\"; left: -114px; top: 185%; }
-        .refresh-box .btn-manual:after, .refresh-box select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
-        .refresh-box:has(.btn-manual:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
-        .refresh-box:has(.btn-manual:hover):after { opacity: 1; visibility: visible; }
-        .refresh-box:has(.btn-manual:hover) .btn-manual:before, .refresh-box:has(select:hover) select:before { opacity: 1; visibility: visible; top: 190%; }
-        .refresh-box:has(.btn-manual:hover) .btn-manual:after, .refresh-box:has(select:hover) select:after { opacity: 1; visibility: visible; }"
+		RUNTIME_CSS=".button-refresh:hover select, .button-refresh:hover .button-trigger { color: #0096ff !important; }
+        .button-refresh, .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
+        .button-refresh:before, .button-refresh .button-trigger:before, .button-refresh select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
+        .button-refresh:after, .button-refresh .button-trigger:after, .button-refresh select:after { content: \"\"; position: absolute; width: 4px; height: 4px; background: #0096ff; border-radius: 50%; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 101; pointer-events: none; }
+        .button-refresh:before { content: \"Avg: ${AVERAGE}s over $NEW_COUNT scans\"; left: -110px; bottom: 185%; }
+        .button-refresh:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
+        .button-refresh .button-trigger:before, .button-refresh select:before { content: \"High: ${NEW_MAX}s   Low: ${NEW_MIN}s\"; left: -114px; top: 185%; }
+        .button-refresh .button-trigger:after, .button-refresh select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
+        .button-refresh:has(.button-trigger:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
+        .button-refresh:has(.button-trigger:hover):after { opacity: 1; visibility: visible; }
+        .button-refresh:has(.button-trigger:hover) .button-trigger:before, .button-refresh:has(select:hover) select:before { opacity: 1; visibility: visible; top: 190%; }
+        .button-refresh:has(.button-trigger:hover) .button-trigger:after, .button-refresh:has(select:hover) select:after { opacity: 1; visibility: visible; }"
         RUNTIME_CSS=$(echo "$RUNTIME_CSS" | sed 's/^    //')
 	else
 		RUNTIME_CSS=""; RUNTIME=""
@@ -1254,57 +1254,57 @@ set_theme() {
     fi
     THEME=${THEME:-1}
     if [ "$THEME" = "1" ]; then # [ORIGINAL THEME]
-        THEME_CSS=".top-panel { background: transparent !important; }
+        THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
         .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
-        .btn-auto { background: transparent !important; }
-        .btn-black-blue { background: transparent !important; }
-        .btn-black-blue:hover, .btn-black-blue.active { color: #0096ff; }
+        .button-auto-refresh { background: transparent !important; }
+        .button-tables { background: transparent !important; }
+        .button-tables:hover, .button-tables.active { color: #0096ff; }
         .report-column { background: #1c232b; }
         table.report_table td { background: #1c232b; }
         table.report_table tfoot td { border-top: 1px solid #475a68; background: #171b1f; }
         table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
-        #refreshRate:focus { background: #000; }
-        #refreshRate, #refreshRate option { background: #000; }
+        #refresh-option:focus { background: #000; }
+        #refresh-option option { background: #000; }
         .rssi-tooltip { background: #000; }"
         RT_TOOLTIP="#000000"
 	fi
     if [ "$THEME" = "2" ]; then # [DARKMODE THEME]
-        THEME_CSS=".top-panel { background: transparent !important; }
+        THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
         .section-header { background: transparent !important; border: 0 !important; box-shadow: 0 !important; }
-        .btn-auto { background: transparent !important; }
-        .btn-black-blue { background: transparent !important; }
-        .btn-black-blue:hover, .btn-black-blue.active { color: #0096ff; }
+        .button-auto-refresh { background: transparent !important; }
+        .button-tables { background: transparent !important; }
+        .button-tables:hover, .button-tables.active { color: #0096ff; }
         .report-column { background: transparent !important; }
         table.report_table td { background: transparent !important; }
         table.report_table tfoot td { border-top: none !important; background: #171b1f; }
         table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
-        #refreshRate:focus { background: #000; }
-        #refreshRate, #refreshRate option { background: #000; }
+        #refresh-option:focus { background: #000; }
+        #refresh-option option { background: #000; }
         .popout-grid .section-header { min-height: 85px !important; }
         .rssi-tooltip { background: #000; }"
         RT_TOOLTIP="#000000"
     fi
 	if [ "$THEME" = "3" ]; then # [ASUS WEBUI THEME]
-        THEME_CSS=".top-panel { background-color: #4D595D; }
+        THEME_CSS=".top-header { background-color: #4D595D; }
         .header-box { background: #3A4042; }
         .section-header { background: #4D595D; }
-        .btn-black-blue { background: #3A4042; }
-        .btn-black-blue:hover, .btn-black-blue.active { color: #white; }
-        .btn-auto { background: #3A4042; }
+        .button-tables { background: #3A4042; }
+        .button-tables:hover, .button-tables.active { color: #white; }
+        .button-auto-refresh { background: #3A4042; }
         .report-column { background: #3A4042; }
         table.report_table td { background: #1c232b; } /* Table Background */
         table.report_table tfoot td { border-top: 1px solid #475a68; background: #3A4042; }
         table.report_table thead th { background: #3A4042; } /* Column Headers */
         table.report_table th:hover { background: #77A5C6; }
         .separator-line { border: 0; border-top: 1px solid black; }
-        #refreshRate:focus { background: #3A4042; }
-        #refreshRate, #refreshRate option { background: #3A4042; }
+        #refresh-option:focus { background: #3A4042; }
+        #refresh-option option { background: #3A4042; }
         .rssi-tooltip { background: #1c232b; }"
         RT_TOOLTIP="#3A4042"
     fi
@@ -2213,7 +2213,7 @@ for line in $SSH_NODES; do
 		N_LOADS="${N_LOADS}${N_LOADS:+$BULLET}<span class='${NC_LOAD}'>$N_LOAD</span>"
         N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
 		N_BOOTS="${N_BOOTS}${N_BOOTS:+$BULLET}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
-        if [ -n "$N_UPTIMES" ]; then NODE_FOOTER="Uptime: $N_UPTIMES&ensp; Reboot: $N_BOOTS"
+        if [ -n "$N_UPTIMES" ]; then NODE_FOOTER="<span>Uptime: $N_UPTIMES</span><span>Reboot: $N_BOOTS</span>"
         else NODE_FOOTER="Offline"; fi
         NODE_DEVICES=0
 		while read -r ssh_node_data; do
@@ -2271,9 +2271,10 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/validator.js"></script>
 <style>
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
-    .top-panel { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
-    .report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
-    .top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
+    .grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
+    .top-header { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
+    .report-header-main { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
+    .top-buttons { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
@@ -2291,22 +2292,29 @@ cat <<HTML >> "$WEB_PAGE"
     .rssi-good { color: #64d2ff; --hover-color: #64d2ff; --glow-color: rgba(100,210,255,0.4); }
     .rssi-fair { color: #ffd60a; --hover-color: #ffd60a; --glow-color: rgba(255,214,10,0.4); }
     .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
-	.refresh-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; border: 1px solid #475a68; font-weight: bold; transition: all 0.2s ease; }
-    .refresh-box:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
+    .button-refresh { display: inline-flex; align-items: center; height: 28px; line-height: 26px; text-align: center; padding: 0 5px; border-radius: 4px; border: 1px solid #475a68; font-weight: bold; transition: all 0.2s ease; }
+    .button-refresh:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
+    .refresh-pulse { animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
     @keyframes refresh-pulse-blue { 0%, 100% { color: #0044cc; text-shadow: 0 0 2px #0044cc; } 50% { color: #0096ff; text-shadow: 0 0 10px #0096ff; } }
-	.refresh-pulse { animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
+	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
+	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
+	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
     ${RUNTIME_CSS}
-    .btn-auto { border:0px; margin-left:0px; border-top-left-radius: 0px !important; border-bottom-left-radius: 0px !important; color: #0096ff; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; }
-    .btn-auto:hover, .btn-auto.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); color: #0096ff; position: relative; z-index: 5 }
-    .btn-auto.active { background: rgba(0,150,255,0.15); }
-    .btn-black-blue { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
-    .btn-black-blue:hover, .btn-black-blue.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
-    .btn-black-blue.active { background: rgba(0,150,255,0.15); }
-	#countdown { font-weight: bold; }
-	#refreshRate:focus { outline: none; border: none; }
-    #refreshRate, #refreshRate option { color: #0096ff; font-weight: bold; cursor: pointer !important; }
-	.grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
-	${THEME_CSS}
+    .button-auto-refresh { display: inline-flex; align-items: center; padding: 0 5px; height: 28px; border: 0; margin-left: -4px; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: #0096ff; font-size: 12px; font-weight: bold; cursor: pointer !important; }
+    .button-auto-refresh > span { color: #0096ff; font-weight: bold; pointer-events: none; user-select: none; }
+    .button-auto-refresh:hover, .button-auto-refresh.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); color: #0096ff; position: relative; z-index: 5 }
+    .button-auto-refresh.active { background: rgba(0,150,255,0.15); }
+    .button-tables.button-trigger { color: #0096ff; border: none; border-top-right-radius: 0; border-bottom-right-radius: 0; height: 100%; line-height: inherit; padding: 0 5px; }
+    .button-tables.button-trigger span { color: white; }
+    .button-tables { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
+    .button-tables:hover, .button-tables.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
+    .button-tables.active { background: rgba(0,150,255,0.15); }
+    #refresh-option { color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit; }
+    #refresh-option:focus { outline: none; border: none; }
+    #refresh-option option { color: #0096ff; font-weight: bold; cursor: pointer !important; }
+	#refresh-countdown { color: #0096ff; font-weight: bold; }
+    ${THEME_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; }
 	table.report_table { width: 100%; border-collapse: collapse; }
 	table.report_table .mac-val { $MAC_COLOR; }
@@ -2325,8 +2333,8 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	.mac-val, .ssid-val { display: inline; }
     .ip-val, .iface-val { display: none; }
-	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
-	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    tfoot td { text-align: center; }
+    tfoot td > span:not(:last-child) { margin-right: 6px; }
 	.new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
 	.val-blue { color: #0096ff !important; font-weight: bold; }
 	.stat-warm { color: #ffa500 !important; font-weight: bold; }
@@ -2334,6 +2342,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.stat-cool { color: #0096ff !important; font-weight: bold; }
 	.router-style { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
     .temp_load_row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 11px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
+    .temp_load_row > span:not(:last-child) { margin-right: 1px; }
 	.band-24g { color: #0096ff !important; font-weight: bold; }
 	.band-5g { color: #30d158 !important; font-weight: bold; }
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
@@ -2349,9 +2358,8 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal table.report_table thead th { font-size: 12px !important; font-weight: bold !important; white-space: nowrap; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
     #popoutModal .report-column .section-header .temp_load_row, #popoutModal .report-column .section-header .temp_load_row span { font-size: 14px !important; font-weight: bold !important; }
     #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; }
-    .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
-	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
-	#allCol { display: none; width: 100% ; align-self: flex-start; }
+	#splitView { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+    #allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
     body { cursor: pointer !important; }
 	.rssi-container { position: relative; vertical-align: middle; }
@@ -2367,7 +2375,7 @@ function initial() {
         openPopout();
     }
     var savedRate = localStorage.getItem('wifiReportAutoRefresh') || "0";
-    document.getElementById('refreshRate').value = savedRate;
+    document.getElementById('refresh-option').value = savedRate;
     initAutoRefresh(parseInt(savedRate));
     var ids = ['allTable', 'mainTable', 'nodeTable', 'popMainTable', 'popNodeTable'];
     ids.forEach(function(id) {
@@ -2412,7 +2420,7 @@ function initial() {
 var timeLeft = 0; var refreshTimer = null; var isRefreshing = false;
 function triggerRefresh() {
     if (isRefreshing) return; isRefreshing = true;
-    var btn = document.querySelector('.btn-manual');
+    var btn = document.querySelector('.button-trigger');
     if (btn) {
         btn.innerText = "Refreshing...";
         btn.classList.add('refresh-pulse');
@@ -2440,8 +2448,8 @@ function initAutoRefresh(seconds) {
     clearInterval(refreshTimer);
     if (seconds > 0) {
         timeLeft = seconds;
-        refreshTimer = setInterval(function() { timeLeft--; if (timeLeft <= 0) { triggerRefresh(); clearInterval(refreshTimer); } document.getElementById('countdown').innerHTML = "&nbsp;" + timeLeft + "s"; }, 1000);
-    } else { document.getElementById('countdown').innerHTML = ""; }
+        refreshTimer = setInterval(function() { timeLeft--; if (timeLeft <= 0) { triggerRefresh(); clearInterval(refreshTimer); } document.getElementById('refresh-countdown').innerHTML = "&nbsp;" + timeLeft + "s"; }, 1000);
+    } else { document.getElementById('refresh-countdown').innerHTML = ""; }
 }
 function switchTab(view) {
     localStorage.setItem('wifiReportView', view);
@@ -2666,18 +2674,23 @@ document.addEventListener('mouseout', function(e) {
             <td valign="top" width="202"><div id="mainMenu"></div><div id="subMenu"></div></td>
             <td valign="top">
                 <div id="tabMenu" class="submenuBlock"></div>
-                <div id="wifiReportContainer" style="padding:10px;">
-                    <div class="top-panel">
-                        <div class="header-wrap"><div class="header-tip" style="--v-width: $V_WIDTH;"><h1 id="v-header" class="report-header-main" style="margin:0; display:inline-block;">WIRELESS REPORT</h1><span class="header-box">$HOVER_TEXT</span></div></div>
+                <div id="wifiReportContainer">
+                    <div class="top-header">
+                        <div class="header-wrap">
+                            <div class="header-tip" style="--v-width: $V_WIDTH;">
+                                <h1 id="v-header" class="report-header-main">WIRELESS REPORT</h1>
+                                <span class="header-box">$HOVER_TEXT</span>
+                            </div>
+                        </div>
                         <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL_DEVICES</span></div>
-                        <div class="top-controls">
-                            <div class="refresh-box" style="padding:0 5px; display:inline-flex; align-items:center;">
-                                <button class="btn-manual btn-black-blue" style="color: #0096ff; border:none; border-top-right-radius: 0px; border-bottom-right-radius: 0px; height:100%; line-height:inherit; padding:0 8px;" onclick="triggerRefresh()">
-                                    Refresh <span style="color: white;">${RUNTIME}</span>
+                        <div class="top-buttons">
+                            <div class="button-refresh">
+                                <button class="button-trigger button-tables" onclick="triggerRefresh()">
+                                Refresh <span>${RUNTIME}</span>
                                 </button>
-                                <div class="btn-auto" style="display: inline-flex; align-items: center; padding: 0 5px; height: 28px;">
-                                    <span style="color: #0096ff; font-weight: bold; pointer-events: none; user-select: none;">Auto:</span>
-                                    <select id="refreshRate" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));" style="color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit;">
+                                <div class="button-auto-refresh">
+                                    <span>Auto:</span>
+                                    <select id="refresh-option" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));">
                                         <option value="0">Off</option>
                                         <option value="30">30s</option>
                                         <option value="60">1m</option>
@@ -2687,28 +2700,32 @@ document.addEventListener('mouseout', function(e) {
                                         <option value="1200">20m</option>
                                         <option value="1800">30m</option>
                                     </select>
-                                    <span style="color: #0096ff;" id="countdown"></span>
+                                    <span id="refresh-countdown"></span>
                                 </div>
                             </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<BUTTONSHTML >> "$WEB_PAGE"
-                            <button id="btnMain" class="btn-black-blue active" onclick="switchTab('split')">Main</button>
-                            <button id="btnAll" class="btn-black-blue" onclick="switchTab('all')">All Devices</button>
-                            <button class="btn-black-blue" onclick="openPopout()">Side by Side ⇗</button>
+                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main</button>
+                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
+                            <button class="button-tables" onclick="openPopout()">Side by Side ⇗</button>
 BUTTONSHTML
 fi
 cat <<HTML >> "$WEB_PAGE"
                         </div>
                     </div>
                     <div class="grid-container">
-                        <div id="splitView" style="display:flex; flex-direction:column; gap:15px; width:100%;">
+                        <div id="splitView">
                             <div id="mainCol" class="report-column">
                                 <div class="section-header">
                                     $MAIN_NAME<br>
                                     $UPDATED_TIME
                                     <hr class="separator-line">
-                                    <div class="temp_load_row">Temp: <span class="$MC_TEMP">$M_TEMP</span>&ensp;Load: <span class="$MC_LOAD">$M_LOAD</span>&ensp;Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></div>
+                                    <div class="temp_load_row">
+                                        <span>Temp: <span class="$MC_TEMP">$M_TEMP</span></span>
+                                        <span>Load: <span class="$MC_LOAD">$M_LOAD</span></span>
+                                        <span>Devices: <span class="val-blue">$MAIN_DEVICE_TOTAL</span></span>
+                                    </div>
                                 </div>
                                 <table id="mainTable" class="report_table show-ip">
                                     <thead><tr>
@@ -2721,7 +2738,14 @@ cat <<HTML >> "$WEB_PAGE"
                                         <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody>$MAIN_ROWS</tbody>
-                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">Uptime: <span class="val-blue">$M_UPTIME</span>&ensp;Reboot: <span class="val-blue">$M_BOOT</span></td></tr></tfoot>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="7">
+                                                <span>Uptime: <span class="val-blue">$M_UPTIME</span></span>
+                                                <span>Reboot: <span class="val-blue">$M_BOOT</span></span>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                             <div class="rssi-quality-bar">
@@ -2738,7 +2762,11 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                     $N_NAMES<br>
                                     $UPDATED_TIME
                                     <hr class="separator-line">
-                                    <div class="temp_load_row">Temp: <span class='${NC_TEMP}'>${N_TEMPS:-0}</span>&ensp;Load: <span class='${NC_LOAD}'>${N_LOADS:-0}</span>&ensp;Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</div>
+                                    <div class="temp_load_row">
+                                        <span>Temp: <span class="${NC_TEMP}">${N_TEMPS:-0}</span></span>
+                                        <span>Load: <span class="${NC_LOAD}">${N_LOADS:-0}</span></span>
+                                        <span>Devices: <span class="val-blue">$NODE_DEVICE_TOTAL</span> $NTOTAL</span>
+                                    </div>
                                 </div>
                                 <table id="nodeTable" class="report_table show-ip">
                                     <thead><tr>
@@ -2751,7 +2779,11 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                         <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody>$NODE_ROWS</tbody>
-                                    <tfoot><tr><td colspan="7" style="text-align: center !important;">$NODE_FOOTER</td></tr></tfoot>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="7">$NODE_FOOTER</td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -2763,7 +2795,11 @@ cat <<HTML >> "$WEB_PAGE"
                                 $ALL_NAMES<br>
                                 $UPDATED_TIME
                                 <hr class="separator-line">
-                                <div class="temp_load_row" style="$TEMP_STYLE">Temp: $TOTAL_TEMP&ensp;Load: $TOTAL_LOAD&ensp;$TOTAL_DEVICES</div>
+                                <div class="temp_load_row" style="$TEMP_STYLE">
+                                    <span>Temp: $TOTAL_TEMP</span>
+                                    <span>Load: $TOTAL_LOAD</span>
+                                    <span>$TOTAL_DEVICES</span>
+                                </div>
                             </div>
                             <table id="allTable" class="report_table show-ip">
                                 <thead><tr>
@@ -2776,7 +2812,14 @@ cat <<HTML >> "$WEB_PAGE"
                                     <th onclick="sortTable(6, 'allTable')">UPTIME</th>
                                 </tr></thead>
                                 <tbody>$ALL_ROWS</tbody>
-                                <tfoot><tr><td colspan="7" style="$UPTIME_STYLE">Uptime: $TOTAL_UPTIME&ensp;Reboot: $TOTAL_BOOTTIME</td></tr></tfoot>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="7" style="$UPTIME_STYLE">
+                                            <span>Uptime: $TOTAL_UPTIME</span>
+                                            <span>Reboot: $TOTAL_BOOTTIME</span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                         <div id="allDevicesQualityBar" class="rssi-quality-bar">
