@@ -151,7 +151,7 @@ menu_vars() {
 	DU="${GR}°$DISPLAY_UNIT${NC}"; CT="${GR}$CUR_TIME${NC}"
 	DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
 	RTIME=${RTIME:-1}
-    if [ "$RTIME" = "0" ]; then RTM="$OFF"; else RTM="$ON"; fi
+    if [ "$RTIME" = "0" ]; then RT_STAT="$OFF"; else RT_STAT="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}
     if [ "$BACKHAUL" = "no" ]; then WB_STAT="$OFF"; else WB_STAT="$ON"; fi
     PULSE_MINS=${PULSE_MINS:-15}
@@ -948,7 +948,7 @@ set_options() {
         echo -e "${BL}                    Set Options                   ${NC}"
         echo -e "${BL}==================================================${NC}"
         echo -e "                                                            "
-        echo -e "  $N1  Show Runtime Tracking: ($RTM)                        "
+        echo -e "  $N1  Show Runtime Tracking: ($RT_STAT)                    "
         echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)                   "
         echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                       "
         echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
@@ -1145,25 +1145,16 @@ theme_submenu() {
         read -r theme_choice
         case "$theme_choice" in
             1)
-                if grep -q "^THEME=" "$CONFIG"; then
-                    sed -i "s/^THEME=.*/THEME=\"1\"/" "$CONFIG"
-                else
-                    echo 'THEME="1"' >> "$CONFIG"
-                fi
+                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"1\"/" "$CONFIG"
+                else echo 'THEME="1"' >> "$CONFIG"; fi
                 ;;
             2)
-                if grep -q "^THEME=" "$CONFIG"; then
-                    sed -i "s/^THEME=.*/THEME=\"2\"/" "$CONFIG"
-                else
-                    echo 'THEME="2"' >> "$CONFIG"
-                fi
+                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"2\"/" "$CONFIG"
+                else echo 'THEME="2"' >> "$CONFIG"; fi
                 ;;
             3)
-                if grep -q "^THEME=" "$CONFIG"; then
-                    sed -i "s/^THEME=.*/THEME=\"3\"/" "$CONFIG"
-                else
-                    echo 'THEME="3"' >> "$CONFIG"
-                fi
+                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"3\"/" "$CONFIG"
+                else echo 'THEME="3"' >> "$CONFIG"; fi
                 ;;
             e|E)
                 break
@@ -1259,10 +1250,9 @@ set_theme() {
         .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
         .button-auto-refresh { background: transparent !important; }
         .button-tables { background: transparent !important; }
-        .button-tables:hover, .button-tables.active { color: #0096ff; }
         .report-column { background: #1c232b; }
         table.report_table td { background: #1c232b; }
-        table.report_table tfoot td { border-top: 1px solid #475a68; background: #171b1f; }
+        table.report_table tfoot td { background: #171b1f; }
         table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
@@ -1274,13 +1264,12 @@ set_theme() {
     if [ "$THEME" = "2" ]; then # [DARKMODE THEME]
         THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
-        .section-header { background: transparent !important; border: 0 !important; box-shadow: 0 !important; }
+        .section-header { background: transparent !important; }
         .button-auto-refresh { background: transparent !important; }
         .button-tables { background: transparent !important; }
-        .button-tables:hover, .button-tables.active { color: #0096ff; }
         .report-column { background: transparent !important; }
         table.report_table td { background: transparent !important; }
-        table.report_table tfoot td { border-top: none !important; background: #171b1f; }
+        table.report_table tfoot td { background: #171b1f; }
         table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
@@ -1295,11 +1284,12 @@ set_theme() {
         .header-box { background: #3A4042; }
         .section-header { background: #4D595D; }
         .button-tables { background: #3A4042; }
-        .button-tables:hover, .button-tables.active { color: #white; }
+        .button-tables.active,
+        .button-tables.active:hover { color: white !important; }
         .button-auto-refresh { background: #3A4042; }
         .report-column { background: #3A4042; }
         table.report_table td { background: #1c232b; } /* Table Background */
-        table.report_table tfoot td { border-top: 1px solid #475a68; background: #3A4042; }
+        table.report_table tfoot td { background: #3A4042; }
         table.report_table thead th { background: #3A4042; } /* Column Headers */
         table.report_table th:hover { background: #77A5C6; }
         .separator-line { border: 0; border-top: 1px solid black; }
@@ -1315,7 +1305,9 @@ do_numbered_node() {
 	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		TOTAL_DEVICES="Devices: <span class='main-color'>$GRAND_TOTAL_DEVICES</span> <span class='right-arrow'>—›</span> <span class='main-color'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
+		TOTAL_DEVICES="Devices: <span class='main-color'>$GRAND_TOTAL_DEVICES</span> \
+        <span class='right-arrow'>—›</span> \
+        <span class='main-color'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
 	else
 		TOTAL_DEVICES="Devices: <span class='main-color'>$MAIN_DEVICE_TOTAL</span>"
 	fi
@@ -2309,7 +2301,7 @@ cat <<HTML >> "$WEB_PAGE"
     .button-tables.button-trigger { color: #0096ff; border: none; border-top-right-radius: 0; border-bottom-right-radius: 0; height: 100%; line-height: inherit; padding: 0 5px; }
     .button-tables.button-trigger span { color: white; }
     .button-tables { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
-    .button-tables:hover, .button-tables.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
+    .button-tables:hover, .button-tables.active { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
     .button-tables.active { background: rgba(0,150,255,0.15); }
     #refresh-option { color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit; }
     #refresh-option:focus { outline: none; border: none; }
@@ -2327,7 +2319,7 @@ cat <<HTML >> "$WEB_PAGE"
 	table.report_table.show-iface .ssid-val { display: none !important; }
 	table.report_table.show-iface .iface-val { display: inline !important; color: #64d2ff; }
     table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; vertical-align: middle; text-align: center; }
-    table.report_table tfoot td { padding: 12px 10px !important; font-weight: bold; color: #fff; }
+    table.report_table tfoot td { border-top: 1px solid #475a68; padding: 12px 10px !important; font-weight: bold; color: #fff; }
     table.report_table thead th { position: sticky; top: 0; z-index: 10; color: #fff; padding: 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
     table.report_table th:hover { color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
