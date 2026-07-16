@@ -1782,7 +1782,7 @@ get_max_column() {
 hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
-		NAME_MAIN="<span class='main-color'>$name</span>"
+		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
 		name="$NAME_MAIN"
 	else
 		IP_COLOR="color: #64d2ff; "MAC_COLOR=""
