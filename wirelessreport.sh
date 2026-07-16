@@ -175,7 +175,6 @@ menu_vars() {
 	HOST_COLOR=${HOST_COLOR:-0}
 	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${GR}Colored${NC}"
 	else HN_STAT="${BL}Numbered${NC}"; fi
-    NO_TEMP_LOAD=${NO_TEMP_LOAD:-0}
 }
 
 check_installed() {
@@ -2064,7 +2063,7 @@ done
 #=============================#
 #  Main Scan/Device Assembly  #
 #=============================#
-IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}; NO_TEMP_LOAD=${NO_TEMP_LOAD:-0}
+IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}
 YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
 awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
 if [ -f "$KNOWN_DB" ]; then cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null; else > "$KNOWN_CACHE"; fi
