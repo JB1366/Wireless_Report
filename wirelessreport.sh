@@ -1055,25 +1055,6 @@ set_options() {
                 pause
                 continue
                 ;;
-            z|Z)
-                if grep -q "NO_TEMP_LOAD=" "$CONFIG"; then
-                    if [ "$NO_TEMP_LOAD" = "1" ]; then
-                        NEW_TEMP="0"
-                        MSG="\n${GR}[!] No Temp/Load: OFF.${NC}"
-                    else
-                        NEW_TEMP="1"
-                        MSG="\n${GR}[!] No Temp/Load: ON.${NC}"
-                    fi
-                    sed -i "s/NO_TEMP_LOAD=.*/NO_TEMP_LOAD=\"$NEW_TEMP\"/" "$CONFIG"
-                    echo -e "$MSG"
-                else
-                    echo 'NO_TEMP_LOAD="1"' >> "$CONFIG"
-                    echo -e "\n${GR}[!] No Temp/Load: ON.${NC}"
-                fi
-                NO_TEMP_LOAD="${NEW_TEMP:-1}"
-                pause
-                continue
-                ;;
             e|E)
                 sort -u -o "$CONFIG" "$CONFIG"
                 return
@@ -1809,26 +1790,6 @@ get_max_column() {
 	if [ "${#ssid}" -gt 15 ]; then ssid="${ssid:0:15}"; fi
 }
 
-get_main_notempload() {
-    if [ "$NO_TEMP_LOAD" = "1" ]; then
-        MC_LOAD="val-blue $M_LOAD"
-        MC_TEMP="val-blue $M_TEMP"
-    else
-        MC_LOAD=$(get_load_class "$M_LOAD")
-        MC_TEMP=$(get_temp_class "$M_TEMP")
-    fi
-}
-
-get_node_notempload() {
-    if [ "$NO_TEMP_LOAD" = "1" ]; then
-        NC_LOAD="custom-node-color' style='color: $NODE_COLOR; font-weight: bold; $N_LOAD"
-        NC_TEMP="custom-node-color' style='color: $NODE_COLOR; font-weight: bold; $N_TEMP"
-    else
-        NC_LOAD=$(get_load_class "$N_LOAD")
-        NC_TEMP=$(get_temp_class "$N_TEMP")
-    fi
-}
-
 hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
@@ -2115,9 +2076,10 @@ awk '{print toupper($1)"|"$2}' > "$DHCPSTATIC_CACHE" 2>/dev/null || > "$DHCPSTAT
 nvram get asus_device_list | sed 's/</\n/g' > "$DEVICE_LIST_CACHE" 2>/dev/null || > "$DEVICE_LIST_CACHE"
 nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
 read -r M_LOAD _ < /proc/loadavg
+MC_LOAD=$(get_load_class "$M_LOAD")
 M_T=$(($(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0) / 1000))
 M_TEMP=$(get_temp_unit "$M_T")
-get_main_notempload
+MC_TEMP=$(get_temp_class "$M_TEMP")
 read -r s _ < /proc/uptime; s=${s%.*}; d=$((s / 86400)); h=$((s % 86400 / 3600)); m=$((s % 3600 / 60))
 if [ $d -gt 0 ]; then M_UPTIME="${d}d ${h}h ${m}m"
 elif [ $h -gt 0 ]; then M_UPTIME="${h}h ${m}m"
@@ -2243,7 +2205,8 @@ for line in $SSH_NODES; do
 		parse_node_out "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
-		get_node_notempload
+		NC_TEMP=$(get_temp_class "$N_TEMP")
+        NC_LOAD=$(get_load_class "$N_LOAD")
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
 		TOTAL_TEMP="$TOTAL_TEMP$BULLET<span class='${NC_TEMP}'>${N_TEMP}</span>"
         TOTAL_LOAD="$TOTAL_LOAD$BULLET<span class='${NC_LOAD}'>${N_LOAD}</span>"
