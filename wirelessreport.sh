@@ -1311,13 +1311,16 @@ do_numbered_node() {
 	else
 		TOTAL_DEVICES="Devices: <span class='main-color'>$MAIN_DEVICE_TOTAL</span>"
 	fi
-	if [ "$NUMBERED_NODE" -gt 3 ]; then
-		TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 13px;"
-		UPTIME_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
-	else
-		TEMP_STYLE="text-align: center; justify-content: center;"
-		UPTIME_STYLE="text-align: center; justify-content: center;"
-	fi
+	if [ "$NUMBERED_NODE" -gt 4 ]; then
+        TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
+        UPTIME_STYLE="text-align: center; justify-content: flex-start; font-size: 8px;"
+    elif [ "$NUMBERED_NODE" -eq 4 ]; then
+        TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 13px;"
+        UPTIME_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
+    else
+        TEMP_STYLE="text-align: center; justify-content: center;"
+        UPTIME_STYLE="text-align: center; justify-content: center;"
+    fi
 }
 
 hasta() {
