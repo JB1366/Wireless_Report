@@ -2275,7 +2275,8 @@ cat <<HTML >> "$WEB_PAGE"
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
     .top-panel { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
     .report-header-main { text-align: center; color: #0096ff; margin: 0 0 10px 0; font-size: 24px; font-weight: bold; width: 100%; position: static; margin-left: 0; }
-	.top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
+	.report-header-main:hover { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); color: #0096ff; position: relative; z-index: 5 }
+    .top-controls { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
