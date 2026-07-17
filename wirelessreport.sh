@@ -2173,7 +2173,7 @@ wait
 # N_COLORS="lime-green medium-purple yellow skyblue orange red"
 N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
 BULLET=" <span style='color:white;'>•</span> "
-N_NAMES=""; NODE_TEMPS=""; NODE_LOADS=""; NODE_BOOTTIMES=""; NODE_UPTIMES=""
+NODE_NAMES=""; NODE_TEMPS=""; NODE_LOADS=""; NODE_BOOTTIMES=""; NODE_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
 for line in $SSH_NODES; do
 	NODE_OUT=""
@@ -2193,7 +2193,7 @@ for line in $SSH_NODES; do
         NODE_NUM="<span style='color:$NODE_COLOR;'>$NODE_SUP</span>"
 		if [ "$HOST_COLOR" = "1" ]; then NNS=""; else NNS="$NODE_SUP"; fi
         NODE_BRAND="<span class='router-style' style='color:$NODE_COLOR;'>${NODE_NAME}$NNS</span>"
-		if [ -z "$N_NAMES" ]; then N_NAMES="$NODE_BRAND"; else N_NAMES="$N_NAMES$BULLET$NODE_BRAND"; fi
+		if [ -z "$NODE_NAMES" ]; then NODE_NAMES="$NODE_BRAND"; else NODE_NAMES="$NODE_NAMES$BULLET$NODE_BRAND"; fi
 		parse_node_out "$NODE_OUT"
 		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
 		N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
@@ -2234,7 +2234,7 @@ TOTAL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
 TOTAL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
 TOTAL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
 GRAND_TOTAL_DEVICES=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
-ALL_NAMES="$MAIN_NAME$BULLET$N_NAMES"
+ALL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
 do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
@@ -2752,7 +2752,7 @@ if [ "$NUMBERED_NODE" -gt 0 ]; then
 cat <<NODEHTML >> "$WEB_PAGE"
                             <div id="nodeCol" class="report-column">
                                 <div class="section-header">
-                                    $N_NAMES<br>
+                                    $NODE_NAMES<br>
                                     $UPDATED_TIME
                                     <hr class="separator-line">
                                     <div class="temp_load_row">
