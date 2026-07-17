@@ -1821,7 +1821,7 @@ get_row() {
 	ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 }
 
-get_rssi_bars() {
+get_rssi_boxes() {
     RSSI_BOXES="<div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font'>$T_EXCL</span></div>
     <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font'>$T_GOOD</span></div>
     <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font'>$T_FAIR</span></div>
@@ -2243,7 +2243,7 @@ GRAND_TOTAL_DEVICES="<span class='count-highlight'>$TOTAL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
 NODE_DEVICE_TOTAL="<span class='main-color'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
-get_rssi_bars; do_numbered_node; set_theme; do_runtime; header_box
+get_rssi_boxes; do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 
