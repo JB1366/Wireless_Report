@@ -1257,7 +1257,6 @@ set_theme() {
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
         #refresh-option:focus { background: #000; }
-        #refresh-option option { background: #000; }
         .rssi-tooltip { background: #000; }"
         RT_TOOLTIP="#000000"
 	fi
@@ -1274,7 +1273,6 @@ set_theme() {
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
         #refresh-option:focus { background: #000; }
-        #refresh-option option { background: #000; }
         .popout-grid .section-header { min-height: 85px !important; }
         .rssi-tooltip { background: #000; }"
         RT_TOOLTIP="#000000"
@@ -1294,7 +1292,6 @@ set_theme() {
         table.report_table th:hover { background: #77A5C6; }
         .separator-line { border: 0; border-top: 1px solid black; }
         #refresh-option:focus { background: #3A4042; }
-        #refresh-option option { background: #3A4042; }
         .rssi-tooltip { background: #1c232b; }"
         RT_TOOLTIP="#3A4042"
     fi
@@ -1824,6 +1821,13 @@ get_row() {
 	ALL_ROWS="${ALL_ROWS}${ROW}${NL}"
 }
 
+get_rssi_bars() {
+    RSSI_BOXES="<div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font'>$T_EXCL</span></div>
+    <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font'>$T_GOOD</span></div>
+    <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font'>$T_FAIR</span></div>
+    <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font'>$T_POOR</span></div>"
+}
+
 parse_main_sta() {
     local raw_info="$1"
     printf "%s\n" "$raw_info" | awk '
@@ -2239,7 +2243,7 @@ GRAND_TOTAL_DEVICES="<span class='count-highlight'>$TOTAL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
 NODE_DEVICE_TOTAL="<span class='main-color'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
-do_numbered_node; set_theme; do_runtime; header_box
+get_rssi_bars; do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 
@@ -2745,10 +2749,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 </table>
                             </div>
                             <div class="rssi-quality-bar">
-                                <div class="rssi-quality-box rssi-excl">Excellent: <span style="background:#30d158;" class="rssi-font">$T_EXCL</span></div>
-                                <div class="rssi-quality-box rssi-good">Good: <span style="background:#64d2ff;" class="rssi-font">$T_GOOD</span></div>
-                                <div class="rssi-quality-box rssi-fair">Fair: <span style="background:#ffd60a;" class="rssi-font">$T_FAIR</span></div>
-                                <div class="rssi-quality-box rssi-poor">Poor: <span style="background:#ff453a;" class="rssi-font">$T_POOR</span></div>
+                                $RSSI_BOXES
                             </div>
 HTML
 if [ "$NUMBERED_NODE" -gt 0 ]; then
@@ -2822,10 +2823,7 @@ cat <<HTML >> "$WEB_PAGE"
                             </table>
                         </div>
                         <div id="allDevicesQualityBar" class="rssi-quality-bar">
-                            <div class="rssi-quality-box rssi-excl">Excellent: <span style="background:#30d158;" class="rssi-font">$T_EXCL</span></div>
-                            <div class="rssi-quality-box rssi-good">Good: <span style="background:#64d2ff;" class="rssi-font">$T_GOOD</span></div>
-                            <div class="rssi-quality-box rssi-fair">Fair: <span style="background:#ffd60a;" class="rssi-font">$T_FAIR</span></div>
-                            <div class="rssi-quality-box rssi-poor">Poor: <span style="background:#ff453a;" class="rssi-font">$T_POOR</span></div>
+                            $RSSI_BOXES
                         </div>
                     </div>
                 </div>
