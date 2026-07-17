@@ -1795,7 +1795,7 @@ hostcolor_main_name() {
 hostcolor_node_name() {
     if [ "$HOST_COLOR" = "1" ]; then
         NAME_NODE="<span style='color:$NODE_COLOR;'>$name</span>"
-        NODE_NUM="<span style='position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;'>$NODE_SUP</span>"
+        NODE_NUM="<span class='hidden-node-number'>$NODE_SUP</span>"
     else
         NAME_NODE="<span style='color:#ffffff;'>$name</span>"
 		NODE_NUM="<span style='color:$NODE_COLOR;'>$NODE_SUP</span>"
@@ -2161,10 +2161,10 @@ for iface in $IFACE_LIST; do
 	done
 done
 MAIN_NAME="<span class='router-style'>$MAIN_NAME</span>"
-TOTAL_TEMP="<span class='${MC_TEMP}'>${M_TEMP}</span>"
-TOTAL_LOAD="<span class='${MC_LOAD}'>${M_LOAD}</span>"
-TOTAL_UPTIME="<span class='main-color'>${M_UPTIME}</span>"
-TOTAL_BOOTTIME="<span class='main-color'>${M_BOOT}</span>"
+MAIN_TEMP="<span class='${MC_TEMP}'>${M_TEMP}</span>"
+MAIN_LOAD="<span class='${MC_LOAD}'>${M_LOAD}</span>"
+MAIN_UPTIME="<span class='main-color'>${M_UPTIME}</span>"
+MAIN_BOOTTIME="<span class='main-color'>${M_BOOT}</span>"
 wait
 
 #========================#
@@ -2173,7 +2173,7 @@ wait
 # N_COLORS="lime-green medium-purple yellow skyblue orange red"
 N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
 BULLET=" <span style='color:white;'>•</span> "
-N_NAMES=""; N_TEMPS=""; N_LOADS=""; N_BOOTS=""; N_UPTIMES=""
+N_NAMES=""; NODE_TEMPS=""; NODE_LOADS=""; NODE_BOOTTIMES=""; NODE_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
 for line in $SSH_NODES; do
 	NODE_OUT=""
@@ -2200,16 +2200,13 @@ for line in $SSH_NODES; do
 		NC_TEMP=$(get_temp_class "$N_TEMP")
         NC_LOAD=$(get_load_class "$N_LOAD")
 		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
-		TOTAL_TEMP="$TOTAL_TEMP$BULLET<span class='${NC_TEMP}'>${N_TEMP}</span>"
-        TOTAL_LOAD="$TOTAL_LOAD$BULLET<span class='${NC_LOAD}'>${N_LOAD}</span>"
-        TOTAL_UPTIME="$TOTAL_UPTIME$BULLET<span style='color:$NODE_COLOR;'>${N_UPTIME}</span>"
-        TOTAL_BOOTTIME="$TOTAL_BOOTTIME$BULLET<span style='color:$NODE_COLOR;'>${N_BOOT}</span>"
-		N_TEMPS="${N_TEMPS}${N_TEMPS:+$BULLET}<span class='${NC_TEMP}'>$N_TEMP</span>"
-		N_LOADS="${N_LOADS}${N_LOADS:+$BULLET}<span class='${NC_LOAD}'>$N_LOAD</span>"
-        N_UPTIMES="${N_UPTIMES}${N_UPTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
-		N_BOOTS="${N_BOOTS}${N_BOOTS:+$BULLET}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
-        if [ -n "$N_UPTIMES" ]; then NODE_FOOTER="<span>Uptime: $N_UPTIMES</span><span>Reboot: $N_BOOTS</span>"
-        else NODE_FOOTER="Offline"; fi
+        NODE_DEVICES=$(echo "$NODE_OUT" | grep -c "DATA|")
+        NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + NODE_DEVICES))
+        NODE_TEMPS="${NODE_TEMPS}${NODE_TEMPS:+$BULLET}<span class='${NC_TEMP}'>$N_TEMP</span>"
+		NODE_LOADS="${NODE_LOADS}${NODE_LOADS:+$BULLET}<span class='${NC_LOAD}'>$N_LOAD</span>"
+        NODE_UPTIMES="${NODE_UPTIMES}${NODE_UPTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
+		NODE_BOOTTIMES="${NODE_BOOTTIMES}${NODE_BOOTTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
+        NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$BULLET}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
         NODE_DEVICES=0
 		while read -r ssh_node_data; do
 			if [ -z "$ssh_node_data" ]; then continue; fi
@@ -2227,14 +2224,15 @@ for line in $SSH_NODES; do
 			hostcolor_node_name
             get_row
             NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
-			NODE_DEVICES=$((NODE_DEVICES + 1))
-			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
         done <<EOF
 $(echo "$NODE_OUT" | grep "DATA|")
 EOF
-NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$BULLET}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
     fi
 done
+TOTAL_TEMP="$MAIN_TEMP$BULLET$NODE_TEMPS"
+TOTAL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
+TOTAL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
+TOTAL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
 GRAND_TOTAL_DEVICES=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 ALL_NAMES="$MAIN_NAME$BULLET$N_NAMES"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
@@ -2339,6 +2337,7 @@ cat <<HTML >> "$WEB_PAGE"
     .main-color, .stat-cool, .band-24g { color: #0096ff !important; font-weight: bold; }
 	.band-5g { color: #30d158 !important; font-weight: bold; }
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
+    .hidden-node-number { position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none; }
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
 	.popout-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
 	.popout-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
@@ -2354,6 +2353,7 @@ cat <<HTML >> "$WEB_PAGE"
 	#splitView { display: flex; flex-direction: column; gap: 15px; width: 100%; }
     #allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
+    .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
     body { cursor: pointer !important; }
 	.rssi-container { position: relative; vertical-align: middle; }
 	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
@@ -2500,11 +2500,11 @@ function sortTable(n, tId, keepDir, forceDesc) {
         if (idx === 1) {
             h.innerHTML = table.classList.contains('show-ip') ? "IP ADDRESS ⇵" : "MAC ADDRESS ⇵";
         } else if (txt.includes("RSSI")) {
-            h.innerHTML = "RSSI<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵈᴮᵐ</span>";
+            h.innerHTML = "RSSI<span class='sup-header'>ᵈᴮᵐ</span>";
         } else if (txt.includes("RX/TX")) {
-            h.innerHTML = "RX/TX<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐᵇᵖˢ</span>";
+            h.innerHTML = "RX/TX<span class='sup-header'>ᵐᵇᵖˢ</span>";
         } else if (txt.includes("BAND")) {
-            h.innerHTML = "BAND<span style='font-size:14px; font-weight:bold; margin-left:2px;'>ᵐʰᶻ</span>";
+            h.innerHTML = "BAND<span class='sup-header'>ᵐʰᶻ</span>";
         } else if (idx === 4) {
             h.innerHTML = table.classList.contains('show-iface') ? "IFACE ⇵" : "SSID ⇵";
         }
@@ -2715,8 +2715,8 @@ cat <<HTML >> "$WEB_PAGE"
                                     $UPDATED_TIME
                                     <hr class="separator-line">
                                     <div class="temp_load_row">
-                                        <span>Temp: <span class="$MC_TEMP">$M_TEMP</span></span>
-                                        <span>Load: <span class="$MC_LOAD">$M_LOAD</span></span>
+                                        <span>Temp: $MAIN_TEMP</span>
+                                        <span>Load: $MAIN_LOAD</span>
                                         <span>Devices: <span class="main-color">$MAIN_DEVICE_TOTAL</span></span>
                                     </div>
                                 </div>
@@ -2734,8 +2734,8 @@ cat <<HTML >> "$WEB_PAGE"
                                     <tfoot>
                                         <tr>
                                             <td colspan="7">
-                                                <span>Uptime: <span class="main-color">$M_UPTIME</span></span>
-                                                <span>Reboot: <span class="main-color">$M_BOOT</span></span>
+                                                <span>Uptime: $MAIN_UPTIME</span>
+                                                <span>Reboot: $MAIN_BOOTTIME</span>
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -2756,8 +2756,8 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                     $UPDATED_TIME
                                     <hr class="separator-line">
                                     <div class="temp_load_row">
-                                        <span>Temp: <span class="${NC_TEMP}">${N_TEMPS:-0}</span></span>
-                                        <span>Load: <span class="${NC_LOAD}">${N_LOADS:-0}</span></span>
+                                        <span>Temp: $NODE_TEMPS</span>
+                                        <span>Load: $NODE_LOADS</span>
                                         <span>Devices: <span class="main-color">$NODE_DEVICE_TOTAL</span> $NTOTAL</span>
                                     </div>
                                 </div>
@@ -2774,7 +2774,10 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                     <tbody>$NODE_ROWS</tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="7">$NODE_FOOTER</td>
+                                            <td colspan="7">
+                                                <span>Uptime: $NODE_UPTIMES</span>
+                                                <span>Reboot: $NODE_BOOTTIMES</span>
+                                            </td>
                                         </tr>
                                     </tfoot>
                                 </table>
