@@ -1305,11 +1305,11 @@ do_numbered_node() {
 	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		TOTAL_DEVICES="Devices: <span class='main-color'>$GRAND_TOTAL_DEVICES</span> \
+		TOTAL_DEVICES="Devices: <span class='main-color'>$TOTAL_DEVICES</span> \
         <span class='right-arrow'>—›</span> \
-        <span class='main-color'>$MAIN_DEVICE_TOTAL</span>$BULLET$NODE_TOTALS"
+        $MAIN_DEVICE_TOTAL$BULLET$NODE_TOTALS"
 	else
-		TOTAL_DEVICES="Devices: <span class='main-color'>$MAIN_DEVICE_TOTAL</span>"
+		TOTAL_DEVICES="Devices: $MAIN_DEVICE_TOTAL"
 	fi
 	if [ "$NUMBERED_NODE" -gt 4 ]; then
         TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
@@ -2233,8 +2233,11 @@ TOTAL_TEMP="$MAIN_TEMP$BULLET$NODE_TEMPS"
 TOTAL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
 TOTAL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
 TOTAL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
-GRAND_TOTAL_DEVICES=$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))
 ALL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
+TOTAL_DEVICES="$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))"
+GRAND_TOTAL_DEVICES="<span class='count-highlight'>$TOTAL_DEVICES</span>"
+MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
+NODE_DEVICE_TOTAL="<span class='main-color'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
 do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
@@ -2675,7 +2678,7 @@ document.addEventListener('mouseout', function(e) {
                                 <span class="header-box">$HOVER_TEXT</span>
                             </div>
                         </div>
-                        <div class="total-count">Total Wireless Devices: <span class="count-highlight">$GRAND_TOTAL_DEVICES</span></div>
+                        <div class="total-count">Total Wireless Devices: $GRAND_TOTAL_DEVICES</div>
                         <div class="top-buttons">
                             <div class="button-refresh">
                                 <button class="button-trigger button-tables" onclick="triggerRefresh()">
@@ -2717,7 +2720,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     <div class="temp_load_row">
                                         <span>Temp: $MAIN_TEMP</span>
                                         <span>Load: $MAIN_LOAD</span>
-                                        <span>Devices: <span class="main-color">$MAIN_DEVICE_TOTAL</span></span>
+                                        <span>Devices: $MAIN_DEVICE_TOTAL</span>
                                     </div>
                                 </div>
                                 <table id="mainTable" class="report_table show-ip">
@@ -2758,7 +2761,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                     <div class="temp_load_row">
                                         <span>Temp: $NODE_TEMPS</span>
                                         <span>Load: $NODE_LOADS</span>
-                                        <span>Devices: <span class="main-color">$NODE_DEVICE_TOTAL</span> $NTOTAL</span>
+                                        <span>Devices: $NODE_DEVICE_TOTAL $NTOTAL</span>
                                     </div>
                                 </div>
                                 <table id="nodeTable" class="report_table show-ip">
