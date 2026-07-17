@@ -157,13 +157,9 @@ $\color{blue}{\Large\text{MAIN VIEW - NUMBERED HOSTNAMES - DEFAULT MODE}}$<br>
 
 ![Instructions11](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions11.png)<br>
 
-$\color{blue}{\Large\text{ALL-DEVICES VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
+$\color{blue}{\Large\text{MAIN VIEW - COLORED HOSTNAMES - ASUS WEBUI MODE}}$<br>
 
 ![Instructions7](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions7.png)<br>
-
-$\color{blue}{\Large\text{ALL-DEVICES VIEW - NUMBERED HOSTNAMES - DARK MODE}}$<br>
-
-![Instructions12](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions12.png)<br>
 
 $\color{blue}{\Large\text{SIDE-BY-SIDE VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
 
