@@ -2237,7 +2237,7 @@ TOTAL_TEMP="$MAIN_TEMP$BULLET$NODE_TEMPS"
 TOTAL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
 TOTAL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
 TOTAL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
-ALL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
+TOTAL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
 TOTAL_DEVICES="$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))"
 GRAND_TOTAL_DEVICES="<span class='count-highlight'>$TOTAL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
@@ -2451,6 +2451,15 @@ function initAutoRefresh(seconds) {
         refreshTimer = setInterval(function() { timeLeft--; if (timeLeft <= 0) { triggerRefresh(); clearInterval(refreshTimer); } document.getElementById('refresh-countdown').innerHTML = "&nbsp;" + timeLeft + "s"; }, 1000);
     } else { document.getElementById('refresh-countdown').innerHTML = ""; }
 }
+window.addEventListener('DOMContentLoaded', function() {
+    const selectEl = document.getElementById('refresh-option');
+    if (selectEl) {
+        selectEl.addEventListener('change', function() {
+            localStorage.setItem('wifiReportAutoRefresh', this.value);
+            initAutoRefresh(parseInt(this.value));
+        });
+    }
+});
 function switchTab(view) {
     localStorage.setItem('wifiReportView', view);
     var split = document.getElementById('splitView');
@@ -2690,7 +2699,7 @@ document.addEventListener('mouseout', function(e) {
                                 </button>
                                 <div class="button-auto-refresh">
                                     <span>Auto:</span>
-                                    <select id="refresh-option" onchange="localStorage.setItem('wifiReportAutoRefresh', this.value); initAutoRefresh(parseInt(this.value));">
+                                    <select id="refresh-option">
                                         <option value="0">Off</option>
                                         <option value="30">30s</option>
                                         <option value="60">1m</option>
@@ -2792,7 +2801,7 @@ fi
 cat <<HTML >> "$WEB_PAGE"
                         <div id="allCol" class="report-column">
                             <div class="section-header">
-                                $ALL_NAMES<br>
+                                $TOTAL_NAMES<br>
                                 $UPDATED_TIME
                                 <hr class="separator-line">
                                 <div class="temp_load_row" style="$TEMP_STYLE">
@@ -2841,7 +2850,8 @@ cat <<HTML >> "$WEB_PAGE"
     </div>
 </body>
 HTML
-rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$NODE_DATA_DIR" 2>/dev/null
+rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" 2>/dev/null
+rm -rf "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$NODE_DATA_DIR" 2>/dev/null
 }
 
 case "$1" in
