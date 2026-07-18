@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.0.3"
+SCRIPT_VERSION="2.0.4"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -2358,6 +2358,8 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal table.report_table thead th { font-size: 12px !important; font-weight: bold !important; white-space: nowrap; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
     #popoutModal .report-column .section-header .temp_load_row, #popoutModal .report-column .section-header .temp_load_row span { font-size: 14px !important; font-weight: bold !important; }
     #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; }
+    .popout-grid .report-column { flex: 1; max-width: 49.5%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    #popoutModal table.report_table { min-width: 600px !important; }
 	#splitView { display: flex; flex-direction: column; gap: 15px; width: 100%; }
     #allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }

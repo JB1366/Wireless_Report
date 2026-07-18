@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v2.0.4-minor script refactoring, fixed popout view table scrolling for smaller screens.
 v2.0.3-minor updates, added new theme.
 v2.0.2-minor updates & visual enhancements.
 v2.0.1-minor updates.
