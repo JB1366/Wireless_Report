@@ -1245,11 +1245,10 @@ set_theme() {
     fi
     THEME=${THEME:-1}
     if [ "$THEME" = "1" ]; then # [ORIGINAL THEME]
+        RT_TOOLTIP="#000000"
         THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
         .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
-        .button-auto-refresh { background: transparent !important; }
-        .button-tables { background: transparent !important; }
         .report-column { background: #1c232b; }
         table.report_table td { background: #1c232b; }
         table.report_table tfoot td { background: #171b1f; }
@@ -1257,15 +1256,15 @@ set_theme() {
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
         #refresh-option:focus { background: #000; }
-        .rssi-tooltip { background: #000; }"
-        RT_TOOLTIP="#000000"
+        .rssi-tooltip { background: #000; }
+        .button-auto-refresh { background: transparent !important; }
+        .button-tables { background: transparent !important; }"
 	fi
     if [ "$THEME" = "2" ]; then # [DARKMODE THEME]
+        RT_TOOLTIP="#000000"
         THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
         .section-header { background: transparent !important; }
-        .button-auto-refresh { background: transparent !important; }
-        .button-tables { background: transparent !important; }
         .report-column { background: transparent !important; }
         table.report_table td { background: transparent !important; }
         table.report_table tfoot td { background: #171b1f; }
@@ -1273,18 +1272,15 @@ set_theme() {
         table.report_table th:hover { background: #00e5ff; }
         .separator-line { border: 0; border-top: 1px solid #475a68; }
         #refresh-option:focus { background: #000; }
-        .popout-grid .section-header { min-height: 85px !important; }
-        .rssi-tooltip { background: #000; }"
-        RT_TOOLTIP="#000000"
+        .rssi-tooltip { background: #000; }
+        .button-auto-refresh { background: transparent !important; }
+        .button-tables { background: transparent !important; }"
     fi
 	if [ "$THEME" = "3" ]; then # [ASUS WEBUI THEME]
+        RT_TOOLTIP="#3A4042"
         THEME_CSS=".top-header { background-color: #4D595D; }
         .header-box { background: #3A4042; }
         .section-header { background: #4D595D; }
-        .button-tables { background: #3A4042; }
-        .button-tables.active,
-        .button-tables.active:hover { color: white !important; }
-        .button-auto-refresh { background: #3A4042; }
         .report-column { background: #3A4042; }
         table.report_table td { background: #1c232b; } /* Table Background */
         table.report_table tfoot td { background: #3A4042; }
@@ -1292,8 +1288,12 @@ set_theme() {
         table.report_table th:hover { background: #77A5C6; }
         .separator-line { border: 0; border-top: 1px solid black; }
         #refresh-option:focus { background: #3A4042; }
-        .rssi-tooltip { background: #1c232b; }"
-        RT_TOOLTIP="#3A4042"
+        .rssi-tooltip { background: #1c232b; }
+        .button-auto-refresh { background: #3A4042; }
+        .button-tables { background: #3A4042; }
+        /* EXTRA */
+        .button-tables.active, }
+        .button-tables.active:hover { color: white !important; }"
     fi
     THEME_CSS=$(echo "$THEME_CSS" | sed 's/^    //')
 }
