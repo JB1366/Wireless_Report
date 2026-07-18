@@ -2273,6 +2273,7 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/validator.js"></script>
 <style>
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
+    #wifiReportContainer { cursor: pointer !important; -webkit-tap-highlight-color: transparent !important;}
     .grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
     .top-header { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
     .header-title { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
@@ -2362,8 +2363,7 @@ cat <<HTML >> "$WEB_PAGE"
     #allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
     .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
-    body { cursor: pointer !important; }
-	.rssi-container { position: relative; vertical-align: middle; }
+    .rssi-container { position: relative; vertical-align: middle; }
 	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
 	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
 </style>
