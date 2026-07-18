@@ -1304,11 +1304,11 @@ do_numbered_node() {
     if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		TOTAL_DEVICES="Devices: <span class='main-color'>$TOTAL_DEVICES</span> \
+		ALL_DEVICES="Devices: <span class='main-color'>$ALL_DEVICES</span> \
         <span class='right-arrow'>—›</span> \
         $MAIN_DEVICE_TOTAL$BULLET$NODE_TOTALS"
 	else
-		TOTAL_DEVICES="Devices: $MAIN_DEVICE_TOTAL"
+		ALL_DEVICES="Devices: $MAIN_DEVICE_TOTAL"
 	fi
 	if [ "$NUMBERED_NODE" -gt 4 ]; then
         TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
@@ -2235,13 +2235,13 @@ $(echo "$NODE_OUT" | grep "DATA|")
 EOF
     fi
 done
-TOTAL_TEMP="$MAIN_TEMP$BULLET$NODE_TEMPS"
-TOTAL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
-TOTAL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
-TOTAL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
-TOTAL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
-TOTAL_DEVICES="$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))"
-GRAND_TOTAL_DEVICES="<span class='count-highlight'>$TOTAL_DEVICES</span>"
+ALL_TEMP="$MAIN_TEMP$BULLET$NODE_TEMPS"
+ALL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
+ALL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
+ALL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
+ALL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
+ALL_DEVICES="$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))"
+GRAND_TOTAL_DEVICES="<span class='count-highlight'>$ALL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
 NODE_DEVICE_TOTAL="<span class='main-color'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
@@ -2793,13 +2793,13 @@ document.addEventListener('mouseout', function(e) {
                         </div>
                         <div id="allCol" class="report-column" style="$ROUTER_ONLY">
                             <div class="section-header">
-                                $TOTAL_NAMES<br>
+                                $ALL_NAMES<br>
                                 $UPDATED_TIME
                                 <hr class="separator-line">
                                 <div class="temp_load_row" style="$TEMP_STYLE">
-                                    <span>Temp: $TOTAL_TEMP</span>
-                                    <span>Load: $TOTAL_LOAD</span>
-                                    <span>$TOTAL_DEVICES</span>
+                                    <span>Temp: $ALL_TEMP</span>
+                                    <span>Load: $ALL_LOAD</span>
+                                    <span>$ALL_DEVICES</span>
                                 </div>
                             </div>
                             <table id="allTable" class="report_table show-ip">
@@ -2816,8 +2816,8 @@ document.addEventListener('mouseout', function(e) {
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" style="$UPTIME_STYLE">
-                                            <span>Uptime: $TOTAL_UPTIME</span>
-                                            <span>Reboot: $TOTAL_BOOTTIME</span>
+                                            <span>Uptime: $ALL_UPTIME</span>
+                                            <span>Reboot: $ALL_BOOTTIME</span>
                                         </td>
                                     </tr>
                                 </tfoot>
