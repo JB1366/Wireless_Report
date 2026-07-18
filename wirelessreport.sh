@@ -2272,8 +2272,7 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/help.js"></script>
 <script src="/validator.js"></script>
 <style>
-	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
-    #wifiReportContainer { cursor: pointer !important; -webkit-tap-highlight-color: transparent !important;}
+	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; cursor: pointer !important; -webkit-tap-highlight-color: transparent !important; }
     .grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
     .top-header { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
     .header-title { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
