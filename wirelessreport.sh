@@ -2273,14 +2273,14 @@ cat <<HTML >> "$WEB_PAGE"
 	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; }
     .grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
     .top-header { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
-    .report-header-main { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
+    .header-title { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
     .top-buttons { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
 	.header-box { visibility: hidden; width: var(--v-width, 190px); background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
-	.header-tip { position: relative; display: inline-block; }
-	.header-tip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
+	.header-tooltip { position: relative; display: inline-block; }
+	.header-tooltip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
     .section-header { color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
     .report-column { width: 100%; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
 	.rssi-quality-bar { display: flex; justify-content: center; gap: 12px; align-items: center; width: 100%; margin: -5px auto -5px auto; padding: 0; background: transparent; border: none; height: auto; }
@@ -2686,8 +2686,8 @@ document.addEventListener('mouseout', function(e) {
                 <div id="wifiReportContainer">
                     <div class="top-header">
                         <div class="header-wrap">
-                            <div class="header-tip" style="--v-width: $V_WIDTH;">
-                                <h1 id="v-header" class="report-header-main">WIRELESS REPORT</h1>
+                            <div class="header-tooltip" style="--v-width: $V_WIDTH;">
+                                <h1 class="header-title">WIRELESS REPORT</h1>
                                 <span class="header-box">$HOVER_TEXT</span>
                             </div>
                         </div>
