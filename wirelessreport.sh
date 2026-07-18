@@ -2315,8 +2315,7 @@ cat <<HTML >> "$WEB_PAGE"
     .button-tables.active { background: rgba(0,150,255,0.15); }
     #refresh-option { color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit; }
     #refresh-option:focus { outline: none; border: none; }
-    #refresh-option option { color: #0096ff; font-weight: bold; cursor: pointer !important; }
-	#refresh-countdown { color: #0096ff; font-weight: bold; }
+    #refresh-countdown { color: #0096ff; font-weight: bold; }
     ${THEME_CSS}
 	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; }
 	table.report_table { width: 100%; border-collapse: collapse; }
