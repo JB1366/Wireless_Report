@@ -2347,11 +2347,12 @@ cat <<HTML >> "$WEB_PAGE"
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
     .hidden-node-number { position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none; }
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
-    #popoutModal .separator-line { margin: 8px -12px; display: block; width: calc(100% + 24px); }
     .popout-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
     .popout-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); overflow-x: hidden !important; }
     .popout-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; font-weight: bold; }
     .popout-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
+    .popout-grid .report-column { flex: 1; max-width: 49.5%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    #popoutModal .separator-line { margin: 8px -12px; display: block; width: calc(100% + 24px); }
     #popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
     #popoutModal table.report_table tbody td:not([style*="font-weight: bold"]) { font-size: 12px !important; font-weight: normal !important; }
     #popoutModal table.report_table tbody td[style*="font-weight: bold"] { font-size: 12px !important; }
@@ -2359,7 +2360,6 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal .report-column .section-header .temp_load_row { margin-top: -2px !important; margin-bottom: -2px !important; display: block !important; }
     #popoutModal .report-column .section-header .temp_load_row span { font-size: 14px !important; font-weight: bold !important; }
     #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; white-space: nowrap !important; }
-    .popout-grid .report-column { flex: 1; max-width: 49.5%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
     @media (min-width: 992px) { #popoutModal .separator-line { min-width: 600px; } #popoutModal table.report_table { min-width: 600px !important; } @media (orientation: landscape) { .popout-grid .report-column::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; } .popout-grid .report-column { -ms-overflow-style: none; scrollbar-width: none; } } @media (orientation: portrait) { #popoutModal table.report_table { width: max-content !important; } .popout-grid .report-column { scrollbar-width: auto !important; -ms-overflow-style: auto !important; } } }
     @media (max-width: 991px) { .popout-grid .report-column { display: block !important; } #popoutModal table.report_table { min-width: 100% !important; width: max-content !important; display: block !important; } #popoutModal .separator-line { min-width: max-content !important; width: calc(100% + 24px) !important; display: inline-block !important; } }
 	#splitView { display: flex; flex-direction: column; gap: 15px; width: 100%; }
