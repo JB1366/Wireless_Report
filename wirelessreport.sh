@@ -1299,7 +1299,9 @@ set_theme() {
 }
 
 do_numbered_node() {
-	if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
+    if [ "$NUMBERED_NODE" -lt 1 ]; then ROUTER_ONLY="display: none !important;"
+    else  ROUTER_ONLY=""; fi
+    if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
 		TOTAL_DEVICES="Devices: <span class='main-color'>$TOTAL_DEVICES</span> \
@@ -2712,15 +2714,9 @@ document.addEventListener('mouseout', function(e) {
                                     <span id="refresh-countdown"></span>
                                 </div>
                             </div>
-HTML
-if [ "$NUMBERED_NODE" -gt 0 ]; then
-cat <<BUTTONSHTML >> "$WEB_PAGE"
-                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main</button>
-                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
-                            <button class="button-tables" onclick="openPopout()">Side by Side ⇗</button>
-BUTTONSHTML
-fi
-cat <<HTML >> "$WEB_PAGE"
+                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')" style="$ROUTER_ONLY">Main</button>
+                            <button id="btnAll" class="button-tables" onclick="switchTab('all')" style="$ROUTER_ONLY">All Devices</button>
+                            <button class="button-tables" onclick="openPopout()" style="$ROUTER_ONLY">Side by Side ⇗</button>
                         </div>
                     </div>
                     <div class="grid-container">
@@ -2760,10 +2756,7 @@ cat <<HTML >> "$WEB_PAGE"
                             <div class="rssi-quality-bar">
                                 $RSSI_BOXES
                             </div>
-HTML
-if [ "$NUMBERED_NODE" -gt 0 ]; then
-cat <<NODEHTML >> "$WEB_PAGE"
-                            <div id="nodeCol" class="report-column">
+                            <div id="nodeCol" class="report-column" style="$ROUTER_ONLY">
                                 <div class="section-header">
                                     $NODE_NAMES<br>
                                     $UPDATED_TIME
@@ -2796,10 +2789,7 @@ cat <<NODEHTML >> "$WEB_PAGE"
                                 </table>
                             </div>
                         </div>
-NODEHTML
-fi
-cat <<HTML >> "$WEB_PAGE"
-                        <div id="allCol" class="report-column">
+                        <div id="allCol" class="report-column" style="$ROUTER_ONLY">
                             <div class="section-header">
                                 $TOTAL_NAMES<br>
                                 $UPDATED_TIME
@@ -2831,7 +2821,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 </tfoot>
                             </table>
                         </div>
-                        <div id="allDevicesQualityBar" class="rssi-quality-bar">
+                        <div id="allDevicesQualityBar" class="rssi-quality-bar" style="$ROUTER_ONLY">
                             $RSSI_BOXES
                         </div>
                     </div>
