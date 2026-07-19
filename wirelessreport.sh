@@ -51,8 +51,7 @@ export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 #==================#
 show_header() {
 	clear; menu_vars
-	echo -e "${BL}" #========================================================
-	echo -e "                                                               "
+	echo -e "${BL}" #=======================================================#
 	echo -e "                                                               "
 	echo -e " ██╗    ██╗██╗██████╗ ███████╗██╗     ███████╗███████╗███████╗ "
 	echo -e " ██║    ██║██║██╔══██╗██╔════╝██║     ██╔════╝██╔════╝██╔════╝ "
@@ -68,30 +67,30 @@ show_header() {
 	echo -e "      ██║  ██║███████╗██║     ╚██████╔╝██║  ██║   ██║          "
 	echo -e "      ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝          "
 	echo -e "                                                               "
-	echo -e "${NC}" #========================================================
+    echo -e "      Copyright (c) 2026 JB_1366 - All Rights Reserved         "
+    echo -e "         $JB1366                                               "
+    echo -e "                                                               "
+    #=======================================================================#
 }
 
 install_menu() {
 	while true; do
 		show_header
-		echo -e "${BL}==================================================${NC}"
-		echo -e " Copyright (c) 2026 JB_1366 - All Rights Reserved           "
-		echo -e "    $JB1366                                                 "
-		echo -e "${BL}==================================================${NC}"
+        echo -e "${BL}=================================================="
 		check_version
-		echo -e "${BL}==================================================${NC}"
-		echo -e "                                                            "
-		echo -e "  $N1  Install/Update                                       "
-		echo -e "  $N2  Uninstall                                            "
-		echo -e "  $N3  Temp/Date ($DU) ($CT)                                "
-		echo -e "  $N4  Router/Node Nicknames                                "
-		echo -e "  $N5  Set Options  Theme:($TM_STAT)                        "
-		echo -e "  $N6  Node Authentication                                  "
-		echo -e "  $N7  Setup SSH Environment (SSH-KEY:$KEY)                 "
-		echo -e "  $NE  Exit                                                 "
-		echo -e "                                                            "
-		echo -e "${BL}==================================================${NC}"
-		printf "\n ${BL}Selection:${NC} "
+		echo -e "${BL}=================================================="
+		echo -e "                                                       "
+		echo -e "  $N1  Install/Update                                  "
+		echo -e "  $N2  Uninstall                                       "
+		echo -e "  $N3  Temp/Date ($DU) ($CT)                           "
+		echo -e "  $N4  Router/Node Nicknames                           "
+		echo -e "  $N5  Set Options  Theme:($TM_STAT)                   "
+		echo -e "  $N6  Node Authentication                             "
+		echo -e "  $N7  Setup SSH Environment (SSH-KEY:$KEY)            "
+		echo -e "  $NE  Exit                                            "
+		echo -e "                                                       "
+		echo -e "${BL}=================================================="
+		printf "\n Selection:${NC} "
 		read -r choice
         case "$choice" in
             1) do_install ;;
@@ -409,24 +408,24 @@ check_ssh() {
 	if [ "$1" = "pause" ]; then check_installed || return 1; fi
 	while true; do
 		show_header
-		echo -e "${BL}==================================================${NC}"
-		echo -e "${BL}                 SSH Environment                  ${NC}"
-		echo -e "${BL}==================================================${NC}"
-		echo -e " SSH-Key: $KEY                          Port: $PORT         "
-		echo -e "${BL}==================================================${NC}"
-		echo -e "                                                            "
-		echo -e "  $N1  Create RSA Keys & Setup AiMesh Nodes                 "
-		echo -e "  $N2  Delete RSA Keys                                      "
-		echo -e "  $N3  Router-Only Setup                                    "
-		echo -e "  $N4  View Authorized Keys                                 "
-		echo -e "  $N5  View Known Hosts                                     "
-		echo -e "  $N6  View SSH Error Log                                   "
-		echo -e "  $N7  Node Authentication                                  "
-		echo -e "                                                            "
-		echo -e "  $NE  Exit to main menu                                    "
-		echo -e "                                                            "
-		echo -e "${BL}==================================================${NC}"
-		printf "\n ${BL}Selection:${NC} "
+		echo -e "${BL}=================================================="
+		echo -e "${NC}                SSH Environment                   "
+		echo -e "${BL}=================================================="
+		echo -e "${NC} SSH-Key: $KEY                         Port: $PORT"
+		echo -e "${BL}=================================================="
+		echo -e "                                                       "
+		echo -e "  $N1  Create RSA Keys & Setup AiMesh Nodes            "
+		echo -e "  $N2  Delete RSA Keys                                 "
+		echo -e "  $N3  Router-Only Setup                               "
+		echo -e "  $N4  View Authorized Keys                            "
+		echo -e "  $N5  View Known Hosts                                "
+		echo -e "  $N6  View SSH Error Log                              "
+		echo -e "  $N7  Node Authentication                             "
+		echo -e "                                                       "
+		echo -e "  $NE  Exit to main menu                               "
+		echo -e "                                                       "
+		echo -e "${BL}=================================================="
+		printf "\n Selection:${NC} "
 		read ssh_choice
 		case "$ssh_choice" in
             1)
@@ -505,9 +504,9 @@ node_auth() {
 	if [ ! -s "$SSH_KEY" ]; then echo -e "\n${YL}[!] Main Router SSH Key not found.${NC}"; sleep 3; return; fi
 	sed -i '/^SSH_NODES=/d' "$CONFIG"
 	echo -e "\n${GR}[✓] Main Router SSH Key found at: ${WH}$SSH_KEY${NC}\n"
-	echo -e "${BL}==================================================${NC}"
-    echo -e "${BL}          Verifying Node Authentication           ${NC}"
-    echo -e "${BL}==================================================${NC}\n"
+	echo -e "${BL}=================================================="
+    echo -e "${NC}         Verifying Node Authentication            "
+    echo -e "${BL}==================================================\n"
 	UNSUPPORTED_MODELS="AX4200|AX1800S|XD4"
 	AIMESH_NODES=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | grep -vE "$UNSUPPORTED_MODELS" | sort -t . -k 4,4n)
 	if [ -z "$AIMESH_NODES" ]; then
@@ -532,7 +531,7 @@ node_auth() {
 			IP=$(echo "$line" | cut -d'|' -f2)
 			if [ -z "$IP" ]; then continue; fi
 			if [ -z "$ROUTER" ]; then ROUTER="Node_$IP"; fi
-			printf "[*] Testing ${GR}%-14s${NC} (%s) " "$ROUTER" "$IP"
+			printf "${NC}[*] Testing ${GR}%-14s${NC} (%s) " "$ROUTER" "$IP"
             SSH_ERR=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "exit" 2>&1 >/dev/null)
 			SSH_RC=$?
 			if [ -n "$SSH_ERR" ]; then
@@ -640,9 +639,9 @@ ssh_keys() {
 		echo -e "\n${GR}[!] Stored JFFS key detected. Linking and configuring...${NC}\n"
 		sleep 3
 	fi
-	echo -e "${BL}==================================================${NC}"
-    echo -e "${BL}                Generating SSH Key                ${NC}"
-    echo -e "${BL}==================================================${NC}"
+	echo -e "${BL}=================================================="
+    echo -e "${NC}                Generating SSH Key                "
+    echo -e "${BL}=================================================="
     if [ ! -f "/jffs/.ssh/id_dropbear" ]; then
         echo -e "\n${YL}[i] Creating RSA Key in JFFS...${NC}\n"
         mkdir -p /jffs/.ssh
@@ -667,15 +666,16 @@ ssh_keys() {
 		echo "cp /jffs/.ssh/id_dropbear /tmp/home/root/.ssh/id_dropbear # sshpairs" >> "$SS_FILE"
         echo "cp /jffs/.ssh/known_hosts /tmp/home/root/.ssh/known_hosts # sshpairs persistence" >> "$SS_FILE"
     fi
-	echo -e "${BL}==================================================${NC}"
-	echo -e "${YL}               ACTION REQUIRED NOW                ${NC}"
-    echo -e "${BL}==================================================${NC}\n"
-	echo -e "${BL}[*] STEP 1: Go to Asus WebGUI > AiMesh > Management${NC}"
-	echo -e "${BL}[*] STEP 2: Click 'Reboot Node' for each node${NC}\n"
-	echo -e "${YL}[!] Do not press [Enter] until Nodes are confirmed to be back online.${NC}\n"
-	echo -e "${BL}[*] TIP: If a node is missing after authentication,${NC}"
-	echo -e "${BL}[*]      use option #6 to reauthenticate.${NC}"
-	echo -ne "\n[*] Press ${BL}[ENTER]${NC} to begin authentication check..."
+	echo -e "${BL}=================================================="
+	echo -e "$${NC}               ACTION REQUIRED NOW               "
+    echo -e "${BL}=================================================="
+    echo -e "                                                       "
+	echo -e "[*] STEP 1: Go to Asus WebGUI > AiMesh > Management    "
+	echo -e "[*] STEP 2: Click 'Reboot Node' for each node\n        "
+	echo -e "${YL}[!] Do not press [Enter] until Nodes are confirmed to be back online.\n"
+	echo -e "${BL}[*] TIP: If a node is missing after authentication,  "
+	echo -e "${BL}[*]      use option #6 to reauthenticate.            "
+	echo -ne "\n[*] Press [ENTER]${NC} to begin authentication check..."
 	read
 	node_auth "pause"
 }
@@ -802,20 +802,20 @@ set_temp_date() {
     check_installed || return 1
     while true; do
         show_header
-        echo -e "${BL}==================================================${NC}"
-        echo -e "${BL}                  Set Temp/Date                   ${NC}"
-        echo -e "${BL}==================================================${NC}"
-        echo -e "${BL}  Unit:${NC} $DU              ${BL}Date:${NC} $CT      "
-        echo -e "${BL}==================================================${NC}"
-        echo -e "                                                            "
-        echo -e "  $N1  Fahrenheit (°F) / USA  ($DATE_USA)                   "
-        echo -e "  $N2  Celsius    (°C) / INTL ($DATE_INTL)                  "
-        echo -e "  $N3  Technical  (°C) / TECH ($DATE_ISO)                   "
-        echo -e "                                                            "
-        echo -e "  $NE  Exit to main menu                                    "
-        echo -e "                                                            "
-		echo -e "${BL}==================================================${NC}"
-		printf "\n ${BL}Selection:${NC} "
+        echo -e "${BL}=================================================="
+        echo -e "${NC}                  Set Temp/Date                   "
+        echo -e "${BL}=================================================="
+        echo -e "${BL}  Unit:${NC} $DU              ${BL}Date:${NC} $CT "
+        echo -e "${BL}=================================================="
+        echo -e "                                                       "
+        echo -e "  $N1  Fahrenheit (°F) / USA  ($DATE_USA)              "
+        echo -e "  $N2  Celsius    (°C) / INTL ($DATE_INTL)             "
+        echo -e "  $N3  Technical  (°C) / TECH ($DATE_ISO)              "
+        echo -e "                                                       "
+        echo -e "  $NE  Exit to main menu                               "
+        echo -e "                                                       "
+		echo -e "${BL}=================================================="
+		printf "\n Selection:${NC} "
         read -r t_choice
         case "$t_choice" in
             1) NEW_UNIT="F" ;;
@@ -836,15 +836,15 @@ set_nicknames() {
     check_installed || return 1
     while true; do
         show_header
-        echo -e "${BL}==================================================${NC}"
-        echo -e "${BL}              Router/Node Nicknames               ${NC}"
-        echo -e "${BL}==================================================${NC}"
-        echo -e "    (Press $N0 for Defaults $N1 for Locations)              "
-        echo -e "              (Press $NE to Exit)                           "
-        echo -e "${BL}==================================================${NC}"
+        echo -e "${BL}=================================================="
+        echo -e "${NC}              Router/Node Nicknames               "
+        echo -e "${BL}=================================================="
+        echo -e "${NC}    (Press $N0 for Defaults $N1 for Locations)    "
+        echo -e "              (Press $NE to Exit)                      "
+        echo -e "${BL}=================================================="
         MAIN_HW_MODEL=$(nvram get productid)
         MAIN_IP=$(nvram get lan_ipaddr)
-        echo -e "\n  ${BL}Main${NC} $MAIN_IP -> ${GR}${MAIN_NICK:-$MAIN_HW_MODEL}${NC}"
+        echo -e "\n  ${BL}Main${NC} $MAIN_IP -> ${GR}${MAIN_NICK:-$MAIN_HW_MODEL}"
         if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
             VALID_NODES=$(echo "$SSH_NODES" | tr ' ' '\n' | grep '|')
             for node in $VALID_NODES; do
@@ -852,11 +852,11 @@ set_nicknames() {
 				IP=$(echo "$node" | cut -d'|' -f2)
                 CLEAN_IP=$(echo "$IP" | tr '.' '_')
                 eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
-                echo -e "  ${BL}Node${NC} $IP -> ${GR}${SAVED_NICK:-$MODEL}${NC}"
+                echo -e "  ${BL}Node${NC} $IP -> ${GR}${SAVED_NICK:-$MODEL}"
             done
         fi
-        echo -e "\n${BL}==================================================${NC}"
-        printf "\n${BL} [Enter]${NC} Manual Name | ${BL}Selection:${NC} "
+        echo -e "\n${BL}=================================================="
+        printf "\n [Enter]${NC} Manual Name | ${BL}Selection:${NC} "
         read -r input_main
         case "$input_main" in
             e|E)
@@ -944,22 +944,22 @@ set_options() {
     check_installed || return 1
     while true; do
         show_header
-        echo -e "${BL}==================================================${NC}"
-        echo -e "${BL}                    Set Options                   ${NC}"
-        echo -e "${BL}==================================================${NC}"
-        echo -e "                                                            "
-        echo -e "  $N1  Show Runtime Tracking: ($RT_STAT)                    "
-        echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)                   "
-        echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                       "
-        echo -e "  $N4  Show RSSI History: ($RH_STAT)                        "
-        echo -e "  $N5  Set Theme: ($TM_STAT)                                "
-		echo -e "  $N6  Enable IP Padding: ($PD_STAT)                        "
-		echo -e "  $N7  Node Hostname Display: ($HN_STAT)                    "
-		echo -e "                                                            "
-        echo -e "  $NE  Exit to main menu                                    "
-        echo -e "                                                            "
-        echo -e "${BL}==================================================${NC}"
-        printf "\n ${BL}Selection:${NC} "
+        echo -e "${BL}=================================================="
+        echo -e "${NC}                  Set Options                     "
+        echo -e "${BL}=================================================="
+        echo -e "                                                       "
+        echo -e "  $N1  Show Runtime Tracking: ($RT_STAT)               "
+        echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)              "
+        echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                  "
+        echo -e "  $N4  Show RSSI History: ($RH_STAT)                   "
+        echo -e "  $N5  Set Theme: ($TM_STAT)                           "
+		echo -e "  $N6  Enable IP Padding: ($PD_STAT)                   "
+		echo -e "  $N7  Node Hostname Display: ($HN_STAT)               "
+		echo -e "                                                       "
+        echo -e "  $NE  Exit to main menu                               "
+        echo -e "                                                       "
+        echo -e "${BL}=================================================="
+        printf "\n Selection:${NC} "
         read -r t_choice
         case "$t_choice" in
             1)
@@ -1068,19 +1068,19 @@ set_options() {
 rssi_submenu() {
 	while true; do
 		show_header
-		echo -e "${BL}==============================================${NC}"
-		echo -e "${BL}          RSSI History Configuration          ${NC}"
-		echo -e "${BL}==============================================${NC}"
-		echo -e "                                                        "
-		echo -e " $N1 Enable RSSI History: [$CH]                         "
-		echo -e " $N2 Set History Depth:   [$CE] entries                 "
-		echo -e " $N3 Enable Timestamps:   [$TS]                         "
-		echo -e "                                                        "
-		echo -e " $NQ Cancel and Discard Changes                         "
-		echo -e " $NE Exit and Save Changes                              "
-		echo -e "                                                        "
-		echo -e "${BL}==============================================${NC}"
-		printf "\n ${BL}Selection:${NC} "
+		echo -e "${BL}=============================================="
+		echo -e "${NC}          RSSI History Configuration          "
+		echo -e "${BL}=============================================="
+		echo -e "                                                   "
+		echo -e " $N1 Enable RSSI History: [$CH]                    "
+		echo -e " $N2 Set History Depth:   [$CE] entries            "
+		echo -e " $N3 Enable Timestamps:   [$TS]                    "
+		echo -e "                                                   "
+		echo -e " $NQ Cancel and Discard Changes                    "
+		echo -e " $NE Exit and Save Changes                         "
+		echo -e "                                                   "
+		echo -e "${BL}=============================================="
+		printf "\n Selection:${NC} "
 		read -r sub_choice
 		case "$sub_choice" in
             1)
@@ -1130,18 +1130,18 @@ rssi_submenu() {
 theme_submenu() {
     while true; do
         show_header
-        echo -e "${BL}==============================================${NC}"
-        echo -e "${BL}  Set Theme                Current: $TM_STAT  ${NC}"
-        echo -e "${BL}==============================================${NC}"
-        echo -e "                                                        "
-        echo -e " $N1 Original Theme                                     "
-        echo -e " $N2 Darkmode Theme                                     "
-        echo -e " $N3 Asus WebUI Theme                                   "
-        echo -e "                                                        "
-        echo -e " $NE Exit                                               "
-        echo -e "                                                        "
-        echo -e "${BL}==============================================${NC}"
-        printf "\n ${BL}Selection:${NC} "
+        echo -e "${BL}=============================================="
+        echo -e "${NC}  Set Theme                Current: $TM_STAT  "
+        echo -e "${BL}=============================================="
+        echo -e "                                                   "
+        echo -e " $N1 Original Theme                                "
+        echo -e " $N2 Darkmode Theme                                "
+        echo -e " $N3 Asus WebUI Theme                              "
+        echo -e "                                                   "
+        echo -e " $NE Exit                                          "
+        echo -e "                                                   "
+        echo -e "${BL}=============================================="
+        printf "\n Selection:${NC} "
         read -r theme_choice
         case "$theme_choice" in
             1)
