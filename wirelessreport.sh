@@ -1291,9 +1291,7 @@ set_theme() {
         .rssi-tooltip { background: #1c232b; }
         .button-auto-refresh { background: #3A4042; }
         .button-tables { background: #3A4042; }
-        /* EXTRA */
-        .button-tables.active, }
-        .button-tables.active:hover { color: white !important; }"
+        .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */"
     fi
     THEME_CSS=$(echo "$THEME_CSS" | sed 's/^    //')
 }
