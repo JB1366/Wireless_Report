@@ -2334,6 +2334,7 @@ cat <<HTML >> "$WEB_PAGE"
     table.report_table th:hover { color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
 	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+    table.report_table td:nth-child(7) { font-weight: normal; }
 	.mac-val, .ssid-val { display: inline; }
     .ip-val, .iface-val { display: none; }
     tfoot td { text-align: center; }
@@ -2357,6 +2358,7 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
     #popoutModal table.report_table tbody td:not([style*="font-weight: bold"]) { font-size: 12px !important; font-weight: normal !important; }
     #popoutModal table.report_table tbody td[style*="font-weight: bold"] { font-size: 12px !important; }
+    #popoutModal table.report_table tbody td:nth-child(7) { font-weight: normal !important; }
     #popoutModal table.report_table thead th { font-size: 12px !important; font-weight: bold !important; white-space: nowrap; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
     #popoutModal .report-column .section-header .temp_load_row { margin-top: -2px !important; margin-bottom: -2px !important; display: block !important; }
     #popoutModal .report-column .section-header .temp_load_row span { font-size: 14px !important; font-weight: bold !important; }
