@@ -2332,8 +2332,6 @@ cat <<HTML >> "$WEB_PAGE"
     table.report_table tfoot td { border-top: 1px solid #475a68; padding: 12px 10px !important; font-weight: bold; color: #fff; }
     table.report_table thead th { position: sticky; top: 0; z-index: 10; color: #fff; padding: 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
     table.report_table th:hover { color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
-	table.report_table td:nth-child(1) { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
-	table.report_table td:nth-child(5) { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
     table.report_table td:nth-child(7) { font-weight: normal; }
 	.mac-val, .ssid-val { display: inline; }
     .ip-val, .iface-val { display: none; }
