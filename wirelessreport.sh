@@ -2314,6 +2314,7 @@ cat <<HTML >> "$WEB_PAGE"
     .button-tables:hover, .button-tables.active { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
     .button-tables.active { background: rgba(0,150,255,0.15); }
     #refresh-option { color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit; }
+    #refresh-option option { font-weight: bold; }
     #refresh-option:focus { outline: none; border: none; }
     #refresh-countdown { color: #0096ff; font-weight: bold; }
     ${THEME_CSS}
