@@ -133,13 +133,6 @@ menu_vars() {
         sed -i "s/^THEME=.*/THEME=\"$THEME\"/" "$CONFIG"
         ;;
     esac
-    if grep -q "^DARKMODE=" "$CONFIG"; then
-        OLD_DM=$(grep "^DARKMODE=" "$CONFIG" | cut -d'"' -f2)
-        [ "$OLD_DM" = "0" ] && NEW_THEME="1" || NEW_THEME="2"
-        sed -i -e "s/^DARKMODE=.*/THEME=\"$NEW_THEME\"/" -e "s/^THEME=.*/THEME=\"$NEW_THEME\"/" "$CONFIG"
-        sed -i "/^DARKMODE=/d" "$CONFIG"
-        THEME="$NEW_THEME"
-    fi
 	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'; YL='\033[0;33m'
     UL='\033[4m'; WH='\e[1;37m'; BG='\e[42;37m'; GY='\e[38;2;77;89;93m'
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
@@ -1398,13 +1391,6 @@ header_box() {
 }
 
 set_theme() {
-	if grep -q "^DARKMODE=" "$CONFIG"; then
-        OLD_DM=$(grep "^DARKMODE=" "$CONFIG" | cut -d'"' -f2)
-        [ "$OLD_DM" = "0" ] && NEW_THEME="1" || NEW_THEME="2"
-        sed -i -e "s/^DARKMODE=.*/THEME=\"$NEW_THEME\"/" -e "s/^THEME=.*/THEME=\"$NEW_THEME\"/" "$CONFIG"
-        sed -i "/^DARKMODE=/d" "$CONFIG"
-        THEME="$NEW_THEME"
-    fi
     case "$THEME" in
     1|2|3)
         case "$THEME" in 1) THEME="ORIGINAL" ;; 2) THEME="DARKMODE" ;; 3) THEME="ASUS_WEBUI" ;; esac
