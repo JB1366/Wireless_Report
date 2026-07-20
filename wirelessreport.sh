@@ -841,7 +841,7 @@ set_nicknames() {
     while true; do
         show_header
         echo -e "${BL}=================================================="
-        echo -e "${NC}                Device Nicknames                  "
+        echo -e "${NC}              Set Device Nicknames                "
         echo -e "${BL}=================================================="
         echo -e "${NC}     Press $N1 for Defaults $N2 for Locations     "
         echo -e "              $NE Back to Main Menu                    "
