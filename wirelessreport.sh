@@ -85,9 +85,9 @@ install_menu() {
 		echo -e "  $N3  Edit Temp/Date ($DU) ($CT)                      "
 		echo -e "  $N4  Edit Device Nicknames                           "
         echo -e "  $N5  Edit Device Colors                              "
-		echo -e "  $N6  Configure Display Options  Theme:($TM_STAT)     "
+		echo -e "  $N6  Configure Display Options ($TM_STAT)            "
 		echo -e "  $N7  Manage Node Authentication                      "
-		echo -e "  $N8  Configure SSH Options (SSH-KEY:$KEY)            "
+		echo -e "  $N8  Configure SSH Options  Key:($KEY)               "
 		echo -e "  $NE  Exit                                            "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
@@ -165,10 +165,8 @@ menu_vars() {
 	if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
 	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
 	CE="${GR}$CUR_ENTRIES${NC}"
-    THEME=${THEME:-1}
-    if [ "$THEME" = "1" ]; then TM_STAT="${GR}ORIGINAL${NC}"; fi
-    if [ "$THEME" = "2" ]; then TM_STAT="${BL}DARKMODE${NC}"; fi
-    if [ "$THEME" = "3" ]; then TM_STAT="${GY}ASUS WEBUI${NC}"; fi
+    THEME=${THEME:-ORIGINAL}
+    TM_STAT="${GR}$THEME${NC}"
 	IPPAD=${IPPAD:-1}
 	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
 	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
@@ -1299,16 +1297,16 @@ theme_submenu() {
         read -r theme_choice
         case "$theme_choice" in
             1)
-                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"1\"/" "$CONFIG"
-                else echo 'THEME="1"' >> "$CONFIG"; fi
+                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ORIGINAL\"/" "$CONFIG"
+                else echo 'THEME="ORIGINAL"' >> "$CONFIG"; fi
                 ;;
             2)
-                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"2\"/" "$CONFIG"
-                else echo 'THEME="2"' >> "$CONFIG"; fi
+                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"DARKMODE\"/" "$CONFIG"
+                else echo 'THEME="DARKMODE"' >> "$CONFIG"; fi
                 ;;
             3)
-                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"3\"/" "$CONFIG"
-                else echo 'THEME="3"' >> "$CONFIG"; fi
+                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ASUS_WEBUI\"/" "$CONFIG"
+                else echo 'THEME="ASUS_WEBUI"' >> "$CONFIG"; fi
                 ;;
             e|E)
                 break
@@ -1401,8 +1399,8 @@ set_theme() {
         sed -i "/^DARKMODE=/d" "$CONFIG"
         THEME="$NEW_THEME"
     fi
-    THEME=${THEME:-1}
-    if [ "$THEME" = "1" ]; then # [ORIGINAL THEME]
+    THEME=${THEME:-ORIGINAL}
+    if [ "$THEME" = "ORIGINAL" ]; then
         RT_TOOLTIP="#000000"
         THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
@@ -1418,7 +1416,7 @@ set_theme() {
         .button-auto-refresh { background: transparent !important; }
         .button-tables { background: transparent !important; }"
 	fi
-    if [ "$THEME" = "2" ]; then # [DARKMODE THEME]
+    if [ "$THEME" = "DARKMODE" ]; then
         RT_TOOLTIP="#000000"
         THEME_CSS=".top-header { background: transparent !important; }
         .header-box { background: rgba(0,0,0,0.9); }
@@ -1434,7 +1432,7 @@ set_theme() {
         .button-auto-refresh { background: transparent !important; }
         .button-tables { background: transparent !important; }"
     fi
-	if [ "$THEME" = "3" ]; then # [ASUS WEBUI THEME]
+	if [ "$THEME" = "ASUS_WEBUI" ]; then
         RT_TOOLTIP="#3A4042"
         THEME_CSS=".top-header { background-color: #4D595D; }
         .header-box { background: #3A4042; }
