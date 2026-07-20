@@ -1014,6 +1014,7 @@ set_colors() {
         done
         echo -e "\n  $NQ Cancel and Discard Changes"
         echo -e "  $NE Exit and Save Changes"
+        echo -e "\n${BL}==============================================${NC}"
         printf "\nSelect a Device number to change color ${BL}(0-$total_nodes)${NC}: "
         read -r node_choice
         case "$node_choice" in
