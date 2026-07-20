@@ -168,11 +168,11 @@ menu_vars() {
     TM_STAT="${GR}$THEME${NC}"
 	IPPAD=${IPPAD:-1}
 	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
-	elif [ "$IPPAD" = "1" ]; then PD_STAT="${GR}Last Octet${NC}"
+	elif [ "$IPPAD" = "1" ]; then PD_STAT="${BL}Last Octet${NC}"
 	else PD_STAT="${RD}Disabled${NC}"; fi
 	HOST_COLOR=${HOST_COLOR:-0}
 	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${BL}Colored${NC}"
-	else HN_STAT="${BL}Numbered${GR}"; fi
+	else HN_STAT="${GR}Numbered${NC}"; fi
 }
 
 check_installed() {
@@ -1397,57 +1397,61 @@ set_theme() {
         sed -i "s/^THEME=.*/THEME=\"$THEME\"/" "$CONFIG"
         ;;
     esac
-    THEME=${THEME:-ORIGINAL}
-    if [ "$THEME" = "ORIGINAL" ]; then
-        RT_TOOLTIP="#000000"
-        THEME_CSS=".top-header { background: transparent !important; }
-        .header-box { background: rgba(0,0,0,0.9); }
-        .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
-        .report-column { background: #1c232b; }
-        table.report_table td { background: #1c232b; }
-        table.report_table tfoot td { background: #171b1f; }
-        table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
-        table.report_table th:hover { background: #00e5ff; }
-        .separator-line { border: 0; border-top: 1px solid #475a68; }
-        #refresh-option:focus { background: #000; }
-        .rssi-tooltip { background: #000; }
-        .button-auto-refresh { background: transparent !important; }
-        .button-tables { background: transparent !important; }"
-	fi
-    if [ "$THEME" = "DARKMODE" ]; then
-        RT_TOOLTIP="#000000"
-        THEME_CSS=".top-header { background: transparent !important; }
-        .header-box { background: rgba(0,0,0,0.9); }
-        .section-header { background: transparent !important; }
-        .report-column { background: transparent !important; }
-        table.report_table td { background: transparent !important; }
-        table.report_table tfoot td { background: #171b1f; }
-        table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
-        table.report_table th:hover { background: #00e5ff; }
-        .separator-line { border: 0; border-top: 1px solid #475a68; }
-        #refresh-option:focus { background: #000; }
-        .rssi-tooltip { background: #000; }
-        .button-auto-refresh { background: transparent !important; }
-        .button-tables { background: transparent !important; }"
-    fi
-	if [ "$THEME" = "ASUS_WEBUI" ]; then
-        RT_TOOLTIP="#3A4042"
-        THEME_CSS=".top-header { background-color: #4D595D; }
-        .header-box { background: #3A4042; }
-        .section-header { background: #4D595D; }
-        .report-column { background: #3A4042; }
-        table.report_table td { background: #1c232b; } /* Table Background */
-        table.report_table tfoot td { background: #3A4042; }
-        table.report_table thead th { background: #3A4042; } /* Column Headers */
-        table.report_table th:hover { background: #77A5C6; }
-        .separator-line { border: 0; border-top: 1px solid black; }
-        #refresh-option:focus { background: #3A4042; }
-        .rssi-tooltip { background: #1c232b; }
-        .button-auto-refresh { background: #3A4042; }
-        .button-tables { background: #3A4042; }
-        .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */"
-    fi
-    THEME_CSS=$(echo "$THEME_CSS" | sed 's/^    //')
+    THEME="${THEME:-ORIGINAL}"
+    case "$THEME" in
+        "DARKMODE")
+            RT_TOOLTIP="#000000"
+            THEME_CSS=".top-header { background: transparent !important; }
+            .header-box { background: rgba(0,0,0,0.9); }
+            .section-header { background: transparent !important; }
+            .report-column { background: transparent !important; }
+            table.report_table td { background: transparent !important; }
+            table.report_table tfoot td { background: #171b1f; }
+            table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
+            table.report_table th:hover { background: #00e5ff; }
+            .separator-line { border: 0; border-top: 1px solid #475a68; }
+            #refresh-option:focus { background: #000; }
+            .rssi-tooltip { background: #000; }
+            .button-auto-refresh { background: transparent !important; }
+            .button-tables { background: transparent !important; }"
+            ;;
+
+        "ASUS_WEBUI")
+            RT_TOOLTIP="#3A4042"
+            THEME_CSS=".top-header { background-color: #4D595D; }
+            .header-box { background: #3A4042; }
+            .section-header { background: #4D595D; }
+            .report-column { background: #3A4042; }
+            table.report_table td { background: #1c232b; } /* Table Background */
+            table.report_table tfoot td { background: #3A4042; }
+            table.report_table thead th { background: #3A4042; } /* Column Headers */
+            table.report_table th:hover { background: #77A5C6; }
+            .separator-line { border: 0; border-top: 1px solid black; }
+            #refresh-option:focus { background: #3A4042; }
+            .rssi-tooltip { background: #1c232b; }
+            .button-auto-refresh { background: #3A4042; }
+            .button-tables { background: #3A4042; }
+            .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */"
+            ;;
+
+        "ORIGINAL"|*)
+            RT_TOOLTIP="#000000"
+            THEME_CSS=".top-header { background: transparent !important; }
+            .header-box { background: rgba(0,0,0,0.9); }
+            .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
+            .report-column { background: #1c232b; }
+            table.report_table td { background: #1c232b; }
+            table.report_table tfoot td { background: #171b1f; }
+            table.report_table thead th { background: linear-gradient(to bottom, #0096ff, #0056b3); }
+            table.report_table th:hover { background: #00e5ff; }
+            .separator-line { border: 0; border-top: 1px solid #475a68; }
+            #refresh-option:focus { background: #000; }
+            .rssi-tooltip { background: #000; }
+            .button-auto-refresh { background: transparent !important; }
+            .button-tables { background: transparent !important; }"
+            ;;
+    esac
+    THEME_CSS=$(echo "$THEME_CSS" | sed 's/^        //')
 }
 
 do_numbered_node() {
