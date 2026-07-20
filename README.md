@@ -58,38 +58,42 @@ $\color{green}{\text{Option (3):}}$ Regional Settings: Toggle between Fahrenheit
 
 ![Instructions2](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions2.png)<br>
 
-$\color{green}{\text{Option (4):}}$ Router & Node Nicknames: By default, the report uses your device model numbers (e.g., GT-BE98_PRO). Use this option to give your hardware friendly names (up to 25 characters).<br>
+$\color{green}{\text{Option (4):}}$ Edit Device Nicknames: By default, the report uses your device model numbers (e.g., GT-BE98_PRO). Use this option to give your hardware friendly names (up to 25 characters).<br>
 
 ![Instructions3](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions3.png)<br>
 
-$\color{green}{\text{Option (5):}}$ Set Options
- * $\color{blue}{\text{Show Runtime Tracking:}}$ Measures and displays the total duration of script scans across your router and nodes. Toggling this setting will also reset the execution counter.
- * $\color{blue}{\text{Show Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
- * $\color{blue}{\text{Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
- * $\color{blue}{\text{Show RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
+$\color{green}{\text{Option (5):}}$ Edit Device Colors: Customize individual device colors to suit your preference. By default, standard color coding is used.<br>
+
+![Instructions12](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions12.png)<br>
+
+$\color{green}{\text{Option (6):}}$ Set Options
+ * $\color{blue}{\text{Toggle Runtime Tracking:}}$ Measures and displays the total duration of script scans across your router and nodes. Toggling this setting will also reset the execution counter.
+ * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
+ * $\color{blue}{\text{Configure Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
+ * $\color{blue}{\text{Toggle RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
  * $\color{blue}{\text{Set Theme:}}$ Switch between Original, Darkmode, and Asus WebUI theme styles.<br>
- * $\color{blue}{\text{Enable IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. <br>
+ * $\color{blue}{\text{Toggle IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. <br>
    * $\color{green}{\text{Mode 1:}}$ 192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only) (Default)
    * $\color{green}{\text{Disabled:}}$ 192.168.50.003 --> 192.168.50.3 (Standard IP Display)
    * $\color{green}{\text{Mode 2:}}$ 192.168.50.3 --> 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
- * $\color{blue}{\text{Node Hostname Display:}}$ Gives you full control over how mesh node identifiers look, allowing for an incredibly clean, unified text layout or distinct color-coded node tracking.<br>
+ * $\color{blue}{\text{Toggle Node Hostname Display:}}$ Gives you full control over how mesh node identifiers look, allowing for an incredibly clean, unified text layout or distinct color-coded node tracking.<br>
    * $\color{green}{\text{Numbered Hostnames (Default):}}$ Hostnames remain a uniform, clean white while their tracking superscripts (sup) are color-coded to match their respective nodes.
    * $\color{green}{\text{Colored Hostnames:}}$ The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
 
-$\color{green}{\text{Option (6):}}$ Node Authentication: Streamlines node management by allowing on-the-fly syncing of new or disconnected AiMesh nodes.<br>
+$\color{green}{\text{Option (7):}}$ Node Authentication: Streamlines node management by allowing on-the-fly syncing of new or disconnected AiMesh nodes.<br>
 
 ![Instructions5](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions5.png)<br>
 
-$\color{green}{\text{Option (7):}}$ SSH Enviroment Setup:<br>
-* $\color{blue}{\text{Create RSA Keys + Setup AiMesh Nodes:}}$ Generates new RSA key pairs and configures authentication between your primary router and all connected AiMesh nodes. This is the primary setup step for enabling secure, passwordless SSH communication across your mesh network.
-* $\color{blue}{\text{Delete RSA Keys:}}$ Purges existing RSA key pairs from the primary router's storage, memory, and NVRAM configuration. Use this option to completely reset your secure SSH environment or clear out old credentials before a clean reinstall.
-* $\color{blue}{\text{Router-Only Setup:}}$ Standalone Dashboard: A consolidated view for single-router setups. Select this if you do not have AiMesh nodes and want to display all connected devices grouped on a single screen.
+$\color{green}{\text{Option (8):}}$ Configure SSH Options:<br>
+* $\color{blue}{\text{Generate RSA Keys + Provision AiMesh Nodes:}}$ Generates new RSA key pairs and configures authentication between your primary router and all connected AiMesh nodes. This is the primary setup step for enabling secure, passwordless SSH communication across your mesh network.
+* $\color{blue}{\text{Remove RSA Keys:}}$ Purges existing RSA key pairs from the primary router's storage, memory, and NVRAM configuration. Use this option to completely reset your secure SSH environment or clear out old credentials before a clean reinstall.
+* $\color{blue}{\text{Provision Main Router-Only:}}$ Standalone Dashboard: A consolidated view for single-router setups. Select this if you do not have AiMesh nodes and want to display all connected devices grouped on a single screen.
 * $\color{blue}{\text{View Authorized Keys:}}$ Displays the contents of the authorized_keys file. This allows you to verify which public keys are currently permitted to access your router via SSH.
 * $\color{blue}{\text{View Known Hosts:}}$ Shows the list of hosts that your router has connected to and verified. This is useful for troubleshooting SSH "Host Key" verification errors when connecting between nodes.
 * $\color{blue}{\text{View SSH Error Log:}}$ Displays the recent logs generated by the SSH daemon (dropbear). Use this to diagnose connection failures, authentication timeouts, or configuration errors.
-* $\color{blue}{\text{Node Authentication:}}$ Provides a status check and management interface for node-to-node authentication. This confirms if your nodes are correctly trusted and identifies any authentication gaps in your mesh topology.
+* $\color{blue}{\text{Manage Node Authentication:}}$ Provides a status check and management interface for node-to-node authentication. This confirms if your nodes are correctly trusted and identifies any authentication gaps in your mesh topology.
 
 ![Instructions10](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions10.png)<br>
 \
