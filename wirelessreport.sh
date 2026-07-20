@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.0.4"
+SCRIPT_VERSION="2.0.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -82,11 +82,12 @@ install_menu() {
 		echo -e "                                                       "
 		echo -e "  $N1  Install/Update                                  "
 		echo -e "  $N2  Uninstall                                       "
-		echo -e "  $N3  Temp/Date ($DU) ($CT)                           "
-		echo -e "  $N4  Router/Node Nicknames                           "
-		echo -e "  $N5  Set Options  Theme:($TM_STAT)                   "
-		echo -e "  $N6  Node Authentication                             "
-		echo -e "  $N7  Setup SSH Environment (SSH-KEY:$KEY)            "
+		echo -e "  $N3  Edit Temp/Date ($DU) ($CT)                      "
+		echo -e "  $N4  Edit Device Nicknames                           "
+        echo -e "  $N5  Edit Device Colors                              "
+		echo -e "  $N6  Configure Display Options  Theme:($TM_STAT)     "
+		echo -e "  $N7  Manage Node Authentication                      "
+		echo -e "  $N8  Configure SSH Options (SSH-KEY:$KEY)            "
 		echo -e "  $NE  Exit                                            "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
@@ -97,9 +98,10 @@ install_menu() {
             2) do_uninstall ;;
             3) set_temp_date ;;
             4) set_nicknames ;;
-            5) set_options ;;
-            6) node_auth "pause" ;;
-            7) check_ssh "pause" ;;
+            5) set_colors ;;
+            6) set_options ;;
+            7) node_auth "pause" ;;
+            8) check_ssh "pause" ;;
             e|E) clear; hasta; exit 0 ;;
             *) ;;
         esac
@@ -136,7 +138,7 @@ menu_vars() {
     UL='\033[4m'; WH='\e[1;37m'; BG='\e[42;37m'; GY='\e[38;2;77;89;93m'
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
-	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"
+	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"; N8="${BL}(8)${NC}"
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
 	TEMP_SCRIPT="/tmp/wirelessreport.sh"
     SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -192,7 +194,12 @@ do_install() {
 	local is_update=0
 	if [ -f "$REPORT_SCRIPT" ]; then is_update=1; fi
 	if [ "$is_update" = "1" ]; then
-		if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
+		if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
+            echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
+			printf "Do you want to reinstall/overwrite anyway? (y/n): "
+			read -r reinstall
+			case "$reinstall" in [yY]) ;; *) return ;; esac
+        elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
 			echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
 			printf "Do you want to update version (y/n): "
 			read -r update
@@ -259,7 +266,7 @@ do_install() {
 		echo -e "${YL}[i] To access Report, navigate to Advanced Settings > Wireless ${NC}"
 		echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}\n"
 		echo -e "${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
-        echo -e "${BL}         Use option #6 in main menu to authenticate new node(s).${NC}\n"
+        echo -e "${BL}         Use option #7 in main menu to authenticate new node(s).${NC}\n"
 		echo -e "${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
 	else
         echo -e "${RD}[!] ERROR: Download failed.${NC}"
@@ -391,9 +398,6 @@ check_github() {
 		REMOTE_VERSION=""; REMOTE_HASH=""
 	fi
 	rm -f "$REMOTE_TMP"
-	if [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then VERHASH="[$REMOTE_VERSION]"
-	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then VERHASH="[Hash]"
-	else VERHASH=""; fi
 }
 
 ssh_init () {
@@ -414,15 +418,15 @@ check_ssh() {
 		echo -e "${NC} SSH-Key: $KEY                         Port: $PORT"
 		echo -e "${BL}=================================================="
 		echo -e "                                                       "
-		echo -e "  $N1  Create RSA Keys & Setup AiMesh Nodes            "
-		echo -e "  $N2  Delete RSA Keys                                 "
-		echo -e "  $N3  Router-Only Setup                               "
+		echo -e "  $N1  Generate RSA Keys & Provision AiMesh Nodes      "
+		echo -e "  $N2  Remove RSA Keys                                 "
+		echo -e "  $N3  Provision Main Router Only                      "
 		echo -e "  $N4  View Authorized Keys                            "
 		echo -e "  $N5  View Known Hosts                                "
 		echo -e "  $N6  View SSH Error Log                              "
-		echo -e "  $N7  Node Authentication                             "
+		echo -e "  $N7  Manage Node Authentication                      "
 		echo -e "                                                       "
-		echo -e "  $NE  Exit to main menu                               "
+		echo -e "  $NE  Back to main menu                               "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
 		printf "\n Selection:${NC} "
@@ -812,7 +816,7 @@ set_temp_date() {
         echo -e "  $N2  Celsius    (°C) / INTL ($DATE_INTL)             "
         echo -e "  $N3  Technical  (°C) / TECH ($DATE_ISO)              "
         echo -e "                                                       "
-        echo -e "  $NE  Exit to main menu                               "
+        echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
 		echo -e "${BL}=================================================="
 		printf "\n Selection:${NC} "
@@ -837,10 +841,10 @@ set_nicknames() {
     while true; do
         show_header
         echo -e "${BL}=================================================="
-        echo -e "${NC}              Router/Node Nicknames               "
+        echo -e "${NC}                Device Nicknames                  "
         echo -e "${BL}=================================================="
-        echo -e "${NC}    (Press $N0 for Defaults $N1 for Locations)    "
-        echo -e "              (Press $NE to Exit)                      "
+        echo -e "${NC}     Press $N1 for Defaults $N2 for Locations     "
+        echo -e "              $NE Back to Main Menu                    "
         echo -e "${BL}=================================================="
         MAIN_HW_MODEL=$(nvram get productid)
         MAIN_IP=$(nvram get lan_ipaddr)
@@ -863,7 +867,7 @@ set_nicknames() {
                 sort -u -o "$CONFIG" "$CONFIG"
 				return
                 ;;
-            0)
+            1)
                 echo -e "\n${BL}[+] Resetting to hardware defaults...${NC}\n"
                 OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
                 sed -i '/^MAIN_NICK=/d' "$CONFIG"
@@ -883,7 +887,7 @@ set_nicknames() {
                 echo -e "\n${GR}[+] Default hardware models restored.${NC}"
                 pause
                 ;;
-            1)
+            2)
                 echo -e "\n${BL}[*] Updating nicknames with Locations...${NC}\n"
                 OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
                 NEW_LOC=$(nvram get cfg_alias)
@@ -940,6 +944,162 @@ set_nicknames() {
     done
 }
 
+set_colors() {
+    NB='\033[38;5;39m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
+    YL='\033[38;5;220m'; SB='\033[38;5;75m'; OR='\033[38;5;208m'; RD='\033[38;5;196m'
+    local main_name=$(nvram get productid); local main_ip=$(nvram get lan_ipaddr)
+    local m_color_hex=""; local current_colors=""
+    if [ -f "$CONFIG" ]; then
+        m_color_hex=$(grep "^MAIN_COLOR=" "$CONFIG" | cut -d'"' -f2)
+        current_colors=$(grep "^NODE_COLORS=" "$CONFIG" | cut -d'"' -f2)
+    fi
+    local total_nodes=0
+    for node in $SSH_NODES; do
+        total_nodes=$((total_nodes + 1))
+    done
+    [ -z "$m_color_hex" ] && m_color_hex="#0096ff"
+    local default_list="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
+    local working_colors=""; local i=1
+    while [ $i -le $total_nodes ]; do
+        local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
+        [ -z "$c_color" ] && c_color=$(echo "$default_list" | awk -v col="$i" '{print $col}')
+        if [ -z "$working_colors" ]; then working_colors="$c_color"
+        else working_colors="$working_colors $c_color"; fi
+        i=$((i + 1))
+    done
+    while true; do
+        show_header
+        echo -e "${BL}=============================================="
+        echo -e "${NC}              Set Device Colors               "
+        echo -e "${BL}=============================================="
+        echo -e "${NC}\n${BL}Current Device Configuration:\n"
+        local main_display_name="${MAIN_NICK:-$main_name}"
+        local main_display_color=""
+        case "$m_color_hex" in
+            "#0096ff") main_display_color="$NB" ;;
+            "#30d158") main_display_color="$LG" ;;
+            "#bf40bf") main_display_color="$MP" ;;
+            "#ffd60a") main_display_color="$YL" ;;
+            "#64d2ff") main_display_color="$SB" ;;
+            "#ff9500") main_display_color="$OR" ;;
+            "#ff453a") main_display_color="$RD" ;;
+            *)         main_display_color="$NC" ;;
+        esac
+        local formatted_main_ip=$(printf "(%s)" "$main_ip")
+        printf "  ${BL}(0)${NC} %b%-14s${NC} %-17s [%b%s${NC}] (Main)\n" \
+            "$main_display_color" "$main_display_name" "$formatted_main_ip" "$main_display_color" "$m_color_hex"
+        local idx=1
+        for node in $SSH_NODES; do
+            local node_ip=$(echo "$node" | cut -d'|' -f2)
+            local active_color=$(echo "$working_colors" | awk -v col="$idx" '{print $col}')
+            local ip_underscores=$(echo "$node_ip" | tr '.' '_')
+            local nick_var_name="NODE_NICK_${ip_underscores}"
+            local node_display_name=$(eval echo \"\${$nick_var_name}\")
+            node_display_name="${node_display_name:-$(echo "$node" | cut -d'|' -f1)}"
+            local display_color=""
+            case "$active_color" in
+                "#0096ff") display_color="$NB" ;;
+                "#30d158") display_color="$LG" ;;
+                "#bf40bf") display_color="$MP" ;;
+                "#ffd60a") display_color="$YL" ;;
+                "#64d2ff") display_color="$SB" ;;
+                "#ff9500") display_color="$OR" ;;
+                "#ff453a") display_color="$RD" ;;
+                *)         display_color="$NC" ;;
+            esac
+            local formatted_ip=$(printf "(%s)" "$node_ip")
+            printf "  ${BL}(%s)${NC} %b%-14s${NC} %-17s [%b%s${NC}] (Node)\n" \
+                "$idx" "$display_color" "$node_display_name" "$formatted_ip" "$display_color" "$active_color"
+            idx=$((idx + 1))
+        done
+        echo -e "\n  $NQ Cancel and Discard Changes"
+        echo -e "  $NE Exit and Save Changes"
+        printf "\nSelect a Device number to change color ${BL}(0-$total_nodes)${NC}: "
+        read -r node_choice
+        case "$node_choice" in
+            c|C) return 0 ;;
+            e|E|"") break ;;
+        esac
+        if ! [ "$node_choice" -ge 0 ] 2>/dev/null || ! [ "$node_choice" -le "$total_nodes" ] 2>/dev/null; then
+            echo -e "${RD}Invalid selection. Please enter a value between 0 and $total_nodes.${NC}"
+            sleep 1.5
+            continue
+        fi
+        local target_name=""; local target_hex=""
+        if [ "$node_choice" -eq 0 ]; then
+            target_name="${MAIN_NICK:-$main_name}"
+            target_hex="$m_color_hex"
+        else
+            local target_node=$(echo "$SSH_NODES" | awk -v n="$node_choice" '{print $n}')
+            local target_ip=$(echo "$target_node" | cut -d'|' -f2)
+            local target_ip_underscores=$(echo "$target_ip" | tr '.' '_')
+            local target_nick_var="NODE_NICK_${target_ip_underscores}"
+            target_name=$(eval echo \"\${$target_nick_var}\")
+            target_name="${target_name:-$(echo "$target_node" | cut -d'|' -f1)}"
+            target_hex=$(echo "$working_colors" | awk -v col="$node_choice" '{print $col}')
+        fi
+        local target_prompt_color=""
+        case "$target_hex" in
+            "#0096ff") target_prompt_color="$NB" ;;
+            "#30d158") target_prompt_color="$LG" ;;
+            "#bf40bf") target_prompt_color="$MP" ;;
+            "#ffd60a") target_prompt_color="$YL" ;;
+            "#64d2ff") target_prompt_color="$SB" ;;
+            "#ff9500") target_prompt_color="$OR" ;;
+            "#ff453a") target_prompt_color="$RD" ;;
+            *)         target_prompt_color="$NC" ;;
+        esac
+        echo -e "\nSelect a new color for ${target_prompt_color}[${target_name}]${NC}:\n"
+        echo -e "${NB}  (1) Neon-Blue (#0096ff)"
+        echo -e "${LG}  (2) Lime-Green (#30d158)"
+        echo -e "${MP}  (3) Medium-Purple (#bf40bf)"
+        echo -e "${YL}  (4) Yellow (#ffd60a)"
+        echo -e "${SB}  (5) SkyBlue (#64d2ff)"
+        echo -e "${OR}  (6) Orange (#ff9500)"
+        echo -e "${RD}  (7) Red (#ff453a)"
+        echo -e "${NC}"
+        local selected_hex=""
+        while true; do
+            printf "Choose option ${BL}(1-7)${NC}: "
+            read -r color_choice
+            case "$color_choice" in
+                1) selected_hex="#0096ff"; break ;;
+                2) selected_hex="#30d158"; break ;;
+                3) selected_hex="#bf40bf"; break ;;
+                4) selected_hex="#ffd60a"; break ;;
+                5) selected_hex="#64d2ff"; break ;;
+                6) selected_hex="#ff9500"; break ;;
+                7) selected_hex="#ff453a"; break ;;
+                *) echo -e "${RD}Invalid selection.${NC} Enter 1-7." ;;
+            esac
+        done
+        if [ "$node_choice" -eq 0 ]; then
+            m_color_hex="$selected_hex"
+        else
+            local new_string=""; local step=1
+            for hex in $working_colors; do
+                if [ "$step" -eq "$node_choice" ]; then hex="$selected_hex"; fi
+                if [ -z "$new_string" ]; then new_string="$hex"
+                else new_string="$new_string $hex"; fi
+                step=$((step + 1))
+            done
+            working_colors="$new_string"
+        fi
+    done
+    if grep -q "^MAIN_COLOR=" "$CONFIG" 2>/dev/null; then
+        sed -i "s|^MAIN_COLOR=.*|MAIN_COLOR=\"$m_color_hex\"|" "$CONFIG"
+    else
+        echo "MAIN_COLOR=\"$m_color_hex\"" >> "$CONFIG"
+    fi
+    if grep -q "^NODE_COLORS=" "$CONFIG" 2>/dev/null; then
+        sed -i "s|^NODE_COLORS=.*|NODE_COLORS=\"$working_colors\"|" "$CONFIG"
+    else
+        echo "NODE_COLORS=\"$working_colors\"" >> "$CONFIG"
+    fi
+    echo -e "\nDevice colors successfully saved to CONFIG."
+    sleep 2
+}
+
 set_options() {
     check_installed || return 1
     while true; do
@@ -948,15 +1108,15 @@ set_options() {
         echo -e "${NC}                  Set Options                     "
         echo -e "${BL}=================================================="
         echo -e "                                                       "
-        echo -e "  $N1  Show Runtime Tracking: ($RT_STAT)               "
-        echo -e "  $N2  Show Wireless Backhaul: ($WB_STAT)              "
-        echo -e "  $N3  Uptime Alert Pulse: ($UP_STAT)                  "
-        echo -e "  $N4  Show RSSI History: ($RH_STAT)                   "
+        echo -e "  $N1  Toggle Runtime Tracking: ($RT_STAT)             "
+        echo -e "  $N2  Toggle Wireless Backhaul: ($WB_STAT)            "
+        echo -e "  $N3  Configure Uptime Alert Pulse: ($UP_STAT)        "
+        echo -e "  $N4  Toggle RSSI History: ($RH_STAT)                 "
         echo -e "  $N5  Set Theme: ($TM_STAT)                           "
-		echo -e "  $N6  Enable IP Padding: ($PD_STAT)                   "
-		echo -e "  $N7  Node Hostname Display: ($HN_STAT)               "
-		echo -e "                                                       "
-        echo -e "  $NE  Exit to main menu                               "
+		echo -e "  $N6  Toggle IP Padding: ($PD_STAT)                   "
+		echo -e "  $N7  Toggle Node Hostname Display: ($HN_STAT)        "
+        echo -e "                                                       "
+        echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
         echo -e "${BL}=================================================="
         printf "\n Selection:${NC} "
@@ -1059,8 +1219,7 @@ set_options() {
                 return
                 ;;
             *)
-                continue
-                ;;
+                continue ;;
         esac
     done
 }
@@ -1072,9 +1231,9 @@ rssi_submenu() {
 		echo -e "${NC}          RSSI History Configuration          "
 		echo -e "${BL}=============================================="
 		echo -e "                                                   "
-		echo -e " $N1 Enable RSSI History: [$CH]                    "
+		echo -e " $N1 Toggle RSSI History: [$CH]                    "
 		echo -e " $N2 Set History Depth:   [$CE] entries            "
-		echo -e " $N3 Enable Timestamps:   [$TS]                    "
+		echo -e " $N3 Toggle Timestamps:   [$TS]                    "
 		echo -e "                                                   "
 		echo -e " $NQ Cancel and Discard Changes                    "
 		echo -e " $NE Exit and Save Changes                         "
@@ -1223,15 +1382,19 @@ header_box() {
     if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION"
         V_WIDTH="100px"
-    elif [ -n "$REMOTE_VERSION" ] && [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
+        VERHASH=""
+    elif [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"
         V_WIDTH="190px"
+        VERHASH="[$REMOTE_VERSION]"
     elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION <br> Hash Update available."
         V_WIDTH="190px"
+        VERHASH="[Hash]"
     else
         HOVER_TEXT="Current v$SCRIPT_VERSION"
         V_WIDTH="100px"
+        VERHASH=""
     fi
 }
 
@@ -1302,7 +1465,7 @@ do_numbered_node() {
     if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
 	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
 	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		ALL_DEVICES="Devices: <span class='main-color'>$ALL_DEVICES</span> \
+		ALL_DEVICES="Devices: <span class='stat-cool'>$ALL_DEVICES</span> \
         <span class='right-arrow'>—›</span> \
         $MAIN_DEVICE_TOTAL$BULLET$NODE_TOTALS"
 	else
@@ -1782,7 +1945,7 @@ get_max_column() {
 hostcolor_main_name() {
 	if [ "$HOST_COLOR" = "1" ]; then
 		IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
-		NAME_MAIN="<span style='color:#0096ff;'>$name</span>"
+		NAME_MAIN="<span style='color: $MAIN_COLOR;'>$name</span>"
 		name="$NAME_MAIN"
 	else
 		IP_COLOR="color: #64d2ff; "MAC_COLOR=""
@@ -1867,7 +2030,7 @@ ROW
 }
 
 check_github; ssh_init
-update_time; get_usb
+update_time; get_usb; header_box
 
 run_report() {
 #=================#
@@ -2087,6 +2250,7 @@ NODE_PFX=$(nvram get cfg_relist | sed 's/[<>]/ /g' | tr ' ' '\n' | grep ":" | cu
 ROUTER_IP=$(nvram get lan_ipaddr)
 ROUTER=$(nvram get cfg_device_list | sed 's/</\n/g' | grep ">$ROUTER_IP>" | awk -F'>' '{print $1}')
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"
+if [ -z "$MAIN_COLOR" ]; then MAIN_COLOR="#0096ff"; fi
 if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
 > "$SEEN_MACS"; > "$NEW_HISTORY"
 SEEN_MACS_VAR=""
@@ -2175,7 +2339,8 @@ wait
 #  Node Device Assembly  #
 #========================#
 # N_COLORS="lime-green medium-purple yellow skyblue orange red"
-N_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
+if [ -z "$NODE_COLORS" ]; then NODE_COLORS="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"; fi
+N_COLORS=$NODE_COLORS
 BULLET=" <span style='color:white;'>•</span> "
 NODE_NAMES=""; NODE_TEMPS=""; NODE_LOADS=""; NODE_BOOTTIMES=""; NODE_UPTIMES=""
 NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
@@ -2241,9 +2406,9 @@ ALL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
 ALL_DEVICES="$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))"
 GRAND_TOTAL_DEVICES="<span class='count-highlight'>$ALL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
-NODE_DEVICE_TOTAL="<span class='main-color'>${NODE_DEVICE_TOTAL}</span>"
+NODE_DEVICE_TOTAL="<span class='stat-cool'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
-get_rssi_boxes; do_numbered_node; set_theme; do_runtime; header_box
+get_rssi_boxes; do_numbered_node; set_theme; do_runtime
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 
@@ -2335,12 +2500,14 @@ cat <<HTML >> "$WEB_PAGE"
     .ip-val, .iface-val { display: none; }
     tfoot td { text-align: center; }
     tfoot td > span:not(:last-child) { margin-right: 6px; }
-	.router-style { color: #0096ff; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
+	.router-style { color: $MAIN_COLOR; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
     .temp_load_row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 11px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; }
     .temp_load_row > span:not(:last-child) { margin-right: 1px; }
-	.stat-warm { color: #ffa500 !important; font-weight: bold; }
+	.stat-cool { color: #0096ff !important; font-weight: bold; }
+    .stat-warm { color: #ffa500 !important; font-weight: bold; }
 	.stat-hot { color: #ff453a !important; font-weight: bold; }
-    .main-color, .stat-cool, .band-24g { color: #0096ff !important; font-weight: bold; }
+    .main-color { color: $MAIN_COLOR !important; font-weight: bold; }
+    .band-24g { color: #0096ff !important; font-weight: bold; }
 	.band-5g { color: #30d158 !important; font-weight: bold; }
 	.band-6g { color: #bf40bf !important; font-weight: bold; }
     .hidden-node-number { position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none; }
@@ -2359,6 +2526,9 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal .report-column .section-header .temp_load_row { margin-top: -2px !important; margin-bottom: -2px !important; display: block !important; }
     #popoutModal .report-column .section-header .temp_load_row span { font-size: 14px !important; font-weight: bold !important; }
     #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; white-space: nowrap !important; }
+    #popoutModal .rssi-container { position: relative !important; }
+    #popoutModal .rssi-tooltip { position: absolute !important; bottom: 100% !important; left: 50% !important; top: auto !important; right: auto !important; transform: translateX(-50%) !important; margin-bottom: 6px !important; z-index: 999999 !important; }
+    #popoutModal, #popoutModal * { cursor: pointer !important; -webkit-tap-highlight-color: transparent !important; }
     @media (min-width: 992px) { #popoutModal .separator-line { min-width: 600px; } #popoutModal table.report_table { min-width: 600px !important; } @media (orientation: landscape) { .popout-grid .report-column::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; } .popout-grid .report-column { -ms-overflow-style: none; scrollbar-width: none; } } @media (orientation: portrait) { #popoutModal table.report_table { width: max-content !important; } .popout-grid .report-column { scrollbar-width: auto !important; -ms-overflow-style: auto !important; } } }
     @media (max-width: 991px) { .popout-grid .report-column { display: block !important; } #popoutModal table.report_table { min-width: 100% !important; width: max-content !important; display: block !important; } #popoutModal .separator-line { min-width: max-content !important; width: calc(100% + 24px) !important; display: inline-block !important; } }
 	#splitView { display: flex; flex-direction: column; gap: 15px; width: 100%; }
