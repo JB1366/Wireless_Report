@@ -197,25 +197,19 @@ do_install() {
 		if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
             echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to reinstall/overwrite anyway? (y/n): "
-			read -r reinstall
-			case "$reinstall" in [yY]) ;; *) return ;; esac
         elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
 			echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
 			printf "Do you want to update version (y/n): "
-			read -r update
-			case "$update" in [yY]) ;; *) return ;; esac
 		elif [ "$VERHASH" = "[Hash]" ]; then
 			echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to update Hash? (y/n): "
-			read -r update
-			case "$update" in [yY]) ;; *) return ;; esac
 		else
 			echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
 			printf "Do you want to reinstall/overwrite anyway? (y/n): "
-			read -r reinstall
-			case "$reinstall" in [yY]) ;; *) return ;; esac
 		fi
-	fi
+        read -r update
+		case "$update" in [yY]) ;; *) return ;; esac
+    fi
 	do_update || return 1
 	if [ "$is_update" = "1" ]; then
 		echo -e "\n${GR}[✓] Wireless Report successfully installed.${NC}"
