@@ -2422,7 +2422,7 @@ cat <<HTML >> "$WEB_PAGE"
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
-	.header-box { visibility: hidden; width: var(--v-width, 190px); background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
+	.header-box { visibility: hidden; width: max-content; min-width: 120px; background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
 	.header-tooltip { position: relative; display: inline-block; }
 	.header-tooltip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
     .section-header { color: #ffffff; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
@@ -2838,7 +2838,7 @@ document.addEventListener('mouseout', function(e) {
                 <div id="wifiReportContainer">
                     <div class="top-header">
                         <div class="header-wrap">
-                            <div class="header-tooltip" style="width: max-content;">
+                            <div class="header-tooltip">
                                 <h1 class="header-title">WIRELESS REPORT</h1>
                                 <span class="header-box">$HOVER_TEXT</span>
                             </div>
