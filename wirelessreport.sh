@@ -941,6 +941,8 @@ set_nicknames() {
 }
 
 hex_to_ansi() {
+    : "${MAIN_COLOR:=#0096ff}"
+    : "${NODE_COLORS:=#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a}"
     NB='\033[38;5;39m';  LG='\033[38;5;82m';  MP='\033[38;5;133m'
     YL='\033[38;5;220m'; SB='\033[38;5;75m';  OR='\033[38;5;208m'
     RD='\033[38;5;196m'
@@ -963,16 +965,15 @@ set_colors() {
         m_color_hex=$(grep "^MAIN_COLOR=" "$CONFIG" | cut -d'"' -f2)
         current_colors=$(grep "^NODE_COLORS=" "$CONFIG" | cut -d'"' -f2)
     fi
+    [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
+    [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
     local total_nodes=0
     for node in $SSH_NODES; do
         total_nodes=$((total_nodes + 1))
     done
-    [ -z "$m_color_hex" ] && m_color_hex="#0096ff"
-    local default_list="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
     local working_colors="" i=1
     while [ $i -le $total_nodes ]; do
         local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
-        [ -z "$c_color" ] && c_color=$(echo "$default_list" | awk -v col="$i" '{print $col}')
         working_colors="${working_colors:+$working_colors }$c_color"
         i=$((i + 1))
     done
