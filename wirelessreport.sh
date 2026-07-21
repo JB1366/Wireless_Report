@@ -817,32 +817,36 @@ set_nicknames() {
     while true; do
         show_header
         echo -e "${BL}=================================================="
-        echo -e "${NC}              Set Device Nicknames                "
+        echo -e "${NC}               Set Device Nicknames                "
         echo -e "${BL}=================================================="
         echo -e "${NC}     Press $N1 for Defaults $N2 for Locations     "
-        echo -e "              $NE Back to Main Menu                    "
+        echo -e "               $NE Back to Main Menu                    "
         echo -e "${BL}=================================================="
-        MAIN_HW_MODEL=$(nvram get productid)
-        MAIN_IP=$(nvram get lan_ipaddr)
-        echo -e "\n  ${BL}Main${NC} $MAIN_IP -> ${GR}${MAIN_NICK:-$MAIN_HW_MODEL}"
+        MAIN_HW_MODEL=$(nvram get productid); MAIN_IP=$(nvram get lan_ipaddr)
+        MAIN_CLR=$(hex_to_ansi "$MAIN_COLOR")
+        echo -e "\n  ${BL}Main${NC} $MAIN_IP -> ${MAIN_CLR}${MAIN_NICK:-$MAIN_HW_MODEL}${NC}"
         if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
             VALID_NODES=$(echo "$SSH_NODES" | tr ' ' '\n' | grep '|')
+            get_node_color() {
+                local idx="$1"
+                echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'
+            }
+            node_idx=1
             for node in $VALID_NODES; do
                 MODEL=$(echo "$node" | cut -d'|' -f1)
-				IP=$(echo "$node" | cut -d'|' -f2)
+                IP=$(echo "$node" | cut -d'|' -f2)
                 CLEAN_IP=$(echo "$IP" | tr '.' '_')
                 eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
-                echo -e "  ${BL}Node${NC} $IP -> ${GR}${SAVED_NICK:-$MODEL}"
+                HEX_CLR=$(get_node_color "$node_idx")
+                NODE_CLR=$(hex_to_ansi "$HEX_CLR")
+                echo -e "  ${BL}Node${NC} $IP -> ${NODE_CLR}${SAVED_NICK:-$MODEL}${NC}"
+                node_idx=$((node_idx + 1))
             done
         fi
         echo -e "\n${BL}=================================================="
         printf "\n [Enter]${NC} Manual Name | ${BL}Selection:${NC} "
         read -r input_main
         case "$input_main" in
-            e|E)
-                sort -u -o "$CONFIG" "$CONFIG"
-				return
-                ;;
             1)
                 echo -e "\n${BL}[+] Resetting to hardware defaults...${NC}\n"
                 OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
@@ -892,6 +896,10 @@ set_nicknames() {
                 echo -e "\n${GR}[+] Nicknames updated to Locations...${NC}"
                 pause
                 ;;
+            e|E)
+                sort -u -o "$CONFIG" "$CONFIG"
+				return
+                ;;
             *)
                 echo -e "\n${BL}[*] Manual Entry Mode${NC}\n"
                 OLD_MAIN="${MAIN_NICK:-$MAIN_HW_MODEL}"
@@ -920,9 +928,23 @@ set_nicknames() {
     done
 }
 
+hex_to_ansi() {
+    NB='\033[38;5;39m';  LG='\033[38;5;82m';  MP='\033[38;5;133m'
+    YL='\033[38;5;220m'; SB='\033[38;5;75m';  OR='\033[38;5;208m'
+    RD='\033[38;5;196m'
+    case "$1" in
+        "#0096ff") echo "$NB" ;;
+        "#30d158") echo "$LG" ;;
+        "#bf40bf") echo "$MP" ;;
+        "#ffd60a") echo "$YL" ;;
+        "#64d2ff") echo "$SB" ;;
+        "#ff9500") echo "$OR" ;;
+        "#ff453a") echo "$RD" ;;
+        *)          echo "$NC" ;;
+    esac
+}
+
 set_colors() {
-    NB='\033[38;5;39m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
-    YL='\033[38;5;220m'; SB='\033[38;5;75m'; OR='\033[38;5;208m'; RD='\033[38;5;196m'
     local main_name=$(nvram get productid); local main_ip=$(nvram get lan_ipaddr)
     local m_color_hex="" current_colors=""
     if [ -f "$CONFIG" ]; then
@@ -942,18 +964,6 @@ set_colors() {
         working_colors="${working_colors:+$working_colors }$c_color"
         i=$((i + 1))
     done
-    hex_to_ansi() {
-        case "$1" in
-            "#0096ff") echo "$NB" ;;
-            "#30d158") echo "$LG" ;;
-            "#bf40bf") echo "$MP" ;;
-            "#ffd60a") echo "$YL" ;;
-            "#64d2ff") echo "$SB" ;;
-            "#ff9500") echo "$OR" ;;
-            "#ff453a") echo "$RD" ;;
-            *)          echo "$NC" ;;
-        esac
-    }
     while true; do
         show_header
         echo -e "${BL}=============================================="
@@ -1989,7 +1999,7 @@ $1
 ROW
 }
 
-check_github; ssh_init
+check_github; ssh_init; hex_to_ansi
 update_time; get_usb; header_box
 
 run_report() {
