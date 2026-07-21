@@ -930,6 +930,7 @@ set_nicknames() {
 }
 
 set_colors() {
+    check_installed || return 1
     NB='\033[38;5;39m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
     YL='\033[38;5;220m'; SB='\033[38;5;75m'; OR='\033[38;5;208m'; RD='\033[38;5;196m'
     local main_name=$(nvram get productid); local main_ip=$(nvram get lan_ipaddr)
