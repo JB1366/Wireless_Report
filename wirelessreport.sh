@@ -1361,19 +1361,15 @@ ssh_error() {
 header_box() {
     if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION"
-        V_WIDTH="100px"
         VERHASH=""
     elif [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"
-        V_WIDTH="190px"
         VERHASH="[$REMOTE_VERSION]"
     elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
         HOVER_TEXT="Current v$SCRIPT_VERSION <br> Hash Update available."
-        V_WIDTH="190px"
         VERHASH="[Hash]"
     else
         HOVER_TEXT="Current v$SCRIPT_VERSION"
-        V_WIDTH="100px"
         VERHASH=""
     fi
 }
@@ -2842,7 +2838,7 @@ document.addEventListener('mouseout', function(e) {
                 <div id="wifiReportContainer">
                     <div class="top-header">
                         <div class="header-wrap">
-                            <div class="header-tooltip" style="--v-width: $V_WIDTH;">
+                            <div class="header-tooltip" style="width: max-content;">
                                 <h1 class="header-title">WIRELESS REPORT</h1>
                                 <span class="header-box">$HOVER_TEXT</span>
                             </div>
