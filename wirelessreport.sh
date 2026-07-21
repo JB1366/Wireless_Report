@@ -656,7 +656,7 @@ ssh_keys() {
         echo "cp /jffs/.ssh/known_hosts /tmp/home/root/.ssh/known_hosts # sshpairs persistence" >> "$SS_FILE"
     fi
 	echo -e "${BL}=================================================="
-	echo -e "$${NC}               ACTION REQUIRED NOW               "
+	echo -e "${NC}               ACTION REQUIRED NOW               "
     echo -e "${BL}=================================================="
     echo -e "                                                       "
 	echo -e "[*] STEP 1: Go to Asus WebGUI > AiMesh > Management    "
