@@ -262,7 +262,7 @@ do_install() {
 
 do_update() {
     local prefix="\n"
-    if [ "$amtm" = "1" ]; then prefix="\n${BG} wr${NC} "; fi
+    if [ "$amtm" = "1" ]; then prefix="${BG} wr${NC} "; fi
     echo -e "${prefix}${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" && [ -s "$TEMP_SCRIPT" ]; then
         mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
