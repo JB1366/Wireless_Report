@@ -320,37 +320,31 @@ get_usb() {
 	local BUP="${uptime_val%%.*}"
     local mount
     local FOUND=0
-    for mount in /tmp/mnt/*; do
-        [ -d "$mount" ] || continue
-        if [ -d "$mount/wirelessreport" ]; then
-            USB_PATH="$mount/wirelessreport"
-            FOUND=1
-            break
-        fi
-    done
-    if [ "$FOUND" -eq 0 ] && [ "$BUP" -lt 300 ]; then
-        sleep 2
+    local attempt=0
+    while [ "$attempt" -lt 2 ]; do
         for mount in /tmp/mnt/*; do
             [ -d "$mount" ] || continue
             if [ -d "$mount/wirelessreport" ]; then
                 USB_PATH="$mount/wirelessreport"
                 FOUND=1
-                break
+                break 2
             fi
         done
+        attempt=$((attempt + 1))
+        if [ "$FOUND" -eq 0 ] && [ "$BUP" -lt 300 ] && [ "$attempt" -eq 1 ]; then
+            sleep 2
+        else
+            break
+        fi
+    done
+    if [ "$FOUND" -eq 1 ] && [ -d "$INSTALL_DIR/data" ] && [ ! -L "$INSTALL_DIR/data" ]; then
+        [ -n "$(ls -A "$INSTALL_DIR/data")" ] && cp -a "$INSTALL_DIR/data/." "$USB_PATH/"
+        rm -rf "$INSTALL_DIR/data"
     fi
-	if [ "$FOUND" -eq 1 ] && [ -d "$INSTALL_DIR/data" ] && [ ! -L "$INSTALL_DIR/data" ]; then
-		if [ "$(ls -A "$INSTALL_DIR/data")" ]; then
-			cp -a "$INSTALL_DIR/data/." "$USB_PATH/"
-			rm -rf "$INSTALL_DIR/data"
-		else
-			rm -rf "$INSTALL_DIR/data"
-		fi
-	fi
     if [ "$FOUND" -eq 0 ]; then
-        local ROOT_PATH=$(ls -d /tmp/mnt/*/ 2>/dev/null | grep -v "defaults" | head -n 1 | sed 's/\/$//')
+        local ROOT_PATH
+        ROOT_PATH=$(ls -d /tmp/mnt/*/ 2>/dev/null | grep -v "defaults" | head -n 1 | sed 's/\/$//')
         if [ -n "$ROOT_PATH" ]; then
-            ROOT_PATH=$(echo "$ROOT_PATH" | sed 's/\/wirelessreport//g')
             USB_PATH="$ROOT_PATH/wirelessreport"
         else
             USB_PATH="$INSTALL_DIR/data"
@@ -939,7 +933,7 @@ set_colors() {
     NB='\033[38;5;39m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
     YL='\033[38;5;220m'; SB='\033[38;5;75m'; OR='\033[38;5;208m'; RD='\033[38;5;196m'
     local main_name=$(nvram get productid); local main_ip=$(nvram get lan_ipaddr)
-    local m_color_hex=""; local current_colors=""
+    local m_color_hex="" current_colors=""
     if [ -f "$CONFIG" ]; then
         m_color_hex=$(grep "^MAIN_COLOR=" "$CONFIG" | cut -d'"' -f2)
         current_colors=$(grep "^NODE_COLORS=" "$CONFIG" | cut -d'"' -f2)
@@ -950,14 +944,25 @@ set_colors() {
     done
     [ -z "$m_color_hex" ] && m_color_hex="#0096ff"
     local default_list="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a"
-    local working_colors=""; local i=1
+    local working_colors="" i=1
     while [ $i -le $total_nodes ]; do
         local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
         [ -z "$c_color" ] && c_color=$(echo "$default_list" | awk -v col="$i" '{print $col}')
-        if [ -z "$working_colors" ]; then working_colors="$c_color"
-        else working_colors="$working_colors $c_color"; fi
+        working_colors="${working_colors:+$working_colors }$c_color"
         i=$((i + 1))
     done
+    hex_to_ansi() {
+        case "$1" in
+            "#0096ff") echo "$NB" ;;
+            "#30d158") echo "$LG" ;;
+            "#bf40bf") echo "$MP" ;;
+            "#ffd60a") echo "$YL" ;;
+            "#64d2ff") echo "$SB" ;;
+            "#ff9500") echo "$OR" ;;
+            "#ff453a") echo "$RD" ;;
+            *)          echo "$NC" ;;
+        esac
+    }
     while true; do
         show_header
         echo -e "${BL}=============================================="
@@ -965,39 +970,20 @@ set_colors() {
         echo -e "${BL}=============================================="
         echo -e "${NC}\n${BL}Current Device Configuration:\n"
         local main_display_name="${MAIN_NICK:-$main_name}"
-        local main_display_color=""
-        case "$m_color_hex" in
-            "#0096ff") main_display_color="$NB" ;;
-            "#30d158") main_display_color="$LG" ;;
-            "#bf40bf") main_display_color="$MP" ;;
-            "#ffd60a") main_display_color="$YL" ;;
-            "#64d2ff") main_display_color="$SB" ;;
-            "#ff9500") main_display_color="$OR" ;;
-            "#ff453a") main_display_color="$RD" ;;
-            *)         main_display_color="$NC" ;;
-        esac
+        local main_display_color=$(hex_to_ansi "$m_color_hex")
         local formatted_main_ip=$(printf "(%s)" "$main_ip")
         printf "  ${BL}(0)${NC} %b%-14s${NC} %-17s [%b%s${NC}] (Main)\n" \
             "$main_display_color" "$main_display_name" "$formatted_main_ip" "$main_display_color" "$m_color_hex"
         local idx=1
         for node in $SSH_NODES; do
             local node_ip=$(echo "$node" | cut -d'|' -f2)
+            local default_nick=$(echo "$node" | cut -d'|' -f1)
             local active_color=$(echo "$working_colors" | awk -v col="$idx" '{print $col}')
             local ip_underscores=$(echo "$node_ip" | tr '.' '_')
             local nick_var_name="NODE_NICK_${ip_underscores}"
             local node_display_name=$(eval echo \"\${$nick_var_name}\")
-            node_display_name="${node_display_name:-$(echo "$node" | cut -d'|' -f1)}"
-            local display_color=""
-            case "$active_color" in
-                "#0096ff") display_color="$NB" ;;
-                "#30d158") display_color="$LG" ;;
-                "#bf40bf") display_color="$MP" ;;
-                "#ffd60a") display_color="$YL" ;;
-                "#64d2ff") display_color="$SB" ;;
-                "#ff9500") display_color="$OR" ;;
-                "#ff453a") display_color="$RD" ;;
-                *)         display_color="$NC" ;;
-            esac
+            node_display_name="${node_display_name:-$default_nick}"
+            local display_color=$(hex_to_ansi "$active_color")
             local formatted_ip=$(printf "(%s)" "$node_ip")
             printf "  ${BL}(%s)${NC} %b%-14s${NC} %-17s [%b%s${NC}] (Node)\n" \
                 "$idx" "$display_color" "$node_display_name" "$formatted_ip" "$display_color" "$active_color"
@@ -1017,7 +1003,7 @@ set_colors() {
             sleep 1.5
             continue
         fi
-        local target_name=""; local target_hex=""
+        local target_name="" target_hex=""
         if [ "$node_choice" -eq 0 ]; then
             target_name="${MAIN_NICK:-$main_name}"
             target_hex="$m_color_hex"
@@ -1030,17 +1016,7 @@ set_colors() {
             target_name="${target_name:-$(echo "$target_node" | cut -d'|' -f1)}"
             target_hex=$(echo "$working_colors" | awk -v col="$node_choice" '{print $col}')
         fi
-        local target_prompt_color=""
-        case "$target_hex" in
-            "#0096ff") target_prompt_color="$NB" ;;
-            "#30d158") target_prompt_color="$LG" ;;
-            "#bf40bf") target_prompt_color="$MP" ;;
-            "#ffd60a") target_prompt_color="$YL" ;;
-            "#64d2ff") target_prompt_color="$SB" ;;
-            "#ff9500") target_prompt_color="$OR" ;;
-            "#ff453a") target_prompt_color="$RD" ;;
-            *)         target_prompt_color="$NC" ;;
-        esac
+        local target_prompt_color=$(hex_to_ansi "$target_hex")
         echo -e "\nSelect a new color for ${target_prompt_color}[${target_name}]${NC}:\n"
         echo -e "${NB}  (1) Neon-Blue (#0096ff)"
         echo -e "${LG}  (2) Lime-Green (#30d158)"
@@ -1068,26 +1044,25 @@ set_colors() {
         if [ "$node_choice" -eq 0 ]; then
             m_color_hex="$selected_hex"
         else
-            local new_string=""; local step=1
+            local new_string="" step=1
             for hex in $working_colors; do
-                if [ "$step" -eq "$node_choice" ]; then hex="$selected_hex"; fi
-                if [ -z "$new_string" ]; then new_string="$hex"
-                else new_string="$new_string $hex"; fi
+                [ "$step" -eq "$node_choice" ] && hex="$selected_hex"
+                new_string="${new_string:+$new_string }$hex"
                 step=$((step + 1))
             done
             working_colors="$new_string"
         fi
     done
-    if grep -q "^MAIN_COLOR=" "$CONFIG" 2>/dev/null; then
-        sed -i "s|^MAIN_COLOR=.*|MAIN_COLOR=\"$m_color_hex\"|" "$CONFIG"
-    else
-        echo "MAIN_COLOR=\"$m_color_hex\"" >> "$CONFIG"
-    fi
-    if grep -q "^NODE_COLORS=" "$CONFIG" 2>/dev/null; then
-        sed -i "s|^NODE_COLORS=.*|NODE_COLORS=\"$working_colors\"|" "$CONFIG"
-    else
-        echo "NODE_COLORS=\"$working_colors\"" >> "$CONFIG"
-    fi
+    update_config_var() {
+        local var_name="$1" var_val="$2"
+        if grep -q "^${var_name}=" "$CONFIG" 2>/dev/null; then
+            sed -i "s|^${var_name}=.*|${var_name}=\"${var_val}\"|" "$CONFIG"
+        else
+            echo "${var_name}=\"${var_val}\"" >> "$CONFIG"
+        fi
+    }
+    update_config_var "MAIN_COLOR" "$m_color_hex"
+    update_config_var "NODE_COLORS" "$working_colors"
     echo -e "\nDevice colors successfully saved to CONFIG."
     sleep 2
 }
