@@ -95,13 +95,18 @@ install_menu() {
 		read -r choice
         case "$choice" in
             1) do_install ;;
-            2) do_uninstall ;;
-            3) set_temp_date ;;
-            4) set_nicknames ;;
-            5) set_colors ;;
-            6) set_options ;;
-            7) node_auth "pause" ;;
-            8) check_ssh "pause" ;;
+            2|3|4|5|6|7|8)
+                [ -f "$REPORT_SCRIPT" ] || continue
+                case "$choice" in
+                    2) do_uninstall ;;
+                    3) set_temp_date ;;
+                    4) set_nicknames ;;
+                    5) set_colors ;;
+                    6) set_options ;;
+                    7) node_auth "pause" ;;
+                    8) check_ssh ;;
+                esac
+                ;;
             e|E) clear; hasta; exit 0 ;;
             *) ;;
         esac
@@ -173,16 +178,6 @@ menu_vars() {
 	HOST_COLOR=${HOST_COLOR:-0}
 	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${BL}Colored${NC}"
 	else HN_STAT="${GR}Numbered${NC}"; fi
-}
-
-check_installed() {
-	if [ ! -f "$REPORT_SCRIPT" ]; then
-        echo -e "\n${RD}[!] ERROR: Wireless Report not Installed.${NC}\n"
-        echo -e "${YL}[i] You must successfully run 'Install/Update' before changing settings.${NC}"
-        pause
-        return 1
-    fi
-    return 0
 }
 
 do_install() {
@@ -394,7 +389,6 @@ ssh_init () {
 }
 
 check_ssh() {
-	if [ "$1" = "pause" ]; then check_installed || return 1; fi
 	while true; do
 		show_header
 		echo -e "${BL}=================================================="
@@ -489,7 +483,6 @@ check_ssh() {
 }
 
 node_auth() {
-	check_installed || return 1
 	if [ ! -s "$SSH_KEY" ]; then echo -e "\n${YL}[!] Main Router SSH Key not found.${NC}"; sleep 3; return; fi
 	sed -i '/^SSH_NODES=/d' "$CONFIG"
 	echo -e "\n${GR}[✓] Main Router SSH Key found at: ${WH}$SSH_KEY${NC}\n"
@@ -788,7 +781,6 @@ do_uninstall() {
 }
 
 set_temp_date() {
-    check_installed || return 1
     while true; do
         show_header
         echo -e "${BL}=================================================="
@@ -822,7 +814,6 @@ set_temp_date() {
 }
 
 set_nicknames() {
-    check_installed || return 1
     while true; do
         show_header
         echo -e "${BL}=================================================="
@@ -930,7 +921,6 @@ set_nicknames() {
 }
 
 set_colors() {
-    check_installed || return 1
     NB='\033[38;5;39m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
     YL='\033[38;5;220m'; SB='\033[38;5;75m'; OR='\033[38;5;208m'; RD='\033[38;5;196m'
     local main_name=$(nvram get productid); local main_ip=$(nvram get lan_ipaddr)
@@ -1069,7 +1059,6 @@ set_colors() {
 }
 
 set_options() {
-    check_installed || return 1
     while true; do
         show_header
         echo -e "${BL}=================================================="
