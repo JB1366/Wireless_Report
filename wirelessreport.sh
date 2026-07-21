@@ -649,7 +649,7 @@ ssh_keys() {
         echo "cp /jffs/.ssh/known_hosts /tmp/home/root/.ssh/known_hosts # sshpairs persistence" >> "$SS_FILE"
     fi
 	echo -e "${BL}=================================================="
-	echo -e "${NC}               ACTION REQUIRED NOW               "
+	echo -e "${NC}               ACTION REQUIRED NOW                "
     echo -e "${BL}=================================================="
     echo -e "                                                       "
 	echo -e "[*] STEP 1: Go to Asus WebGUI > AiMesh > Management    "
@@ -817,10 +817,10 @@ set_nicknames() {
     while true; do
         show_header
         echo -e "${BL}=================================================="
-        echo -e "${NC}               Set Device Nicknames                "
+        echo -e "${NC}               Set Device Nicknames               "
         echo -e "${BL}=================================================="
         echo -e "${NC}     Press $N1 for Defaults $N2 for Locations     "
-        echo -e "               $NE Back to Main Menu                    "
+        echo -e "               $NE Back to Main Menu                   "
         echo -e "${BL}=================================================="
         MAIN_HW_MODEL=$(nvram get productid); MAIN_IP=$(nvram get lan_ipaddr)
         MAIN_CLR=$(hex_to_ansi "$MAIN_COLOR")
