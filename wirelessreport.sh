@@ -147,7 +147,6 @@ menu_vars() {
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"; N8="${BL}(8)${NC}"
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
-	TEMP_SCRIPT="/tmp/wirelessreport.sh"
 	SS_FILE="/jffs/scripts/services-start"
 	SE_FILE="/jffs/scripts/service-event"
 	if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
@@ -263,7 +262,7 @@ do_install() {
 }
 
 do_update() {
-    local prefix="\n"
+    local prefix="\n"; TEMP_SCRIPT="/tmp/wirelessreport.sh"
     if [ "$amtm" = "1" ]; then prefix="${BG} wr${NC} "; fi
     echo -e "${prefix}${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" && [ -s "$TEMP_SCRIPT" ]; then
@@ -301,7 +300,7 @@ ScriptUpdateFromAMTM() {
         return 1
     fi
     if [ "$1" = "check" ]; then return 0; fi
-	amtm=1; menu_vars
+	amtm=1; check_github
     if do_update; then
         echo -e "\n\n${BG} wr${NC}${GR} [✓] Wireless Report successfully updated${NC}\n"
 		logger -p user.info -t "Wireless_Report" "AMTM Update: (v$REMOTE_VERSION) successfully installed."
