@@ -80,7 +80,7 @@ show_header() {
 install_menu() {
 	while true; do
 		show_header
-        echo -e "${BL}=================================================="
+		echo -e "${BL}=================================================="
 		check_version
 		echo -e "${BL}=================================================="
 		echo -e "                                                       "
@@ -95,25 +95,31 @@ install_menu() {
 		echo -e "  $NE  Exit                                            "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
-		printf "\n Selection:${NC} "
-		read -r choice
-        case "$choice" in
-            1) do_install ;;
-            2|3|4|5|6|7|8)
-                [ -f "$REPORT_SCRIPT" ] || continue
-                case "$choice" in
-                    2) do_uninstall ;;
-                    3) set_temp_date ;;
-                    4) set_nicknames ;;
-                    5) set_colors ;;
-                    6) set_options ;;
-                    7) node_auth "pause" ;;
-                    8) check_ssh ;;
-                esac
-                ;;
-            e|E) clear; hasta; exit 0 ;;
-            *) ;;
-        esac
+		while true; do
+			printf "\n ${BL}Selection:${NC} "
+			read -r choice
+			case "$choice" in
+				1) do_install; break ;;
+				2|3|4|5|6|7|8)
+					if [ ! -f "$REPORT_SCRIPT" ]; then
+						printf "\033[2A\033[J"
+						continue
+					fi
+					case "$choice" in
+						2) do_uninstall ;;
+						3) set_temp_date ;;
+						4) set_nicknames ;;
+						5) set_colors ;;
+						6) set_options ;;
+						7) node_auth "pause" ;;
+						8) check_ssh ;;
+					esac
+					break
+					;;
+				e|E) clear; hasta; exit 0 ;;
+				*) printf "\033[2A\033[J"; continue ;;
+			esac
+		done
 	done
 }
 
@@ -209,7 +215,7 @@ do_install() {
 		sleep 2
 		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
 		exec "$REPORT_SCRIPT" install "$@"
-		echo "${RD}Error: Failed to restart script!${NC}" >&2
+		echo -e "${RD}Error: Failed to restart script!${NC}" >&2
 		exit 1
 	fi
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
@@ -948,14 +954,14 @@ hex_to_ansi() {
     YL='\033[38;5;220m'; SB='\033[38;5;75m';  OR='\033[38;5;208m'
     RD='\033[38;5;196m'
     case "$1" in
-        "#0096ff") echo "$NB" ;;
-        "#30d158") echo "$LG" ;;
-        "#bf40bf") echo "$MP" ;;
-        "#ffd60a") echo "$YL" ;;
-        "#64d2ff") echo "$SB" ;;
-        "#ff9500") echo "$OR" ;;
-        "#ff453a") echo "$RD" ;;
-        *)          echo "$NC" ;;
+        "#0096ff") echo -e "$NB" ;;
+        "#30d158") echo -e "$LG" ;;
+        "#bf40bf") echo -e "$MP" ;;
+        "#ffd60a") echo -e "$YL" ;;
+        "#64d2ff") echo -e "$SB" ;;
+        "#ff9500") echo -e "$OR" ;;
+        "#ff453a") echo -e "$RD" ;;
+        *)         echo -e "$NC" ;;
     esac
 }
 
