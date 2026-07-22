@@ -3006,7 +3006,7 @@ case "$1" in
         ;;
     inject)
         # Called by services-start to mount tab
-		INJECT="1"
+		if [ -s "$WEB_PAGE" ]; then INJECT="1"; fi
         inject_menu
         ;;
     inject2)
