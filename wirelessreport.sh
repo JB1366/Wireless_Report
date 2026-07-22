@@ -415,77 +415,70 @@ check_ssh() {
 		echo -e "  $NE  Back to main menu                               "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
-		printf "\n Selection:${NC} "
-		read ssh_choice
-		case "$ssh_choice" in
-            1)
-                ssh_keys
-                if [ "$install" = "1" ]; then return 0; fi
-                continue
-                ;;
-            2)
-				del_ssh_keys
-				continue
-				;;
-			3)
-                echo -e "\n${YL}[i] Setting Up Router-Only...${NC}"
-                sed -i '/^SSH_NODES=/d' "$CONFIG"
-                echo 'SSH_NODES=" "' >> "$CONFIG"
-                sleep 5
-				pause
-                continue
-                ;;
-            4)
-                echo -e "\n${BL}================ Authorized Keys =================${NC}\n"
-                if [ -f "/root/.ssh/authorized_keys" ]; then cat /root/.ssh/authorized_keys
-                else echo -e "${YL}[!] File not found.${NC}"; fi
-                echo -e "\n\n${BL}==================================================${NC}"
-                pause
-                continue
-                ;;
-            5)
-                echo -e "\n${BL}================== Known Hosts  ==================${NC}\n"
-                if [ -f "/jffs/.ssh/known_hosts" ]; then cat /jffs/.ssh/known_hosts
-                else echo -e "${YL}[!] File not found.${NC}"; fi
-                echo -e "\n${BL}==================================================${NC}"
-                pause
-                continue
-                ;;
-            6)
-				echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
-				if [ -f "$ERROR_LOG" ]; then
-					cat "$ERROR_LOG"
-					echo -e "\n\n${BL}==================================================${NC}"
-					printf "\nRemove error log? (y/n): "
-					read -r rm_log
-					if [ "$rm_log" = "y" ] || [ "$rm_log" = "Y" ]; then
-						rm -f "$ERROR_LOG"
-						echo -e "\n${GR}[✓] Error log removed.${NC}"
-						pause
-					fi
-				else
-					echo -e "${YL}[!] File not found.${NC}"
-					echo -e "\n${BL}==================================================${NC}"
-					pause
-				fi
-				continue
-				;;
-            7)
-                if [ "$install" = "1" ]; then
-                    echo -e "\n${YL}[i] You must run option #1 first.${NC}"
+        while true; do
+            printf "\n Selection:${NC} "
+            read ssh_choice
+            case "$ssh_choice" in
+                1)
+                    ssh_keys
+                    if [ "$install" = "1" ]; then return 0; fi
+                    break ;;
+                2)
+                    del_ssh_keys
+                    break ;;
+                3)
+                    echo -e "\n${YL}[i] Setting Up Router-Only...${NC}"
+                    sed -i '/^SSH_NODES=/d' "$CONFIG"
+                    echo 'SSH_NODES=" "' >> "$CONFIG"
                     pause
-                    continue
-                fi
-                node_auth
-                pause
-                ;;
-            e|E)
-                return
-                ;;
-            *)
-                continue
-                ;;
-        esac
+                    break ;;
+                4)
+                    echo -e "\n${BL}================ Authorized Keys =================${NC}\n"
+                    if [ -f "/root/.ssh/authorized_keys" ]; then cat /root/.ssh/authorized_keys
+                    else echo -e "${YL}[!] File not found.${NC}"; fi
+                    echo -e "\n\n${BL}==================================================${NC}"
+                    pause
+                    break ;;
+                5)
+                    echo -e "\n${BL}================== Known Hosts  ==================${NC}\n"
+                    if [ -f "/jffs/.ssh/known_hosts" ]; then cat /jffs/.ssh/known_hosts
+                    else echo -e "${YL}[!] File not found.${NC}"; fi
+                    echo -e "\n${BL}==================================================${NC}"
+                    pause
+                    break ;;
+                6)
+                    echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
+                    if [ -f "$ERROR_LOG" ]; then
+                        cat "$ERROR_LOG"
+                        echo -e "\n\n${BL}==================================================${NC}"
+                        printf "\nRemove error log? (y/n): "
+                        read -r rm_log
+                        if [ "$rm_log" = "y" ] || [ "$rm_log" = "Y" ]; then
+                            rm -f "$ERROR_LOG"
+                            echo -e "\n${GR}[✓] Error log removed.${NC}"
+                            pause
+                        fi
+                    else
+                        echo -e "${YL}[!] File not found.${NC}"
+                        echo -e "\n${BL}==================================================${NC}"
+                        pause
+                    fi
+                    break ;;
+                7)
+                    if [ "$install" = "1" ]; then
+                        echo -e "\n${YL}[i] You must run option #1 first.${NC}"
+                        pause
+                        break
+                    fi
+                    node_auth
+                    pause
+                    break ;;
+                e|E)
+                    return 0 ;;
+                *)
+                    printf "\033[2A\033[J"; continue ;;
+            esac
+        done
 	done
 }
 
@@ -803,20 +796,23 @@ set_temp_date() {
         echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
 		echo -e "${BL}=================================================="
-		printf "\n Selection:${NC} "
-        read -r t_choice
-        case "$t_choice" in
-            1) NEW_UNIT="F" ;;
-            2) NEW_UNIT="C" ;;
-            3) NEW_UNIT="ISO" ;;
-            e|E) sort -u -o "$CONFIG" "$CONFIG"; return ;;
-            *) continue ;;
-        esac
-        sed -i '/REPORT_UNIT=/d' "$CONFIG"
-        echo "REPORT_UNIT=\"$NEW_UNIT\"" >> "$CONFIG"
-        REPORT_UNIT="$NEW_UNIT"
-        echo -e "\n${GR}[+] Settings updated to $NEW_UNIT${NC}"
-        pause
+        while true; do
+            printf "\n ${BL}Selection:${NC} "
+            read -r t_choice
+            case "$t_choice" in
+                1) NEW_UNIT="F" ;;
+                2) NEW_UNIT="C" ;;
+                3) NEW_UNIT="ISO" ;;
+                e|E) sort -u -o "$CONFIG" "$CONFIG"; return ;;
+                *) printf "\033[2A\033[J"; continue ;;
+            esac
+            sed -i '/REPORT_UNIT=/d' "$CONFIG"
+            echo "REPORT_UNIT=\"$NEW_UNIT\"" >> "$CONFIG"
+            REPORT_UNIT="$NEW_UNIT"
+            echo -e "\n${GR}[+] Settings updated to $NEW_UNIT${NC}"
+            pause
+            break
+        done
     done
 }
 
@@ -1017,11 +1013,11 @@ set_colors() {
         read -r node_choice
         case "$node_choice" in
             c|C) return 0 ;;
-            e|E|"") break ;;
+            e|E) break ;;
         esac
         if ! [ "$node_choice" -ge 0 ] 2>/dev/null || ! [ "$node_choice" -le "$total_nodes" ] 2>/dev/null; then
-            echo -e "${RD}Invalid selection. Please enter a value between 0 and $total_nodes.${NC}"
-            sleep 1.5
+            echo -e "\n${RD}Invalid selection. Please enter a value between 0 and $total_nodes.${NC}"
+            sleep 2
             continue
         fi
         local target_name="" target_hex=""
@@ -1106,108 +1102,111 @@ set_options() {
         echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
         echo -e "${BL}=================================================="
-        printf "\n Selection:${NC} "
-        read -r t_choice
-        case "$t_choice" in
-            1)
-                if grep -q "RTIME=" "$CONFIG"; then
-                    if [ "$RTIME" = "1" ]; then
-						sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
-					else
-						sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"
-					fi
-                else
-                    echo 'RTIME="0"' >> "$CONFIG"
-                fi
-                if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
-                ;;
-            2)
-                if grep -q "BACKHAUL=" "$CONFIG"; then
-                    if [ "$BACKHAUL" = "yes" ]; then NEW_BACK="no"; else NEW_BACK="yes"; fi
-                    sed -i "s/BACKHAUL=.*/BACKHAUL=\"$NEW_BACK\"/" "$CONFIG"
-                else
-                    echo 'BACKHAUL="yes"' >> "$CONFIG"
-                fi
-                ;;
-            3)
-                echo -e "\n (${GR}0${NC}) disable (${GR}15${NC}) def (${GR}1440${NC}) max "
-                printf " ${BL}Enter alert interval in mins:${NC} "
-                read -r user_mins
-                if [ -z "$user_mins" ]; then user_mins="15"; fi
-                if echo "$user_mins" | grep -q '^[0-9]\+$'; then
-                    if [ "$user_mins" -le 1440 ]; then
-                        NEW_MINS="$user_mins"
-                        if grep -q "PULSE_MINS=" "$CONFIG"; then
-                            sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$NEW_MINS\"/" "$CONFIG"
+        while true; do
+            printf "\n ${BL}Selection:${NC} "
+            read -r t_choice
+            case "$t_choice" in
+                1)
+                    if grep -q "RTIME=" "$CONFIG"; then
+                        if [ "$RTIME" = "1" ]; then
+                            sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
                         else
-                            echo "PULSE_MINS=\"$NEW_MINS\"" >> "$CONFIG"
+                            sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"
                         fi
-                        echo -e "\n ${GR}[+] Uptime Alert Pulse set to ${NEW_MINS} minutes.${NC}"
                     else
-                        echo -e "\n ${RD}[!] Invalid entry. Maximum permitted interval is 1440 minutes (24 hours).${NC}"
+                        echo 'RTIME="0"' >> "$CONFIG"
                     fi
-                else
-                    echo -e "\n ${RD}[!] Invalid entry. Please enter numbers only.${NC}"
-                fi
-                pause
-                ;;
-            4)
-                rssi_submenu ;;
-            5)
-                theme_submenu ;;
-			6)
-                if grep -q "IPPAD=" "$CONFIG"; then
-                    if [ "$IPPAD" = "1" ]; then
+                    if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
+                    break ;;
+                2)
+                    if grep -q "BACKHAUL=" "$CONFIG"; then
+                        if [ "$BACKHAUL" = "yes" ]; then NEW_BACK="no"; else NEW_BACK="yes"; fi
+                        sed -i "s/BACKHAUL=.*/BACKHAUL=\"$NEW_BACK\"/" "$CONFIG"
+                    else
+                        echo 'BACKHAUL="yes"' >> "$CONFIG"
+                    fi
+                    break ;;
+                3)
+                    echo -e "\n (${GR}0${NC}) disable (${GR}15${NC}) def (${GR}1440${NC}) max "
+                    printf " ${BL}Enter alert interval in mins:${NC} "
+                    read -r user_mins
+                    if [ -z "$user_mins" ]; then user_mins="15"; fi
+                    if echo "$user_mins" | grep -q '^[0-9]\+$'; then
+                        if [ "$user_mins" -le 1440 ]; then
+                            NEW_MINS="$user_mins"
+                            if grep -q "PULSE_MINS=" "$CONFIG"; then
+                                sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$NEW_MINS\"/" "$CONFIG"
+                            else
+                                echo "PULSE_MINS=\"$NEW_MINS\"" >> "$CONFIG"
+                            fi
+                            echo -e "\n ${GR}[+] Uptime Alert Pulse set to ${NEW_MINS} minutes.${NC}"
+                        else
+                            echo -e "\n ${RD}[!] Invalid entry. Maximum permitted interval is 1440 minutes (24 hours).${NC}"
+                        fi
+                    else
+                        echo -e "\n ${RD}[!] Invalid entry. Please enter numbers only.${NC}"
+                    fi
+                    pause
+                    break ;;
+                4)
+                    rssi_submenu
+                    break ;;
+                5)
+                    theme_submenu
+                    break ;;
+                6)
+                    if grep -q "IPPAD=" "$CONFIG"; then
+                        if [ "$IPPAD" = "1" ]; then
+                            NEW_PAD="0"
+                            echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
+                            pause
+                        elif [ "$IPPAD" = "0" ]; then
+                            NEW_PAD="2"
+                            echo -e "\n${GR}[+] Mode 2:${NC} 192.168.50.3 --> ${GR}192.168.050.003${NC} (Last 2 Octets)"
+                            pause
+                        else
+                            NEW_PAD="1"
+                            echo -e "\n${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"
+                            pause
+                        fi
+                        sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
+                    else
                         NEW_PAD="0"
                         echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
                         pause
-                    elif [ "$IPPAD" = "0" ]; then
-                        NEW_PAD="2"
-                        echo -e "\n${GR}[+] Mode 2:${NC} 192.168.50.3 --> ${GR}192.168.050.003${NC} (Last 2 Octets)"
-                        pause
-                    else
-                        NEW_PAD="1"
-                        echo -e "\n${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"
-                        pause
+                        echo 'IPPAD="0"' >> "$CONFIG"
                     fi
-                    sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
-                else
-                    NEW_PAD="0"
-                    echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
+                    break ;;
+                7)
+                    if grep -q "HOST_COLOR=" "$CONFIG"; then
+                        if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
+                        sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
+                    else
+                        echo 'HOST_COLOR="1"' >> "$CONFIG"
+                    fi
+                    break ;;
+                u|U)
+                    echo -e "\n${BL}================= USB Check ======================${NC}"
+                    check_storage
+                    echo -e "\n${BL}==================================================${NC}"
                     pause
-                    echo 'IPPAD="0"' >> "$CONFIG"
-                fi
-                ;;
-			7)
-                if grep -q "HOST_COLOR=" "$CONFIG"; then
-                    if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
-                    sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
-                else
-                    echo 'HOST_COLOR="1"' >> "$CONFIG"
-                fi
-				;;
-            u|U)
-                echo -e "\n${BL}================= USB Check ======================${NC}"
-                check_storage
-                echo -e "\n${BL}==================================================${NC}"
-                pause
-                continue
-                ;;
-            v|V)
-                echo -e "\n${BL}================== CONFIG ======================${NC}\n"
-                if [ -f "$CONFIG" ]; then cat "$CONFIG"
-                else echo -e "${GR}[!] No CONFIG file found.${NC}"; fi
-                echo -e "\n${BL}==================================================${NC}"
-                pause
-                continue
-                ;;
-            e|E)
-                sort -u -o "$CONFIG" "$CONFIG"
-                return
-                ;;
-            *)
-                continue ;;
-        esac
+                    continue
+                    break ;;
+                v|V)
+                    echo -e "\n${BL}================== CONFIG ======================${NC}\n"
+                    if [ -f "$CONFIG" ]; then cat "$CONFIG"
+                    else echo -e "${GR}[!] No CONFIG file found.${NC}"; fi
+                    echo -e "\n${BL}==================================================${NC}"
+                    pause
+                    continue
+                    break ;;
+                e|E)
+                    sort -u -o "$CONFIG" "$CONFIG"
+                    return 0 ;;
+                *)
+                    printf "\033[2A\033[J"; continue ;;
+            esac
+        done
     done
 }
 
@@ -1226,50 +1225,52 @@ rssi_submenu() {
 		echo -e " $NE Exit and Save Changes                         "
 		echo -e "                                                   "
 		echo -e "${BL}=============================================="
-		printf "\n Selection:${NC} "
-		read -r sub_choice
-		case "$sub_choice" in
-            1)
-                if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
-                ;;
-            2)
-                echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CE]: "
-                read new_days
-                if [ "$new_days" -ge 5 ] && [ "$new_days" -le 20 ]; then
-                    CUR_ENTRIES="$new_days"
-                else
-                    echo -e "\n${RD}[!] Invalid: Use 5-20${NC}"
-                    sleep 1
-                fi
-                ;;
-            3)
-                if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
-                ;;
-            c|C)
-                echo -e "\n${RD}[!] Changes discarded.${NC}"
-                unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-				pause
-                break
-                ;;
-            e|E)
-				RS_HIST="$CUR_RS_HIST"
-				RS_HIST_ENTRIES="$CUR_ENTRIES"
-				RS_HIST_DATE="$CUR_DATE"
-                for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
-                    eval "val=\$${var}"
-                    if grep -q "^$var=" "$CONFIG"; then
-                        sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
+        while true; do
+            printf "\n ${BL}Selection:${NC} "
+            read -r sub_choice
+            case "$sub_choice" in
+                1)
+                    if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
+                    break ;;
+                2)
+                    echo -ne "\n Enter new depth (${BL}5-20${NC}) [Current: $CE]: "
+                    read new_days
+                    if [ "$new_days" -ge 5 ] && [ "$new_days" -le 20 ]; then
+                        CUR_ENTRIES="$new_days"
                     else
-                        echo "$var=\"$val\"" >> "$CONFIG"
+                        echo -e "\n${RD}[!] Invalid: Use 5-20${NC}"
+                        sleep 1
                     fi
-                done
-                if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
-                echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
-                unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-				pause
-                break
-                ;;
-        esac
+                    break ;;
+                3)
+                    if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
+                    break ;;
+                c|C)
+                    echo -e "\n${RD}[!] Changes discarded.${NC}"
+                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
+                    pause
+                    return 0 ;;
+                e|E)
+                    RS_HIST="$CUR_RS_HIST"
+                    RS_HIST_ENTRIES="$CUR_ENTRIES"
+                    RS_HIST_DATE="$CUR_DATE"
+                    for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
+                        eval "val=\$${var}"
+                        if grep -q "^$var=" "$CONFIG"; then
+                            sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
+                        else
+                            echo "$var=\"$val\"" >> "$CONFIG"
+                        fi
+                    done
+                    if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
+                    echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
+                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
+                    pause
+                    return 0 ;;
+                *)
+                    printf "\033[2A\033[J"; continue ;;
+            esac
+        done
     done
 }
 
@@ -1287,25 +1288,28 @@ theme_submenu() {
         echo -e " $NE Exit                                          "
         echo -e "                                                   "
         echo -e "${BL}=============================================="
-        printf "\n Selection:${NC} "
-        read -r theme_choice
-        case "$theme_choice" in
-            1)
-                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ORIGINAL\"/" "$CONFIG"
-                else echo 'THEME="ORIGINAL"' >> "$CONFIG"; fi
-                ;;
-            2)
-                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"DARKMODE\"/" "$CONFIG"
-                else echo 'THEME="DARKMODE"' >> "$CONFIG"; fi
-                ;;
-            3)
-                if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ASUS_WEBUI\"/" "$CONFIG"
-                else echo 'THEME="ASUS_WEBUI"' >> "$CONFIG"; fi
-                ;;
-            e|E)
-                break
-                ;;
-        esac
+        while true; do
+            printf "\n ${BL}Selection:${NC} "
+            read -r theme_choice
+            case "$theme_choice" in
+                1)
+                    if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ORIGINAL\"/" "$CONFIG"
+                    else echo 'THEME="ORIGINAL"' >> "$CONFIG"; fi
+                    break ;;
+                2)
+                    if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"DARKMODE\"/" "$CONFIG"
+                    else echo 'THEME="DARKMODE"' >> "$CONFIG"; fi
+                    break ;;
+                3)
+                    if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ASUS_WEBUI\"/" "$CONFIG"
+                    else echo 'THEME="ASUS_WEBUI"' >> "$CONFIG"; fi
+                    break ;;
+                e|E)
+                    return 0 ;;
+                *)
+                    printf "\033[2A\033[J"; continue ;;
+            esac
+        done
     done
 }
 
