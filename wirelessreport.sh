@@ -592,18 +592,15 @@ node_auth() {
 					fi
 					echo -e "${GR}[✓] Environment configuration locked in.${NC}"
 					pause
-					return
-					;;
+					return ;;
 				[eE])
 					read
-					return
-					;;
+					return ;;
 				*)
 					echo -e "\n\n${BL}[i] Retrying authentication...${NC}"
 					sleep 5
 					node_auth "pause"
-					return
-					;;
+					return ;;
 			esac
         else
             sleep 2
@@ -872,8 +869,7 @@ set_nicknames() {
                     done
                 fi
                 echo -e "\n${GR}[+] Default hardware models restored.${NC}"
-                pause
-                ;;
+                pause ;;
             2)
                 echo -e "\n${BL}[*] Updating nicknames with Locations...${NC}\n"
                 OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
@@ -905,12 +901,10 @@ set_nicknames() {
                     node_idx=$((node_idx + 1))
                 done
                 echo -e "\n${GR}[+] Nicknames updated to Locations...${NC}"
-                pause
-                ;;
+                pause ;;
             e|E)
                 sort -u -o "$CONFIG" "$CONFIG"
-                return
-                ;;
+                return ;;
             *)
                 echo -e "\n${BL}[*] Manual Entry Mode${NC}\n"
                 OLD_MAIN="${MAIN_NICK:-$MAIN_HW_MODEL}"
@@ -937,8 +931,7 @@ set_nicknames() {
                     node_idx=$((node_idx + 1))
                 done
                 echo -e "\n${GR}[+] Manual nicknames saved.${NC}"
-                pause
-                ;;
+                pause ;;
         esac
     done
 }
@@ -1190,7 +1183,6 @@ set_options() {
                     check_storage
                     echo -e "\n${BL}==================================================${NC}"
                     pause
-                    continue
                     break ;;
                 v|V)
                     echo -e "\n${BL}================== CONFIG ======================${NC}\n"
@@ -1198,7 +1190,6 @@ set_options() {
                     else echo -e "${GR}[!] No CONFIG file found.${NC}"; fi
                     echo -e "\n${BL}==================================================${NC}"
                     pause
-                    continue
                     break ;;
                 e|E)
                     sort -u -o "$CONFIG" "$CONFIG"
