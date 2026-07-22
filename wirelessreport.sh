@@ -31,6 +31,8 @@ INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
 WEB_PAGE="/tmp/wireless.asp"
+SYSTEM_MENU="/www/require/modules/menuTree.js"
+TEMP_MENU="/tmp/menuTree.js"
 NEW_HISTORY="/tmp/rssi_new.db"
 SEEN_MACS="/tmp/seen_macs.txt"
 YAZ_CACHE="/tmp/yaz_cache.tmp"
@@ -132,6 +134,7 @@ check_version() {
 
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
+    startup
     case "$THEME" in
     1|2|3)
         case "$THEME" in 1) THEME="ORIGINAL" ;; 2) THEME="DARKMODE" ;; 3) THEME="ASUS_WEBUI" ;; esac
@@ -145,8 +148,6 @@ menu_vars() {
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"; N8="${BL}(8)${NC}"
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
 	TEMP_SCRIPT="/tmp/wirelessreport.sh"
-    SYSTEM_MENU="/www/require/modules/menuTree.js"
-	TEMP_MENU="/tmp/menuTree.js"
 	SS_FILE="/jffs/scripts/services-start"
 	SE_FILE="/jffs/scripts/service-event"
 	if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
@@ -222,8 +223,9 @@ do_install() {
 		node_auth
 	else
 		install="1"
-		echo -e "\n${GR}[+] Select Option #1 to setup SSH Keys.${NC}\n"
-		sleep 5
+		echo -e "\n${BL}[+] Press ${WH}[Enter]${BL} to proceed to SSH Environment Setup${NC}"
+		echo -e "${BL}[+] Generate RSA keys or provision router-only setup${NC}"
+        read -r discard
 		check_ssh || return 1
 	fi
     echo -e "\n${GR}[+] Processing Wireless Report Files...${NC}\n"
@@ -698,7 +700,7 @@ del_ssh_keys() {
 
 inject_menu() {
 	. /usr/sbin/helper.sh
-	menu_vars; TAB_LABEL="Wireless Report"
+	TAB_LABEL="Wireless Report"
 	if [ -f "$CONFIG" ]; then sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
 	else touch "$CONFIG"; fi
     if ! nvram get rc_support | grep -q am_addons; then
@@ -741,7 +743,7 @@ inject_menu() {
 	umount "/www/user/$am_webui_page" 2>/dev/null
 	mount -o bind "$WEB_PAGE" "/www/user/$am_webui_page"
 	restart_httpd
-	"$REPORT_SCRIPT" &
+	if [ -z "$INJECT" ]; then "$REPORT_SCRIPT" >/dev/null 2>&1 & fi
 }
 
 do_uninstall() {
@@ -2008,13 +2010,16 @@ $1
 ROW
 }
 
-check_github; ssh_init; hex_to_ansi
-update_time; get_usb; header_box
+startup() {
+    check_github; ssh_init; hex_to_ansi
+    update_time; get_usb
+}
 
 run_report() {
 #=================#
 #  Node Scan(s)   #
 #=================#
+startup
 read -r START_RUNTIME _ < /proc/uptime
 NODE_DATA_DIR="/tmp/node_data"
 rm -rf "$NODE_DATA_DIR" 2>/dev/null
@@ -2387,7 +2392,7 @@ GRAND_TOTAL_DEVICES="<span class='count-highlight'>$ALL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
 NODE_DEVICE_TOTAL="<span class='stat-cool'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
-get_rssi_boxes; do_numbered_node; set_theme; do_runtime
+get_rssi_boxes; do_numbered_node; set_theme; do_runtime; header_box
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 
@@ -3001,7 +3006,8 @@ case "$1" in
         ;;
     inject)
         # Called by services-start to mount tab
-		inject_menu
+		INJECT="1"
+        inject_menu
         ;;
     inject2)
         # Called by services-start to mount menu
