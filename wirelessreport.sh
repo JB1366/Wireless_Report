@@ -300,7 +300,7 @@ ScriptUpdateFromAMTM() {
         return 1
     fi
     if [ "$1" = "check" ]; then return 0; fi
-	amtm=1; check_github
+	amtm=1; check_github; GR='\033[0;32m'; NC='\033[0m'; BG='\e[42;37m'
     if do_update; then
         echo -e "\n\n${BG} wr${NC}${GR} [✓] Wireless Report successfully updated${NC}\n"
 		logger -p user.info -t "Wireless_Report" "AMTM Update: (v$REMOTE_VERSION) successfully installed."
