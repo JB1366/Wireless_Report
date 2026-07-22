@@ -29,9 +29,9 @@
 SCRIPT_VERSION="2.0.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
+SYSTEM_MENU="/www/require/modules/menuTree.js"
 CONFIG="$INSTALL_DIR/webui.conf"
 WEB_PAGE="/tmp/wireless.asp"
-SYSTEM_MENU="/www/require/modules/menuTree.js"
 TEMP_MENU="/tmp/menuTree.js"
 NEW_HISTORY="/tmp/rssi_new.db"
 SEEN_MACS="/tmp/seen_macs.txt"
@@ -46,6 +46,8 @@ CUSTOM_CLIENTS_CACHE="/tmp/custom_clients.cache"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 doScriptUpdateFromAMTM=true
 unset LD_LIBRARY_PATH
+UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; BG='\e[42;37m'
+BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 #==================#
@@ -141,8 +143,6 @@ menu_vars() {
         sed -i "s/^THEME=.*/THEME=\"$THEME\"/" "$CONFIG"
         ;;
     esac
-	BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'; RD='\033[0;31m'; YL='\033[0;33m'
-    UL='\033[4m'; WH='\e[1;37m'; BG='\e[42;37m'; GY='\e[38;2;77;89;93m'
 	JB1366="${GR}${UL}https://github.com/JB1366/Wireless_Report${NC}"
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"; N8="${BL}(8)${NC}"
@@ -263,7 +263,7 @@ do_install() {
 
 do_update() {
     local prefix="\n"; TEMP_SCRIPT="/tmp/wirelessreport.sh"
-    if [ "$amtm" = "1" ]; then prefix="${BG} wr${NC} "; fi
+    if [ "$amtm" = "1" ]; then prefix="\n${BG} wr${NC} "; fi
     echo -e "${prefix}${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" && [ -s "$TEMP_SCRIPT" ]; then
         mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
@@ -300,7 +300,7 @@ ScriptUpdateFromAMTM() {
         return 1
     fi
     if [ "$1" = "check" ]; then return 0; fi
-	amtm=1; check_github; GR='\033[0;32m'; NC='\033[0m'; BG='\e[42;37m'
+	amtm=1; check_github
     if do_update; then
         echo -e "\n\n${BG} wr${NC}${GR} [✓] Wireless Report successfully updated${NC}\n"
 		logger -p user.info -t "Wireless_Report" "AMTM Update: (v$REMOTE_VERSION) successfully installed."
