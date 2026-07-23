@@ -124,19 +124,18 @@ install_menu() {
 }
 
 check_version() {
-	if [ ! -f "$REPORT_SCRIPT" ]; then LOCAL_VERSION="Not Installed"; fi
-	if [ -z "$REMOTE_VERSION" ]; then
-        echo -e " ${BL}STATUS:${NC} ${RD}[Offline]${NC} Could not reach GitHub"
-    elif [ "$LOCAL_VERSION" = "Not Installed" ]; then
-        echo -e " ${BL}STATUS:${NC} ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"
+    if [ ! -f "$REPORT_SCRIPT" ]; then
+        echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"
+	elif [ -z "$REMOTE_VERSION" ]; then
+        echo -e "$STATUS ${RD}[Offline]${NC} Could not reach GitHub"
     elif [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
-        echo -e " ${BL}STATUS:${NC} [Up to date] ${GR}Current: v$LOCAL_VERSION${NC}"
+        echo -e "$STATUS [Up to date] $CURRENT"
     elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-        echo -e " ${BL}STATUS:${NC} [v$REMOTE_VERSION Available] ${GR}Current: v$LOCAL_VERSION${NC}"
+        echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT"
 	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-		echo -e " ${BL}STATUS:${NC} [Hash Update Available] ${GR}Current: v$LOCAL_VERSION${NC}"
+		echo -e "$STATUS [Hash Update Available] $CURRENT"
 	else
-        echo -e " ${BL}STATUS:${NC} [Up to date] ${GR}Current: v$LOCAL_VERSION${NC}"
+        echo -e "$STATUS [Up to date] $CURRENT"
     fi
 }
 
@@ -153,7 +152,8 @@ menu_vars() {
 	N0="${BL}(0)${NC}"; N1="${BL}(1)${NC}"; N2="${BL}(2)${NC}"; N3="${BL}(3)${NC}"
 	N4="${BL}(4)${NC}"; N5="${BL}(5)${NC}"; N6="${BL}(6)${NC}"; N7="${BL}(7)${NC}"; N8="${BL}(8)${NC}"
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
-	SS_FILE="/jffs/scripts/services-start"
+	STATUS=" ${BL}STATUS:${NC}"; CURRENT="${GR}Current: v$LOCAL_VERSION${NC}"
+    SS_FILE="/jffs/scripts/services-start"
 	SE_FILE="/jffs/scripts/service-event"
 	if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
 	PORT="${GR}$SSH_PORT${NC}"
@@ -771,7 +771,9 @@ do_uninstall() {
 	rm -rf "$WEB_PAGE" 2>/dev/null
 	case "$USB_PATH" in *wirelessreport*) rm -rf "$USB_PATH" 2>/dev/null ;; esac
 	logger -p user.info -t "Wireless_Report" "(v$LOCAL_VERSION) successfully uninstalled."
-	ssh_init; unset RTIME BACKHAUL RS_HIST HOST_COLOR THEME IPPAD PULSE_MINS DISPLAY_UNIT MAIN_COLOR NODE_COLORS
+	ssh_init
+    unset RTIME BACKHAUL CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES
+    unset THEME IPPAD PULSE_MINS DISPLAY_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
 	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
 	pause
@@ -1073,7 +1075,7 @@ set_colors() {
     }
     update_config_var "MAIN_COLOR" "$m_color_hex"
     update_config_var "NODE_COLORS" "$working_colors"
-    echo -e "\nDevice colors successfully saved to CONFIG."
+    echo -e "\n${BL}Device colors successfully saved to CONFIG.${NC}"
     sleep 2
 }
 
