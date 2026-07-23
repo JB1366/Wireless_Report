@@ -57,15 +57,18 @@ $\color{blue}{\Large\text{OPTIONAL CONFIGURATION:}}$<br>
 $\color{green}{\text{Option (3):}}$ Regional Settings: Toggle between Fahrenheit (default) and Celsius. Selecting Celsius will also automatically adjust the date to a non-US format (DD/MM/YYYY). Default is $\color{green}{\text{(1)}}$, if you do nothing.<br>
 
 ![Instructions2](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions2.png)<br>
-
+\
+\
 $\color{green}{\text{Option (4):}}$ Edit Device Nicknames: By default, the report uses your device model numbers (e.g., GT-BE98_PRO). Use this option to give your hardware friendly names (up to 25 characters).<br>
 
 ![Instructions3](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions3.png)<br>
-
+\
+\
 $\color{green}{\text{Option (5):}}$ Edit Device Colors: Customize individual device colors to suit your preference. By default, standard color coding is used.<br>
 
 ![Instructions12](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions12.png)<br>
-
+\
+\
 $\color{green}{\text{Option (6):}}$ Set Options
  * $\color{blue}{\text{Toggle Runtime Tracking:}}$ Measures and displays the total duration of script scans across your router and nodes. Toggling this setting will also reset the execution counter.
  * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
@@ -81,11 +84,13 @@ $\color{green}{\text{Option (6):}}$ Set Options
    * $\color{green}{\text{Colored Hostnames:}}$ The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
-
+\
+\
 $\color{green}{\text{Option (7):}}$ Node Authentication: Streamlines node management by allowing on-the-fly syncing of new or disconnected AiMesh nodes.<br>
 
 ![Instructions5](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions5.png)<br>
-
+\
+\
 $\color{green}{\text{Option (8):}}$ Configure SSH Options:<br>
 * $\color{blue}{\text{Generate RSA Keys + Provision AiMesh Nodes:}}$ Generates new RSA key pairs and configures authentication between your primary router and all connected AiMesh nodes. This is the primary setup step for enabling secure, passwordless SSH communication across your mesh network.
 * $\color{blue}{\text{Remove RSA Keys:}}$ Purges existing RSA key pairs from the primary router's storage, memory, and NVRAM configuration. Use this option to completely reset your secure SSH environment or clear out old credentials before a clean reinstall.
@@ -156,15 +161,18 @@ Remember that your UI is interactive! You can toggle between IP vs. MAC and SSID
 $\color{blue}{\Large\text{MAIN VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
 
 ![Instructions6](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions6.png)<br>
-
+\
+\
 $\color{blue}{\Large\text{MAIN VIEW - NUMBERED HOSTNAMES - DEFAULT MODE}}$<br>
 
 ![Instructions11](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions11.png)<br>
-
+\
+\
 $\color{blue}{\Large\text{MAIN VIEW - COLORED HOSTNAMES - ASUS WEBUI MODE}}$<br>
 
 ![Instructions7](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions7.png)<br>
-
+\
+\
 $\color{blue}{\Large\text{SIDE-BY-SIDE VIEW - COLORED HOSTNAMES - DARK MODE}}$<br>
 
 ![Instructions8](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions8.png)
