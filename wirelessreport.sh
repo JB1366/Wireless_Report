@@ -712,6 +712,7 @@ inject_menu() {
 	fi
 	cp "$WEB_PAGE" "/www/user/$am_webui_page" 2>/dev/null
 	echo "INSTALLED_PAGE=$am_webui_page" >> "$CONFIG"
+    echo "$TAB_LABEL" > "/www/user/$(echo "$INSTALLED_PAGE" | cut -f1 -d'.').title"
 	if [ ! -f "$TEMP_MENU" ]; then
 		cp "$SYSTEM_MENU" /tmp/
 		mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
@@ -763,6 +764,7 @@ do_uninstall() {
 	if [ -n "$INSTALLED_PAGE" ]; then
 		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 		rm -f "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+        rm -f "/www/user/$(echo "$INSTALLED_PAGE" | cut -f1 -d'.').title" >/dev/null 2>&1
 	fi
 	sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
 	sed -i "/wireless_report/d" "$SE_FILE"
