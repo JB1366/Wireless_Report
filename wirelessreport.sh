@@ -124,18 +124,23 @@ install_menu() {
 }
 
 check_version() {
+    local mode="$1"
     if [ ! -f "$REPORT_SCRIPT" ]; then
         echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"
-	elif [ -z "$REMOTE_VERSION" ]; then
+    elif [ -z "$REMOTE_VERSION" ]; then
         echo -e "$STATUS ${RD}[Offline]${NC} Could not reach GitHub"
     elif [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
-        echo -e "$STATUS [Up to date] $CURRENT"
+        HOVER_TEXT="Current v$SCRIPT_VERSION"; VERHASH=""
+        [ "$mode" != "header_box" ] && echo -e "$STATUS [Up to date] $CURRENT"
     elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-        echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT"
-	elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-		echo -e "$STATUS [Hash Update Available] $CURRENT"
-	else
-        echo -e "$STATUS [Up to date] $CURRENT"
+        HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"; VERHASH="[$REMOTE_VERSION]"
+        [ "$mode" != "header_box" ] && echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT"
+    elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+        HOVER_TEXT="Current v$SCRIPT_VERSION <br> Hash Update available."; VERHASH="[Hash]"
+        [ "$mode" != "header_box" ] && echo -e "$STATUS [Hash Update Available] $CURRENT"
+    else
+        HOVER_TEXT="Current v$SCRIPT_VERSION"; VERHASH=""
+        [ "$mode" != "header_box" ] && echo -e "$STATUS [Up to date] $CURRENT"
     fi
 }
 
@@ -1372,22 +1377,6 @@ ssh_error() {
     fi
 }
 
-header_box() {
-    if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
-        HOVER_TEXT="Current v$SCRIPT_VERSION"
-        VERHASH=""
-    elif [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-        HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"
-        VERHASH="[$REMOTE_VERSION]"
-    elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-        HOVER_TEXT="Current v$SCRIPT_VERSION <br> Hash Update available."
-        VERHASH="[Hash]"
-    else
-        HOVER_TEXT="Current v$SCRIPT_VERSION"
-        VERHASH=""
-    fi
-}
-
 set_theme() {
     case "$THEME" in
     1|2|3)
@@ -2023,8 +2012,8 @@ ROW
 }
 
 startup() {
-    check_github; ssh_init; hex_to_ansi
-    update_time; get_usb; header_box
+    check_github; ssh_init; hex_to_ansi; get_usb
+    update_time; check_version header_box
 }
 
 run_report() {
