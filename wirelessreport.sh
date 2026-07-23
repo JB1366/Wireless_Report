@@ -242,28 +242,24 @@ do_install() {
             rm -f "/www/user/$OLD_PAGE"
         fi
     fi
-    if [ -f "$REPORT_SCRIPT" ]; then
-        inject_menu
-		echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}\n"
-        if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
-        sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
-        echo "sh $REPORT_SCRIPT inject # Inject Wireless Report" >> "$SS_FILE"
-        chmod +x "$SS_FILE"
-        if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
-        sed -i "/wireless_report/d" "$SE_FILE"
-        echo 'if [ "$1" = "restart" ] && [ "$2" = "wireless_report" ]; then sh '$REPORT_SCRIPT'; fi # Wireless Report' >> "$SE_FILE"
-        chmod +x "$SE_FILE"
-		install=""; LOCAL_VERSION="$REMOTE_VERSION"
-		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-        echo -e "${GR}[✓] SUCCESS: Installation complete!${NC}\n"
-		echo -e "${YL}[i] To access Report, navigate to Advanced Settings > Wireless ${NC}"
-		echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}\n"
-		echo -e "${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
-        echo -e "${BL}         Use option #7 in main menu to authenticate new node(s).${NC}\n"
-		echo -e "${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
-	else
-        echo -e "${RD}[!] ERROR: Download failed.${NC}"
-    fi
+    inject_menu
+    echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}\n"
+    if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
+    sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
+    echo "sh $REPORT_SCRIPT inject # Inject Wireless Report" >> "$SS_FILE"
+    chmod +x "$SS_FILE"
+    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
+    sed -i "/wireless_report/d" "$SE_FILE"
+    echo 'if [ "$1" = "restart" ] && [ "$2" = "wireless_report" ]; then sh '$REPORT_SCRIPT'; fi # Wireless Report' >> "$SE_FILE"
+    chmod +x "$SE_FILE"
+    install=""; LOCAL_VERSION="$REMOTE_VERSION"
+    logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
+    echo -e "${GR}[✓] SUCCESS: Installation complete!${NC}\n"
+    echo -e "${YL}[i] To access Report, navigate to Advanced Settings > Wireless ${NC}"
+    echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}\n"
+    echo -e "${BL}[i] Tip: On router only install, you can add node(s) later.${NC}"
+    echo -e "${BL}         Use option #7 in main menu to authenticate new node(s).${NC}\n"
+    echo -e "${YL}[i] Use Option 4 if you wish to set custom nicknames.${NC}"
 	pause
 }
 
