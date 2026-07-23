@@ -32,7 +32,7 @@ You can launch the installer using either of the following methods:
 * $\color{green}{\text{Option B}}$ (Manual SSH): Run the following command from your main router’s SSH terminal:
 
 ```
-curl -sfL --retry 3 https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh -o /tmp/wirelessreport.sh && sh /tmp/wirelessreport.sh install
+curl -sfL https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh -o /tmp/wirelessreport.sh && sh /tmp/wirelessreport.sh install
 ```
 
 Note that both methods only initiate the install screen, the installation is NOT COMPLETE at this point.<br>
