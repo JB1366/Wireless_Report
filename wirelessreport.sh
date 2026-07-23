@@ -818,8 +818,13 @@ set_nicknames() {
         echo -e "${BL}=================================================="
         echo -e "${NC}               Set Device Nicknames               "
         echo -e "${BL}=================================================="
-        echo -e "${NC}     Press $N1 for Defaults $N2 for Locations     "
-        echo -e "               $NE Back to Main Menu                   "
+        echo -e "                                                       "
+		echo -e " $N1 Defaults Nicknames                                "
+		echo -e " $N2 Location Nicknames                                "
+		echo -e " $N3 Manual Nicknames                                  "
+		echo -e "                                                       "
+		echo -e " $NE Back to main menu                                 "
+		echo -e "                                                       "
         echo -e "${BL}=================================================="
         MAIN_HW_MODEL=$(nvram get productid); MAIN_IP=$(nvram get lan_ipaddr)
         MAIN_CLR=$(hex_to_ansi "$MAIN_COLOR")
@@ -843,95 +848,102 @@ set_nicknames() {
             done
         fi
         echo -e "\n${BL}=================================================="
-        printf "\n [Enter]${NC} Manual Name | ${BL}Selection:${NC} "
-        read -r input_main
-        case "$input_main" in
-            1)
-                echo -e "\n${BL}[+] Resetting to hardware defaults...${NC}\n"
-                OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
-                sed -i '/^MAIN_NICK=/d' "$CONFIG"
-                unset MAIN_NICK
-                echo -e "    ${MAIN_CLR}$OLD_NAME${NC} -> ${MAIN_CLR}$MAIN_HW_MODEL${NC}"; sleep 1
-                if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
+        while true; do
+            printf "\n ${BL}Selection:${NC} "
+            read -r input_main
+            case "$input_main" in
+                1)
+                    echo -e "\n${BL}[+] Resetting to hardware defaults...${NC}\n"
+                    OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
+                    sed -i '/^MAIN_NICK=/d' "$CONFIG"
+                    unset MAIN_NICK
+                    echo -e "    ${MAIN_CLR}$OLD_NAME${NC} -> ${MAIN_CLR}$MAIN_HW_MODEL${NC}"; sleep 1
+                    if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
+                        node_idx=1
+                        for node in $VALID_NODES; do
+                            MODEL=$(echo "$node" | cut -d'|' -f1)
+                            IP=$(echo "$node" | cut -d'|' -f2)
+                            CLEAN_IP=$(echo "$IP" | tr '.' '_')
+                            eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
+                            sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
+                            eval "unset NODE_NICK_$CLEAN_IP"
+                            HEX_CLR=$(echo "$NODE_COLORS" | awk -v i="$node_idx" '{print $i}')
+                            NODE_CLR=$(hex_to_ansi "$HEX_CLR")
+                            echo -e "    ${NODE_CLR}${OLD_NICK:-$MODEL}${NC} -> ${NODE_CLR}$MODEL${NC}"; sleep 1
+                            node_idx=$((node_idx + 1))
+                        done
+                    fi
+                    echo -e "\n${GR}[+] Default hardware models restored.${NC}"
+                    break
+                    pause ;;
+                2)
+                    echo -e "\n${BL}[*] Updating nicknames with Locations...${NC}\n"
+                    OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
+                    NEW_LOC=$(nvram get cfg_alias)
+                    sed -i '/^MAIN_NICK=/d' "$CONFIG"
+                    if [ -n "$NEW_LOC" ]; then
+                        echo "MAIN_NICK=\"$NEW_LOC\"" >> "$CONFIG"
+                        echo -e "    ${MAIN_CLR}$OLD_NAME${NC} -> ${MAIN_CLR}$NEW_LOC${NC}"; sleep 1
+                    else
+                        unset MAIN_NICK
+                        echo -e "    ${MAIN_CLR}$OLD_NAME${NC} -> ${MAIN_CLR}$MAIN_HW_MODEL (Default)${NC}"; sleep 1
+                    fi
+                    node_idx=1
+                    for node in $VALID_NODES; do
+                        MODEL=$(echo "$node" | cut -d'|' -f1); IP=$(echo "$node" | cut -d'|' -f2)
+                        CLEAN_IP=$(echo "$IP" | tr '.' '_')
+                        eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
+                        NODE_LOC=$(cat /jffs/.sys/cfg_mnt/re.info 2>/dev/null | sed 's/},/}\n/g' | grep "$IP" | sed -n 's/.*"alias":"\([^"]*\)".*/\1/p')
+                        sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
+                        HEX_CLR=$(echo "$NODE_COLORS" | awk -v i="$node_idx" '{print $i}')
+                        NODE_CLR=$(hex_to_ansi "$HEX_CLR")
+                        if [ -n "$NODE_LOC" ]; then
+                            echo "NODE_NICK_$CLEAN_IP=\"$NODE_LOC\"" >> "$CONFIG"
+                            echo -e "    ${NODE_CLR}${OLD_NICK:-$MODEL}${NC} -> ${NODE_CLR}$NODE_LOC${NC}"; sleep 1
+                        else
+                            eval "unset NODE_NICK_$CLEAN_IP"
+                            echo -e "    ${NODE_CLR}${OLD_NICK:-$MODEL}${NC} -> ${NODE_CLR}$MODEL (Default)${NC}"; sleep 1
+                        fi
+                        node_idx=$((node_idx + 1))
+                    done
+                    echo -e "\n${GR}[+] Nicknames updated to Locations...${NC}"
+                    break
+                    pause ;;
+                3)
+                    echo -e "\n${BL}[*] Manual Entry Mode${NC}\n"
+                    OLD_MAIN="${MAIN_NICK:-$MAIN_HW_MODEL}"
+                    printf "  Main $MAIN_IP ${MAIN_CLR}[$OLD_MAIN]:${NC} "
+                    read -r manual_main
+                    if [ -n "$manual_main" ]; then
+                        sed -i '/^MAIN_NICK=/d' "$CONFIG"
+                        echo "MAIN_NICK=\"$manual_main\"" >> "$CONFIG"
+                    fi
                     node_idx=1
                     for node in $VALID_NODES; do
                         MODEL=$(echo "$node" | cut -d'|' -f1)
                         IP=$(echo "$node" | cut -d'|' -f2)
                         CLEAN_IP=$(echo "$IP" | tr '.' '_')
                         eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
-                        sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
-                        eval "unset NODE_NICK_$CLEAN_IP"
                         HEX_CLR=$(echo "$NODE_COLORS" | awk -v i="$node_idx" '{print $i}')
                         NODE_CLR=$(hex_to_ansi "$HEX_CLR")
-                        echo -e "    ${NODE_CLR}${OLD_NICK:-$MODEL}${NC} -> ${NODE_CLR}$MODEL${NC}"; sleep 1
+                        printf "  Node $IP ${NODE_CLR}[${OLD_NICK:-$MODEL}]:${NC} "
+                        read -r input_node
+                        if [ -n "$input_node" ]; then
+                            sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
+                            echo "NODE_NICK_$CLEAN_IP=\"$input_node\"" >> "$CONFIG"
+                        fi
                         node_idx=$((node_idx + 1))
                     done
-                fi
-                echo -e "\n${GR}[+] Default hardware models restored.${NC}"
-                pause ;;
-            2)
-                echo -e "\n${BL}[*] Updating nicknames with Locations...${NC}\n"
-                OLD_NAME="${MAIN_NICK:-$MAIN_HW_MODEL}"
-                NEW_LOC=$(nvram get cfg_alias)
-                sed -i '/^MAIN_NICK=/d' "$CONFIG"
-                if [ -n "$NEW_LOC" ]; then
-                    echo "MAIN_NICK=\"$NEW_LOC\"" >> "$CONFIG"
-                    echo -e "    ${MAIN_CLR}$OLD_NAME${NC} -> ${MAIN_CLR}$NEW_LOC${NC}"; sleep 1
-                else
-                    unset MAIN_NICK
-                    echo -e "    ${MAIN_CLR}$OLD_NAME${NC} -> ${MAIN_CLR}$MAIN_HW_MODEL (Default)${NC}"; sleep 1
-                fi
-                node_idx=1
-                for node in $VALID_NODES; do
-                    MODEL=$(echo "$node" | cut -d'|' -f1); IP=$(echo "$node" | cut -d'|' -f2)
-                    CLEAN_IP=$(echo "$IP" | tr '.' '_')
-                    eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
-                    NODE_LOC=$(cat /jffs/.sys/cfg_mnt/re.info 2>/dev/null | sed 's/},/}\n/g' | grep "$IP" | sed -n 's/.*"alias":"\([^"]*\)".*/\1/p')
-                    sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
-                    HEX_CLR=$(echo "$NODE_COLORS" | awk -v i="$node_idx" '{print $i}')
-                    NODE_CLR=$(hex_to_ansi "$HEX_CLR")
-                    if [ -n "$NODE_LOC" ]; then
-                        echo "NODE_NICK_$CLEAN_IP=\"$NODE_LOC\"" >> "$CONFIG"
-                        echo -e "    ${NODE_CLR}${OLD_NICK:-$MODEL}${NC} -> ${NODE_CLR}$NODE_LOC${NC}"; sleep 1
-                    else
-                        eval "unset NODE_NICK_$CLEAN_IP"
-                        echo -e "    ${NODE_CLR}${OLD_NICK:-$MODEL}${NC} -> ${NODE_CLR}$MODEL (Default)${NC}"; sleep 1
-                    fi
-                    node_idx=$((node_idx + 1))
-                done
-                echo -e "\n${GR}[+] Nicknames updated to Locations...${NC}"
-                pause ;;
-            e|E)
-                sort -u -o "$CONFIG" "$CONFIG"
-                return ;;
-            *)
-                echo -e "\n${BL}[*] Manual Entry Mode${NC}\n"
-                OLD_MAIN="${MAIN_NICK:-$MAIN_HW_MODEL}"
-                printf "  Main $MAIN_IP ${MAIN_CLR}[$OLD_MAIN]:${NC} "
-                read -r manual_main
-                if [ -n "$manual_main" ]; then
-                    sed -i '/^MAIN_NICK=/d' "$CONFIG"
-                    echo "MAIN_NICK=\"$manual_main\"" >> "$CONFIG"
-                fi
-                node_idx=1
-                for node in $VALID_NODES; do
-                    MODEL=$(echo "$node" | cut -d'|' -f1)
-                    IP=$(echo "$node" | cut -d'|' -f2)
-                    CLEAN_IP=$(echo "$IP" | tr '.' '_')
-                    eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
-                    HEX_CLR=$(echo "$NODE_COLORS" | awk -v i="$node_idx" '{print $i}')
-                    NODE_CLR=$(hex_to_ansi "$HEX_CLR")
-                    printf "  Node $IP ${NODE_CLR}[${OLD_NICK:-$MODEL}]:${NC} "
-                    read -r input_node
-                    if [ -n "$input_node" ]; then
-                        sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
-                        echo "NODE_NICK_$CLEAN_IP=\"$input_node\"" >> "$CONFIG"
-                    fi
-                    node_idx=$((node_idx + 1))
-                done
-                echo -e "\n${GR}[+] Manual nicknames saved.${NC}"
-                pause ;;
-        esac
+                    echo -e "\n${GR}[+] Manual nicknames saved.${NC}"
+                    break
+                    pause ;;
+                e|E)
+                    sort -u -o "$CONFIG" "$CONFIG"
+                    return ;;
+                *)
+                    printf "\033[2A\033[J"; continue ;;
+            esac
+        done
     done
 }
 
@@ -974,9 +986,9 @@ set_colors() {
     done
     while true; do
         show_header
-        echo -e "${BL}=============================================="
-        echo -e "${NC}              Set Device Colors               "
-        echo -e "${BL}=============================================="
+        echo -e "${BL}=================================================="
+        echo -e "${NC}                Set Device Colors                 "
+        echo -e "${BL}=================================================="
         echo -e "${NC}\n${BL}Current Device Configuration:\n"
         local main_display_name="${MAIN_NICK:-$main_name}"
         local main_display_color=$(hex_to_ansi "$m_color_hex")
@@ -1001,66 +1013,67 @@ set_colors() {
         echo -e "\n  $NQ Cancel and Discard Changes"
         echo -e "  $NE Exit and Save Changes"
         echo -e "\n${BL}==============================================${NC}"
-        printf "\nSelect a Device number to change color ${BL}(0-$total_nodes)${NC}: "
-        read -r node_choice
-        case "$node_choice" in
-            c|C) return 0 ;;
-            e|E) break ;;
-        esac
-        if ! [ "$node_choice" -ge 0 ] 2>/dev/null || ! [ "$node_choice" -le "$total_nodes" ] 2>/dev/null; then
-            echo -e "\n${RD}Invalid selection. Please enter a value between 0 and $total_nodes.${NC}"
-            sleep 2
-            continue
-        fi
-        local target_name="" target_hex=""
-        if [ "$node_choice" -eq 0 ]; then
-            target_name="${MAIN_NICK:-$main_name}"
-            target_hex="$m_color_hex"
-        else
-            local target_node=$(echo "$SSH_NODES" | awk -v n="$node_choice" '{print $n}')
-            local target_ip=$(echo "$target_node" | cut -d'|' -f2)
-            local target_ip_underscores=$(echo "$target_ip" | tr '.' '_')
-            local target_nick_var="NODE_NICK_${target_ip_underscores}"
-            target_name=$(eval echo \"\${$target_nick_var}\")
-            target_name="${target_name:-$(echo "$target_node" | cut -d'|' -f1)}"
-            target_hex=$(echo "$working_colors" | awk -v col="$node_choice" '{print $col}')
-        fi
-        local target_prompt_color=$(hex_to_ansi "$target_hex")
-        echo -e "\nSelect a new color for ${target_prompt_color}[${target_name}]${NC}:\n"
-        echo -e "${NB}  (1) Neon-Blue (#0096ff)"
-        echo -e "${LG}  (2) Lime-Green (#30d158)"
-        echo -e "${MP}  (3) Medium-Purple (#bf40bf)"
-        echo -e "${YL}  (4) Yellow (#ffd60a)"
-        echo -e "${SB}  (5) SkyBlue (#64d2ff)"
-        echo -e "${OR}  (6) Orange (#ff9500)"
-        echo -e "${RD}  (7) Red (#ff453a)"
-        echo -e "${NC}"
-        local selected_hex=""
         while true; do
-            printf "Choose option ${BL}(1-7)${NC}: "
-            read -r color_choice
-            case "$color_choice" in
-                1) selected_hex="#0096ff"; break ;;
-                2) selected_hex="#30d158"; break ;;
-                3) selected_hex="#bf40bf"; break ;;
-                4) selected_hex="#ffd60a"; break ;;
-                5) selected_hex="#64d2ff"; break ;;
-                6) selected_hex="#ff9500"; break ;;
-                7) selected_hex="#ff453a"; break ;;
-                *) echo -e "${RD}Invalid selection.${NC} Enter 1-7." ;;
+            printf "\nSelect a Device number to change color ${BL}(0-$total_nodes)${NC}: "
+            read -r node_choice
+            case "$node_choice" in
+                c|C) return 0 ;;
+                e|E) break 2 ;;
             esac
-        done
-        if [ "$node_choice" -eq 0 ]; then
-            m_color_hex="$selected_hex"
-        else
-            local new_string="" step=1
-            for hex in $working_colors; do
-                [ "$step" -eq "$node_choice" ] && hex="$selected_hex"
-                new_string="${new_string:+$new_string }$hex"
-                step=$((step + 1))
+            if ! [ "$node_choice" -ge 0 ] 2>/dev/null || ! [ "$node_choice" -le "$total_nodes" ] 2>/dev/null; then
+                printf "\033[2A\033[J"; continue
+            fi
+            local target_name="" target_hex=""
+            if [ "$node_choice" -eq 0 ]; then
+                target_name="${MAIN_NICK:-$main_name}"
+                target_hex="$m_color_hex"
+            else
+                local target_node=$(echo "$SSH_NODES" | awk -v n="$node_choice" '{print $n}')
+                local target_ip=$(echo "$target_node" | cut -d'|' -f2)
+                local target_ip_underscores=$(echo "$target_ip" | tr '.' '_')
+                local target_nick_var="NODE_NICK_${target_ip_underscores}"
+                target_name=$(eval echo \"\${$target_nick_var}\")
+                target_name="${target_name:-$(echo "$target_node" | cut -d'|' -f1)}"
+                target_hex=$(echo "$working_colors" | awk -v col="$node_choice" '{print $col}')
+            fi
+            local target_prompt_color=$(hex_to_ansi "$target_hex")
+            echo -e "\nSelect a new color for ${target_prompt_color}[${target_name}]${NC}:\n"
+            echo -e "${NB}  (1) Neon-Blue (#0096ff)"
+            echo -e "${LG}  (2) Lime-Green (#30d158)"
+            echo -e "${MP}  (3) Medium-Purple (#bf40bf)"
+            echo -e "${YL}  (4) Yellow (#ffd60a)"
+            echo -e "${SB}  (5) SkyBlue (#64d2ff)"
+            echo -e "${OR}  (6) Orange (#ff9500)"
+            echo -e "${RD}  (7) Red (#ff453a)"
+            echo -e "${NC}"
+            local selected_hex=""
+            while true; do
+                printf "Choose option ${BL}(1-7)${NC}: "
+                read -r color_choice
+                case "$color_choice" in
+                    1) selected_hex="#0096ff"; break ;;
+                    2) selected_hex="#30d158"; break ;;
+                    3) selected_hex="#bf40bf"; break ;;
+                    4) selected_hex="#ffd60a"; break ;;
+                    5) selected_hex="#64d2ff"; break ;;
+                    6) selected_hex="#ff9500"; break ;;
+                    7) selected_hex="#ff453a"; break ;;
+                    *) printf "\033[1A\033[2K\r"; continue ;;
+                esac
             done
-            working_colors="$new_string"
-        fi
+            if [ "$node_choice" -eq 0 ]; then
+                m_color_hex="$selected_hex"
+            else
+                local new_string="" step=1
+                for hex in $working_colors; do
+                    [ "$step" -eq "$node_choice" ] && hex="$selected_hex"
+                    new_string="${new_string:+$new_string }$hex"
+                    step=$((step + 1))
+                done
+                working_colors="$new_string"
+            fi
+            break
+        done
     done
     update_config_var() {
         local var_name="$1" var_val="$2"
@@ -1203,18 +1216,18 @@ set_options() {
 rssi_submenu() {
 	while true; do
 		show_header
-		echo -e "${BL}=============================================="
-		echo -e "${NC}          RSSI History Configuration          "
-		echo -e "${BL}=============================================="
-		echo -e "                                                   "
-		echo -e " $N1 Toggle RSSI History: [$CH]                    "
-		echo -e " $N2 Set History Depth:   [$CE] entries            "
-		echo -e " $N3 Toggle Timestamps:   [$TS]                    "
-		echo -e "                                                   "
-		echo -e " $NQ Cancel and Discard Changes                    "
-		echo -e " $NE Exit and Save Changes                         "
-		echo -e "                                                   "
-		echo -e "${BL}=============================================="
+		echo -e "${BL}=================================================="
+        echo -e "${NC}           RSSI History Configuration             "
+		echo -e "${BL}=================================================="
+		echo -e "                                                       "
+		echo -e " $N1 Toggle RSSI History: [$CH]                        "
+		echo -e " $N2 Set History Depth:   [$CE] entries                "
+		echo -e " $N3 Toggle Timestamps:   [$TS]                        "
+		echo -e "                                                       "
+		echo -e " $NQ Cancel and Discard Changes                        "
+		echo -e " $NE Exit and Save Changes                             "
+		echo -e "                                                       "
+		echo -e "${BL}=================================================="
         while true; do
             printf "\n ${BL}Selection:${NC} "
             read -r sub_choice
@@ -1267,17 +1280,17 @@ rssi_submenu() {
 theme_submenu() {
     while true; do
         show_header
-        echo -e "${BL}=============================================="
-        echo -e "${NC}  Set Theme                Current: $TM_STAT  "
-        echo -e "${BL}=============================================="
-        echo -e "                                                   "
-        echo -e " $N1 Original Theme                                "
-        echo -e " $N2 Darkmode Theme                                "
-        echo -e " $N3 Asus WebUI Theme                              "
-        echo -e "                                                   "
-        echo -e " $NE Exit                                          "
-        echo -e "                                                   "
-        echo -e "${BL}=============================================="
+        echo -e "${BL}=================================================="
+        echo -e "${NC}  Set Theme                  Current: $TM_STAT    "
+        echo -e "${BL}=================================================="
+        echo -e "                                                       "
+        echo -e " $N1 Original Theme                                    "
+        echo -e " $N2 Darkmode Theme                                    "
+        echo -e " $N3 Asus WebUI Theme                                  "
+        echo -e "                                                       "
+        echo -e " $NE Exit                                              "
+        echo -e "                                                       "
+        echo -e "${BL}=================================================="
         while true; do
             printf "\n ${BL}Selection:${NC} "
             read -r theme_choice
