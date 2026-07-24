@@ -432,22 +432,19 @@ check_ssh() {
                     echo -e "\n${YL}[i] Setting Up Router-Only...${NC}"
                     sed -i '/^SSH_NODES=/d' "$CONFIG"
                     echo 'SSH_NODES=" "' >> "$CONFIG"
-                    pause
-                    break ;;
+                    pause; break ;;
                 4)
                     echo -e "\n${BL}================ Authorized Keys =================${NC}\n"
                     if [ -f "/root/.ssh/authorized_keys" ]; then cat /root/.ssh/authorized_keys
                     else echo -e "${YL}[!] File not found.${NC}"; fi
                     echo -e "\n\n${BL}==================================================${NC}"
-                    pause
-                    break ;;
+                    pause; break ;;
                 5)
                     echo -e "\n${BL}================== Known Hosts  ==================${NC}\n"
                     if [ -f "/jffs/.ssh/known_hosts" ]; then cat /jffs/.ssh/known_hosts
                     else echo -e "${YL}[!] File not found.${NC}"; fi
                     echo -e "\n${BL}==================================================${NC}"
-                    pause
-                    break ;;
+                    pause; break ;;
                 6)
                     echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
                     if [ -f "$ERROR_LOG" ]; then
@@ -473,8 +470,7 @@ check_ssh() {
                         break
                     fi
                     node_auth
-                    pause
-                    break ;;
+                    pause; break ;;
                 e|E)
                     return 0 ;;
                 *)
