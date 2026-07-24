@@ -2409,7 +2409,7 @@ cat <<HTML >> "$WEB_PAGE"
     .top-header { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
     .header-title { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
     .header-title2 { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; animation: pulse-twice 1.2s ease-in-out 2; }
-   @keyframes pulse-twice { 0%, 100% { color: #0096ff; text-shadow: 0 0 0px transparent; } 50% { color: #66c2ff; text-shadow: 0 0 8px #0096ff; } }
+    @keyframes pulse-twice { 0%, 100% { color: #0096ff; text-shadow: 0 0 0px transparent; } 50% { color: #66c2ff; text-shadow: 0 0 8px #0096ff; } }
     .top-buttons { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
