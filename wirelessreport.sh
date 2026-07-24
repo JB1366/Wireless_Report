@@ -84,7 +84,7 @@ install_menu() {
 		check_version
 		echo -e "${BL}=================================================="
 		echo -e "                                                       "
-		echo -e "  $N1  Install/Update                                  "
+		echo -e "  $N1  ${IN}Install/Update${NC}                        "
 		echo -e "  $N2  Uninstall                                       "
 		echo -e "  $N3  Edit Temp/Date ($DU) ($CT)                      "
 		echo -e "  $N4  Edit Device Nicknames                           "
@@ -124,7 +124,7 @@ install_menu() {
 }
 
 check_version() {
-    local mode="$1"
+    local mode="$1"; IN=""
     if [ ! -f "$REPORT_SCRIPT" ]; then STATE="NOT_INSTALLED"
     elif [ -z "$REMOTE_VERSION" ]; then STATE="OFFLINE"
     elif [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then  STATE="UP_TO_DATE"
@@ -151,7 +151,7 @@ check_version() {
             esac ;;
         *)
             case "$STATE" in
-                NOT_INSTALLED) echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}" ;;
+                NOT_INSTALLED) echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"; IN="$BL" ;;
                 OFFLINE)       echo -e "$STATUS ${RD}[Offline]${NC} Could not reach GitHub" ;;
                 OUTDATED)      echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT" ;;
                 HASH_DIFF)     echo -e "$STATUS [Hash Update Available] $CURRENT" ;;
