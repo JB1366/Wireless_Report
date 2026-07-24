@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v2.0.6-minor updates.
 v2.0.5-fixed mobile popout display and added Edit Device Colors option.
 v2.0.4-minor script refactoring, fixed popout view table scrolling for smaller screens.
 v2.0.3-minor updates, added new theme.

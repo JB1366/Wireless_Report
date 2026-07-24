@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.0.5"
+SCRIPT_VERSION="2.0.6"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -140,8 +140,6 @@ check_version() {
             esac ;;
         do_install)
             case "$STATE" in
-                NOT_INSTALLED) echo -e "\n${GR}[i] Installing version (${NC}v$REMOTE_VERSION${GR})...${NC}\n" ;;
-                OFFLINE)       echo -e "\n${RD}[!] Could not reach GitHub to check versions.${NC}\n" ;;
                 OUTDATED)      echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
                                printf "Do you want to update version (y/n): " ;;
                 HASH_DIFF)     echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
@@ -151,8 +149,8 @@ check_version() {
             esac ;;
         *)
             case "$STATE" in
-                NOT_INSTALLED) echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"; N1="${BL}(1)" ;;
                 OFFLINE)       echo -e "$STATUS ${RD}[Offline]${NC} Could not reach GitHub" ;;
+                NOT_INSTALLED) echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"; N1="${BL}(1)" ;;
                 OUTDATED)      echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT" ;;
                 HASH_DIFF)     echo -e "$STATUS [Hash Update Available] $CURRENT" ;;
                 UP_TO_DATE|*)  echo -e "$STATUS [Up to date] $CURRENT" ;;
@@ -303,7 +301,6 @@ do_update() {
         fi
     fi
 }
-
 
 ScriptUpdateFromAMTM() {
     if [ "$doScriptUpdateFromAMTM" != "true" ]; then
@@ -815,8 +812,7 @@ set_temp_date() {
             echo "REPORT_UNIT=\"$NEW_UNIT\"" >> "$CONFIG"
             REPORT_UNIT="$NEW_UNIT"
             echo -e "\n${GR}[+] Settings updated to $NEW_UNIT${NC}"
-            pause
-            break
+            pause; break
         done
     done
 }
@@ -956,9 +952,8 @@ set_nicknames() {
 hex_to_ansi() {
     : "${MAIN_COLOR:=#0096ff}"
     : "${NODE_COLORS:=#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a}"
-    NB='\033[38;5;39m';  LG='\033[38;5;82m';  MP='\033[38;5;133m'
-    YL='\033[38;5;220m'; SB='\033[38;5;75m';  OR='\033[38;5;208m'
-    RD='\033[38;5;196m'
+    NB='\033[38;5;39m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'; RD='\033[38;5;196m'
+    YL='\033[38;5;220m'; SB='\033[38;5;75m'; OR='\033[38;5;208m'
     case "$1" in
         "#0096ff") echo -e "$NB" ;;
         "#30d158") echo -e "$LG" ;;
@@ -981,9 +976,7 @@ set_colors() {
     [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
     [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
     local total_nodes=0
-    for node in $SSH_NODES; do
-        total_nodes=$((total_nodes + 1))
-    done
+    for node in $SSH_NODES; do total_nodes=$((total_nodes + 1)); done
     local working_colors="" i=1
     while [ $i -le $total_nodes ]; do
         local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
@@ -1050,8 +1043,7 @@ set_colors() {
             echo -e "${YL}  (4) Yellow (#ffd60a)"
             echo -e "${SB}  (5) SkyBlue (#64d2ff)"
             echo -e "${OR}  (6) Orange (#ff9500)"
-            echo -e "${RD}  (7) Red (#ff453a)"
-            echo -e "${NC}"
+            echo -e "${RD}  (7) Red (#ff453a)"; echo -e "${NC}"
             local selected_hex=""
             while true; do
                 printf "Choose option ${BL}(1-7)${NC}: "
@@ -1092,7 +1084,7 @@ set_colors() {
     update_config_var "MAIN_COLOR" "$m_color_hex"
     update_config_var "NODE_COLORS" "$working_colors"
     echo -e "\n${BL}Device colors successfully saved to CONFIG.${NC}"
-    sleep 2
+    pause
 }
 
 set_options() {
@@ -1157,8 +1149,7 @@ set_options() {
                     else
                         echo -e "\n ${RD}[!] Invalid entry. Please enter numbers only.${NC}"
                     fi
-                    pause
-                    break ;;
+                    pause; break ;;
                 4)
                     rssi_submenu
                     break ;;
@@ -1257,8 +1248,7 @@ rssi_submenu() {
                 c|C)
                     echo -e "\n${RD}[!] Changes discarded.${NC}"
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                    pause
-                    return 0 ;;
+                    pause; return 0 ;;
                 e|E)
                     RS_HIST="$CUR_RS_HIST"
                     RS_HIST_ENTRIES="$CUR_ENTRIES"
@@ -1274,8 +1264,7 @@ rssi_submenu() {
                     if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
                     echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                    pause
-                    return 0 ;;
+                    pause; return 0 ;;
                 *)
                     printf "\033[2A\033[J"; continue ;;
             esac
@@ -1401,8 +1390,7 @@ set_theme() {
             #refresh-option:focus { background: #000; }
             .rssi-tooltip { background: #000; }
             .button-auto-refresh { background: transparent !important; }
-            .button-tables { background: transparent !important; }"
-            ;;
+            .button-tables { background: transparent !important; }" ;;
 
         "ASUS_WEBUI")
             RT_TOOLTIP="#3A4042"
@@ -1419,8 +1407,7 @@ set_theme() {
             .rssi-tooltip { background: #1c232b; }
             .button-auto-refresh { background: #3A4042; }
             .button-tables { background: #3A4042; }
-            .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */"
-            ;;
+            .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */" ;;
 
         "ORIGINAL"|*)
             RT_TOOLTIP="#000000"
@@ -1436,8 +1423,7 @@ set_theme() {
             #refresh-option:focus { background: #000; }
             .rssi-tooltip { background: #000; }
             .button-auto-refresh { background: transparent !important; }
-            .button-tables { background: transparent !important; }"
-            ;;
+            .button-tables { background: transparent !important; }" ;;
     esac
     THEME_CSS=$(echo "$THEME_CSS" | sed 's/^        //')
 }
@@ -2443,6 +2429,9 @@ cat <<HTML >> "$WEB_PAGE"
     .rssi-good { color: #64d2ff; --hover-color: #64d2ff; --glow-color: rgba(100,210,255,0.4); }
     .rssi-fair { color: #ffd60a; --hover-color: #ffd60a; --glow-color: rgba(255,214,10,0.4); }
     .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
+    .rssi-container { position: relative; vertical-align: middle; }
+	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
+	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
     .button-refresh { display: inline-flex; align-items: center; height: 28px; line-height: 26px; text-align: center; padding: 0 5px; border-radius: 4px; border: 1px solid #475a68; font-weight: bold; transition: all 0.2s ease; }
     .button-refresh:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
     .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
@@ -2521,9 +2510,6 @@ cat <<HTML >> "$WEB_PAGE"
     #allCol { display: none; width: 100% ; align-self: flex-start; }
 	sup { font-size: 0.6em; margin-left: 2px; }
     .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
-    .rssi-container { position: relative; vertical-align: middle; }
-	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
-	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
 </style>
 <script>
 function initial() {
@@ -2701,7 +2687,6 @@ function sortTable(n, tId, keepDir, forceDesc) {
 			if (isRightClick || isNodeModeSaved) {
 				var nodeA = getNodeNum(cellA);
 				var nodeB = getNodeNum(cellB);
-
 				if (nodeA !== nodeB) {
 					return dir === "asc" ? nodeA - nodeB : nodeB - nodeA;
 				}
@@ -3000,7 +2985,6 @@ HTML
 rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" 2>/dev/null
 rm -rf "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$NODE_DATA_DIR" 2>/dev/null
 }
-
 case "$1" in
     install)
         # Install/Uninstall options
