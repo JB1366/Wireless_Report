@@ -125,23 +125,39 @@ install_menu() {
 
 check_version() {
     local mode="$1"
-    if [ ! -f "$REPORT_SCRIPT" ]; then
-        echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}"
-    elif [ -z "$REMOTE_VERSION" ]; then
-        echo -e "$STATUS ${RD}[Offline]${NC} Could not reach GitHub"
-    elif [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
-        HOVER_TEXT="Current v$SCRIPT_VERSION"; VERHASH=""
-        [ "$mode" != "header_box" ] && echo -e "$STATUS [Up to date] $CURRENT"
-    elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-        HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"; VERHASH="[$REMOTE_VERSION]"
-        [ "$mode" != "header_box" ] && echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT"
-    elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-        HOVER_TEXT="Current v$SCRIPT_VERSION <br> Hash Update available."; VERHASH="[Hash]"
-        [ "$mode" != "header_box" ] && echo -e "$STATUS [Hash Update Available] $CURRENT"
-    else
-        HOVER_TEXT="Current v$SCRIPT_VERSION"; VERHASH=""
-        [ "$mode" != "header_box" ] && echo -e "$STATUS [Up to date] $CURRENT"
-    fi
+    if [ ! -f "$REPORT_SCRIPT" ]; then STATE="NOT_INSTALLED"
+    elif [ -z "$REMOTE_VERSION" ]; then STATE="OFFLINE"
+    elif [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then  STATE="UP_TO_DATE"
+    elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then STATE="OUTDATED"
+    elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then STATE="HASH_DIFF"
+    else STATE="UP_TO_DATE"; fi
+    case "$mode" in
+        header_box)
+            case "$STATE" in
+                OUTDATED)     HOVER_TEXT="Current v$SCRIPT_VERSION <br> New Version v$REMOTE_VERSION available"; VERHASH="[$REMOTE_VERSION]" ;;
+                HASH_DIFF)    HOVER_TEXT="Current v$SCRIPT_VERSION <br> Hash Update available."; VERHASH="[Hash]" ;;
+                UP_TO_DATE|*) HOVER_TEXT="Current v$SCRIPT_VERSION"; VERHASH="" ;;
+            esac ;;
+        do_install)
+            case "$STATE" in
+                NOT_INSTALLED) echo -e "\n${GR}[i] Installing version (${NC}v$REMOTE_VERSION${GR})...${NC}\n" ;;
+                OFFLINE)       echo -e "\n${RD}[!] Could not reach GitHub to check versions.${NC}\n" ;;
+                OUTDATED)      echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
+                               printf "Do you want to update version (y/n): " ;;
+                HASH_DIFF)     echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
+                               printf "Do you want to update Hash? (y/n): " ;;
+                UP_TO_DATE|*)  echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
+                               printf "Do you want to reinstall/overwrite anyway? (y/n): " ;;
+            esac ;;
+        *)
+            case "$STATE" in
+                NOT_INSTALLED) echo -e "$STATUS ${RD}[Not Installed]${NC} Latest Available: ${GR}v$REMOTE_VERSION${NC}" ;;
+                OFFLINE)       echo -e "$STATUS ${RD}[Offline]${NC} Could not reach GitHub" ;;
+                OUTDATED)      echo -e "$STATUS [v$REMOTE_VERSION Available] $CURRENT" ;;
+                HASH_DIFF)     echo -e "$STATUS [Hash Update Available] $CURRENT" ;;
+                UP_TO_DATE|*)  echo -e "$STATUS [Up to date] $CURRENT" ;;
+            esac ;;
+    esac
 }
 
 menu_vars() {
@@ -197,19 +213,7 @@ do_install() {
 	local is_update=0
 	if [ -f "$REPORT_SCRIPT" ]; then is_update=1; fi
 	if [ "$is_update" = "1" ]; then
-		if [ "$(echo "$LOCAL_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then
-            echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
-			printf "Do you want to reinstall/overwrite anyway? (y/n): "
-        elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_VERSION" ]; then
-			echo -e "\n${GR}[i] A new version (${NC}v$REMOTE_VERSION${GR}) is available!${NC}\n"
-			printf "Do you want to update version (y/n): "
-		elif [ "$VERHASH" = "[Hash]" ]; then
-			echo -e "\n${GR}[i] There is a Hash Update for (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
-			printf "Do you want to update Hash? (y/n): "
-		else
-			echo -e "\n${GR}[i] You are already on the latest version (${NC}v$LOCAL_VERSION${GR}).${NC}\n"
-			printf "Do you want to reinstall/overwrite anyway? (y/n): "
-		fi
+		check_version do_install
         read -r update
 		case "$update" in [yY]) ;; *) return ;; esac
     fi
