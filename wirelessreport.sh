@@ -1999,8 +1999,8 @@ ROW
 }
 
 startup() {
-    check_github; ssh_init; hex_to_ansi; get_usb
-    update_time; check_version header_box
+    ssh_init; hex_to_ansi; get_usb
+    check_github; update_time
 }
 
 run_report() {
@@ -2380,7 +2380,8 @@ GRAND_TOTAL_DEVICES="<span class='count-highlight'>$ALL_DEVICES</span>"
 MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
 NODE_DEVICE_TOTAL="<span class='stat-cool'>${NODE_DEVICE_TOTAL}</span>"
 UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
-get_rssi_boxes; do_numbered_node; set_theme; do_runtime
+get_rssi_boxes; do_numbered_node; set_theme
+check_version header_box; do_runtime
 JS_DIFF="${DIFF:-5.00}"
 mv "$NEW_HISTORY" "$HISTORY_DB"
 
