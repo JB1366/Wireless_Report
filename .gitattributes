@@ -1,0 +1,27 @@
+# Normalize detected text files to Unix LF line endings
+* text=auto eol=lf
+
+# Shell scripts and Diversion files
+diversion text eol=lf
+*.sh text eol=lf
+*.div text eol=lf
+
+# Configuration and router files
+*.conf text eol=lf
+*.postconf text eol=lf
+*.list text eol=lf
+
+# Documentation and structured text files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.patch text eol=lf
+
+# Binary files must never be line-ending converted
+*.zip binary
+*.gz binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
