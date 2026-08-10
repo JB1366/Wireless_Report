@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.2.4"
+SCRIPT_VERSION="2.3.0"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -212,76 +212,81 @@ menu_vars() {
 	else HN_STAT="${GR}Numbered${NC}"; fi
 }
 
-do_install() {
-	mkdir -p "$INSTALL_DIR" 2>/dev/null
-    if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
-	local is_update=0 apply_only=0
-	[ "$1" = "--apply" ] && apply_only=1
-	if [ -f "$REPORT_SCRIPT" ]; then is_update=1; fi
-
-	# When updating/reinstalling, restart into the newly installed script once,
-	# then continue directly into the WebUI mounting phase.  Previously this
-	# exec'd back into `install`, which reopened the menu and skipped inject_menu().
-	if [ "$is_update" = "1" ] && [ "$apply_only" != "1" ]; then
-        while true; do
-            check_version do_install
-            printf "Do you want to $UP (y/n): "; read -r update
-            case "$update" in [yY]) break ;; [nN]) return ;; *) printf "\033[4A\033[J" ;; esac; done
-        do_update || return 1
-        echo -e "\n${GR}[+] Preparing Wireless Report (${NC}v$REMOTE_VERSION${GR})${NC}"
-		echo -e "\n${BL}[✓] Wireless Report files updated.${NC}"
-		printf "\nPress ${BL}[Enter]${NC} to apply changes & mount the WebUI..."; read -r discard
-		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) files updated; applying WebUI mount."
-		exec "$REPORT_SCRIPT" install-apply
-		echo -e "${RD}Error: Failed to restart script for WebUI apply!${NC}" >&2
-		exit 1
-	fi
-
-	# A fresh install still needs to place/update the script before mounting.
-	if [ "$apply_only" != "1" ]; then
-        do_update || return 1
-        echo -e "\n${GR}[+] Preparing Wireless Report (${NC}v$REMOTE_VERSION${GR})${NC}"
-	fi
-    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
-        echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
-        pause; return 1
-    fi
-	# v2.2+ is controller-only. Remove legacy add-on persistence hooks,
-	# but never delete the user's SSH keys or authorized_keys.
-	if [ -f "$SS_FILE" ]; then sed -i '/# sshpairs/d' "$SS_FILE" 2>/dev/null; fi
-	sed -i '/^SSH_NODES=/d; /^MESH_NODES=/d' "$CONFIG" 2>/dev/null
-    echo -e "\n${GR}[+] Processing Wireless Report Files...${NC}\n"
-    inject_menu
-    echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}\n"
+ensure_persistence_hooks() {
     if ! mkdir -p /jffs/scripts 2>/dev/null; then
         echo -e "${RD}[!] ERROR: Unable to access /jffs/scripts.${NC}"
         return 1
     fi
     if [ ! -f "$SS_FILE" ]; then
-        if ! printf '#!/bin/sh\n' > "$SS_FILE"; then
-            echo -e "${RD}[!] ERROR: Unable to create $SS_FILE.${NC}"
-            return 1
-        fi
+        printf '#!/bin/sh\n' > "$SS_FILE" || return 1
     fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
-    if ! echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"; then
-        echo -e "${RD}[!] ERROR: Unable to update $SS_FILE.${NC}"
-        return 1
-    fi
-    if ! chmod +x "$SS_FILE"; then
-        echo -e "${RD}[!] ERROR: Unable to make $SS_FILE executable.${NC}"
-        return 1
-    fi
-    # Dynamic refreshes are handled in the browser; no service-event scan hook is required.
+    echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE" || return 1
+    chmod +x "$SS_FILE" || return 1
+
+    # The browser now gathers telemetry directly from the primary WebUI APIs.
+    # Remove only Wireless Report's legacy service-event refresh hook.
     if [ -f "$SE_FILE" ]; then sed -i "/wireless_report/d" "$SE_FILE" 2>/dev/null; fi
+    return 0
+}
+
+do_install() {
+    mkdir -p "$INSTALL_DIR" 2>/dev/null
+    [ -f "$CONFIG" ] || touch "$CONFIG"
+    local is_update=0
+    [ -f "$REPORT_SCRIPT" ] && is_update=1
+
+    if [ "$is_update" = "1" ]; then
+        while true; do
+            check_version do_install
+            printf "Do you want to $UP (y/n): "; read -r update
+            case "$update" in [yY]) break ;; [nN]) return ;; *) printf "\033[4A\033[J" ;; esac
+        done
+        do_update || return 1
+        echo -e "\n${GR}[+] Wireless Report files updated to ${NC}v$REMOTE_VERSION${GR}.${NC}"
+        printf "\nPress ${BL}[Enter]${NC} to regenerate the existing WebUI page..."; read -r discard
+        logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) files updated; regenerating existing WebUI source."
+        # The ASUS user page is already a bind mount of /tmp/wireless.asp. Execute
+        # the new script once to regenerate that source; a routine update does not
+        # need to allocate or remount the page.
+        exec "$REPORT_SCRIPT" update-apply
+        echo -e "${RD}Error: Failed to restart script for update apply!${NC}" >&2
+        exit 1
+    fi
+
+    do_update || return 1
+    echo -e "\n${GR}[+] Preparing Wireless Report (${NC}v$REMOTE_VERSION${GR})${NC}"
+    if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+        echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
+        pause; return 1
+    fi
+
+    # Controller-only collection supersedes all legacy SSH-node state.
+    sed -i '/^SSH_NODES=/d; /^MESH_NODES=/d' "$CONFIG" 2>/dev/null
+    echo -e "\n${GR}[+] Processing Wireless Report Files...${NC}\n"
+    inject_menu
+    echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}\n"
+    ensure_persistence_hooks || return 1
+
     install=""; SCRIPT_VERSION="$REMOTE_VERSION"
     logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
     echo -e "${GR}[✓] SUCCESS: Installation complete!${NC}\n"
     echo -e "${YL}[i] To access Report, navigate to Advanced Settings > Wireless "
     echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}\n"
-    echo -e "${BL}[i] AiMesh nodes are discovered automatically from the primary router."
+    echo -e "${BL}[i] AiMesh nodes are discovered from the primary-router WebUI session."
     echo -e "${BL}    No node SSH keys, passwords, cookies, or direct node login are required.${NC}"
-	pause
+    pause
+}
+
+apply_updated_page() {
+    # Rebuild the bind-mounted source page with the new executable. Do not
+    # reallocate/remount the ASUS user page during a routine update.
+    menu_vars
+    sed -i '/^SSH_NODES=/d; /^MESH_NODES=/d' "$CONFIG" 2>/dev/null
+    ensure_persistence_hooks || return 1
+    run_report || return 1
+    logger -p user.info -t "Wireless_Report" "(v$SCRIPT_VERSION) regenerated WebUI after update."
+    return 0
 }
 
 do_update() {
@@ -344,9 +349,13 @@ ScriptUpdateFromAMTM() {
 	check_github
     if do_update; then
         echo -e "\n  [+] Downloading latest version (v$REMOTE_VERSION)\n"
-        echo -e "\n  [✓] Wireless Report successfully updated.\n"
-		logger -p user.info -t "Wireless_Report" "AMTM Update: (v$REMOTE_VERSION) successfully installed."
-		return 0
+        if "$REPORT_SCRIPT" update-apply quiet; then
+            echo -e "\n  [✓] Wireless Report successfully updated.\n"
+            logger -p user.info -t "Wireless_Report" "AMTM Update: (v$REMOTE_VERSION) successfully installed and WebUI regenerated."
+            return 0
+        fi
+        echo -e "\n  [!] Wireless Report executable updated, but WebUI regeneration failed.\n"
+        return 1
     else
         return 1
     fi
@@ -381,6 +390,7 @@ mesh_init() {
 inject_menu() {
 	source /usr/sbin/helper.sh
 	TAB_LABEL="Wireless Report"
+
 	if [ -f "$CONFIG" ]; then sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"; else touch "$CONFIG"; fi
     if ! nvram get rc_support | grep -q am_addons; then echo -e "\n${RD}[!] ERROR: This firmware does not support addons!${NC}"; exit 5; fi
     if [ ! -f "$WEB_PAGE" ]; then echo "<html><body>$TAB_LABEL Loading...</body></html>" > "$WEB_PAGE"; fi
@@ -821,11 +831,12 @@ set_options() {
         echo -e "${BL}=================================================="
         echo -e "                                                       "
         echo -e "  $N1  Toggle Browser Refresh Runtime: ($RT_STAT)      "
-        echo -e "  $N2  Configure Connection Alert Pulse: ($UP_STAT)    "
-        echo -e "  $N3  Configure RSSI History: ($RH_STAT)              "
-        echo -e "  $N4  Set Theme: ($TM_STAT)                           "
-        echo -e "  $N5  Toggle IP Padding: ($PD_STAT)                   "
-        echo -e "  $N6  Toggle Node Hostname Display: ($HN_STAT)        "
+        echo -e "  $N2  Toggle Wireless Backhaul: ($WB_STAT)            "
+        echo -e "  $N3  Configure Connection Alert Pulse: ($UP_STAT)    "
+        echo -e "  $N4  Configure RSSI History: ($RH_STAT)              "
+        echo -e "  $N5  Set Theme: ($TM_STAT)                           "
+        echo -e "  $N6  Toggle IP Padding: ($PD_STAT)                   "
+        echo -e "  $N7  Toggle Node Hostname Display: ($HN_STAT)        "
         echo -e "                                                       "
         echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
@@ -842,6 +853,14 @@ set_options() {
                     fi
                     break ;;
                 2)
+                    if grep -q "BACKHAUL=" "$CONFIG"; then
+                        if [ "$BACKHAUL" = "yes" ]; then NEW_BACK="no"; else NEW_BACK="yes"; fi
+                        sed -i "s/BACKHAUL=.*/BACKHAUL=\"$NEW_BACK\"/" "$CONFIG"
+                    else
+                        echo 'BACKHAUL="yes"' >> "$CONFIG"
+                    fi
+                    break ;;
+                3)
                     while true; do
                         echo -e "\n (${GR}0${NC}) disable (${GR}15${NC}) def (${GR}1440${NC}) max "
                         printf " ${BL}Enter alert interval in mins:${GR} "; read -r user_mins
@@ -857,11 +876,11 @@ set_options() {
                         freeze3
                     done
                     pause; break ;;
-                3)
-                    rssi_submenu; break ;;
                 4)
-                    theme_submenu; break ;;
+                    rssi_submenu; break ;;
                 5)
+                    theme_submenu; break ;;
+                6)
                     if grep -q "IPPAD=" "$CONFIG"; then
                         if [ "$IPPAD" = "1" ]; then
                             echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
@@ -880,7 +899,7 @@ set_options() {
                         pause
                     fi
                     break ;;
-                6)
+                7)
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
                         if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
@@ -1105,6 +1124,7 @@ update_time() {
 
 startup() { mesh_init; check_github; normalize_date_format; update_time; }
 
+
 run_report() {
 #======================================#
 #  Browser/API Report Page Preparation #
@@ -1122,6 +1142,7 @@ PULSE_MINS=${PULSE_MINS:-15}
 ROUTER=$(nvram get productid)
 MAIN_NAME="${MAIN_NICK:-${ROUTER:-Main Router}}"
 [ "${#MAIN_NAME}" -gt 25 ] && MAIN_NAME="${MAIN_NAME:0:25}"
+MAIN_NAME_JS=$(printf '%s' "$MAIN_NAME" | sed 's/\\/\\\\/g; s/"/\\"/g; s#</#<\\/#g')
 
 # Preserve custom node nicknames configured by the add-on without exposing any
 # credentials to the page. Values are emitted as JavaScript string literals.
@@ -1338,12 +1359,14 @@ var WR_CUSTOM_NODE_NAMES = {};
 $NODE_NICK_JS
 
 var WR_CONFIG = {
+    mainName: "$MAIN_NAME_JS",
     mainColor: "$MAIN_COLOR",
     nodeColors: String("$NODE_COLORS").trim().split(/\s+/).filter(Boolean),
     hostColor: Number("$HOST_COLOR") || 0,
     pulseMins: Number("$PULSE_MINS"),
     dateFormat: String("${DATE_FORMAT:-USA}"),
     runtimeTracking: Number("${RTIME:-1}") || 0,
+    backhaul: String("${BACKHAUL:-no}") === 'yes',
     ipPad: Number("${IPPAD:-1}") || 0,
     rssiHistory: Number("${RS_HIST:-0}") || 0,
     rssiHistoryEntries: Number("${RS_HIST_ENTRIES:-5}") || 5,
@@ -1513,7 +1536,7 @@ function wrWidth(code) {
     return Object.prototype.hasOwnProperty.call(map, n) ? map[n] : '';
 }
 
-function wrBandHtml(sta, client) {
+function wrBandInfo(sta, client) {
     var band = sta ? wrBandName(sta.sta_band) : String(wrFirst(client, ['band', 'wlBand']) || '');
     var width = sta ? wrWidth(sta.bw) : '';
     var label = band + (width ? ' (' + width + ')' : '');
@@ -1522,7 +1545,12 @@ function wrBandHtml(sta, client) {
     if (/2\.4|2G/i.test(band)) { cls = 'band-24g'; sort = '2.4'; }
     else if (/5/.test(band)) { cls = 'band-5g'; sort = '5'; }
     else if (/6/.test(band)) { cls = 'band-6g'; sort = '6'; }
-    return "<td data-sort='" + sort + "' style='text-align:center;'><span class='" + cls + "'>" + wrEscape(label || '--') + "</span></td>";
+    return { band: band, width: width, label: label || '--', cls: cls, sort: sort };
+}
+
+function wrBandHtml(device) {
+    var info = device.bandInfo || { label: '--', cls: '', sort: '0' };
+    return "<td data-sort='" + info.sort + "' style='text-align:center;'><span class='" + info.cls + "'>" + wrEscape(info.label) + "</span></td>";
 }
 
 function wrQuality(rssi) {
@@ -1587,17 +1615,12 @@ function wrPrepareRssiHistoryStorage() {
     localStorage.setItem(sigKey, current);
 }
 
-function wrRssiHistoryBand(item) {
-    if (item && item.sta && item.sta.sta_band !== undefined) {
-        return wrBandName(item.sta.sta_band);
-    }
-    return wrBandName(wrFirst(item && item.client, ['band', 'wlBand']) || '');
+function wrRssiHistoryBand(device) {
+    return device && device.bandInfo ? String(device.bandInfo.band || '') : '';
 }
 
-function wrRssiHistoryLocation(item) {
-    if (item && item.node) return wrNodeDisplayName(item.node);
-    var el = document.getElementById('wr-main-name');
-    return el && el.textContent.trim() ? el.textContent.trim() : 'Main Router';
+function wrRssiHistoryLocation(device) {
+    return device && device.locationName ? device.locationName : 'Main Router';
 }
 
 function wrRssiHistoryEntry(item, rssi, nowMs) {
@@ -1910,29 +1933,21 @@ function wrNodeDisplayName(node) {
     return custom || wrFirst(node, ['alias', 'model_name', 'product_id']) || ip || wrNormMac(wrFirst(node, ['mac', 'mac_addr']));
 }
 
-function wrRenderRow(item, history, known, firstHistoryLoad) {
-    var c = item.client;
-    var saved = item.saved;
-    var sta = item.sta;
-    var mac = item.mac;
-    var ip = wrFirst(c, ['ip']) || '';
-    var name = wrClientName(mac, c, saved);
-    var ssid = wrFirst(c, ['ssid']) || '';
-    var iface = sta ? (sta.conn_if || '') : wrFirst(c, ['ifname', 'interface']);
-    var rssi = sta && sta.sta_rssi !== undefined ? wrNumber(sta.sta_rssi) : wrNumber(c.rssi);
-    var rx = sta && sta.sta_rx !== undefined ? wrNumber(sta.sta_rx) : wrNumber(c.curRx);
-    var tx = sta && sta.sta_tx !== undefined ? wrNumber(sta.sta_tx) : wrNumber(c.curTx);
-    var connected = sta && sta.conn_time !== undefined ? sta.conn_time : c.wlConnectTime;
-    var quality = wrQuality(rssi);
-    var trend = wrGetTrend(item, rssi, history);
+function wrRenderRow(device, history, known, firstHistoryLoad) {
+    var mac = device.mac;
+    var name = device.name;
+    var quality = wrQuality(device.rssi);
+    var trend = wrGetTrend(device, device.rssi, history);
     var isNew = !firstHistoryLoad && !known[mac] ? 'new-device-row' : '';
-    var nodeMarker = '';
 
-    if (item.node) {
-        var markerColor = wrNodeColor(item.nodeIndex);
-        nodeMarker = "<sup style='color:" + markerColor + ";'>" + (item.nodeIndex + 1) + "</sup>";
+    if (device.isNode) {
+        var markerColor = device.nodeColor;
+        var nodeMarker = device.showNodeMarker
+            ? "<sup style='color:" + markerColor + ";'>" + (device.nodeIndex + 1) + "</sup>"
+            : '';
         if (WR_CONFIG.hostColor) {
-            name = "<span style='color:" + markerColor + ";'>" + wrEscape(name) + "</span><span class='hidden-node-number'>" + nodeMarker + "</span>";
+            name = "<span style='color:" + markerColor + ";'>" + wrEscape(name) + "</span>" +
+                (nodeMarker ? "<span class='hidden-node-number'>" + nodeMarker + "</span>" : '');
         } else {
             name = "<span style='color:#ffffff;'>" + wrEscape(name) + "</span>" + nodeMarker;
         }
@@ -1942,33 +1957,32 @@ function wrRenderRow(item, history, known, firstHistoryLoad) {
         name = wrEscape(name);
     }
 
-    var rxText = Number.isFinite(rx) && rx >= 0 ? rx : '--';
-    var txText = Number.isFinite(tx) && tx >= 0 ? tx : '--';
+    var rxText = Number.isFinite(device.rxPhy) && device.rxPhy >= 0 ? device.rxPhy : '--';
+    var txText = Number.isFinite(device.txPhy) && device.txPhy >= 0 ? device.txPhy : '--';
     var rateText = rxText + ' / ' + txText;
-    var rateSort = Number.isFinite(tx) && tx >= 0 ? tx : 0;
-    var rssiText = Number.isFinite(rssi) && rssi < 0 && rssi >= -120 ? rssi : '--';
+    var rateSort = Number.isFinite(device.txPhy) && device.txPhy >= 0 ? device.txPhy : 0;
+    var rssiText = Number.isFinite(device.rssi) && device.rssi < 0 && device.rssi >= -120 ? device.rssi : '--';
     var bars = quality.bars ? "<span class='rssi_bars " + quality.cls + "'>" + quality.bars + "</span>" : '';
+    var displayIp = device.isBackhaul ? '' : wrDisplayIp(device.ip);
 
     return "<tr class='" + isNew + "'>" +
         "<td style='text-align:left;'>" + name + "</td>" +
         "<td><span class='mac-val' data-sort='" + wrEscape(mac) + "'>" + wrEscape(mac) + "</span>" +
-        "<span class='ip-val' data-sort='" + wrIpSort(ip) + "'>" + wrEscape(wrDisplayIp(ip) || '--') + "</span></td>" +
-        "<td data-sort='" + (Number.isFinite(rssi) ? rssi : -999) + "' class='rssi-container'>" +
+        "<span class='ip-val' data-sort='" + wrIpSort(device.ip) + "'>" + wrEscape(displayIp || '--') + "</span></td>" +
+        "<td data-sort='" + (Number.isFinite(device.rssi) ? device.rssi : -999) + "' class='rssi-container'>" +
             bars + " <span style='" + quality.style + "'>" + rssiText + "</span> " + trend + "</td>" +
         "<td data-sort='" + rateSort + "' style='" + quality.style + "text-align:center;'>" + wrEscape(rateText) + "</td>" +
-        "<td><span class='ssid-val' data-sort='" + wrEscape(ssid) + "'>" + wrEscape(ssid || '--') + "</span>" +
-        "<span class='iface-val' data-sort='" + wrEscape(iface) + "'>" + wrEscape(iface || '--') + "</span></td>" +
-        wrBandHtml(sta, c) +
-        "<td>" + wrFormatConnection(connected) + "</td>" +
+        "<td><span class='ssid-val' data-sort='" + wrEscape(device.ssid) + "'>" + wrEscape(device.ssid || '--') + "</span>" +
+        "<span class='iface-val' data-sort='" + wrEscape(device.iface) + "'>" + wrEscape(device.iface || '--') + "</span></td>" +
+        wrBandHtml(device) +
+        "<td>" + wrFormatConnection(device.connectedSeconds) + "</td>" +
         "</tr>";
 }
 
-function wrApplyRssiCounts(items) {
+function wrApplyRssiCounts(devices) {
     var counts = { excellent: 0, good: 0, fair: 0, poor: 0 };
-    items.forEach(function(item) {
-        var sta = item.sta;
-        var rssi = sta && sta.sta_rssi !== undefined ? wrNumber(sta.sta_rssi) : wrNumber(item.client.rssi);
-        var q = wrQuality(rssi);
+    devices.forEach(function(device) {
+        var q = wrQuality(device.rssi);
         if (q.key) counts[q.key]++;
     });
     Object.keys(counts).forEach(function(key) {
@@ -2059,10 +2073,84 @@ async function wrResolveSta(item, staMaps) {
     return best;
 }
 
-async function loadWirelessReport() {
-    // Primary CPU usage is derived from two clean cpu_usage() counter samples.
-    // Start the first sample alongside the larger client-inventory request so
-    // the normal page load provides a useful interval without slowing refreshes.
+function wrMacMiddle(mac) {
+    var parts = wrNormMac(mac).split(':');
+    return parts.length === 6 ? parts.slice(1, 5).join(':') : '';
+}
+
+function wrBackhaulOwner(mac, mainMac, nodes) {
+    var middle = wrMacMiddle(mac);
+    if (!middle) return null;
+    if (wrMacMiddle(mainMac) === middle) return { type: 'main', name: WR_CONFIG.mainName || 'Main Router' };
+    for (var i = 0; i < nodes.length; i++) {
+        if (wrMacMiddle(nodes[i].mac) === middle) return { type: 'node', node: nodes[i], name: nodes[i].name };
+    }
+    return null;
+}
+
+function wrNormalizeNode(raw, index, diag) {
+    var mac = wrNormMac(raw.mac || raw.mac_addr);
+    return {
+        raw: raw,
+        index: index,
+        mac: mac,
+        ip: String(wrFirst(raw, ['ip', 'ip_addr', 'ipAddr']) || ''),
+        name: wrNodeDisplayName(raw),
+        model: String(wrFirst(raw, ['model_name', 'product_id']) || ''),
+        firmware: String(wrFirst(raw, ['firmware', 'fwver', 'fw_version', 'version']) || ''),
+        color: wrNodeColor(index),
+        diag: diag || null
+    };
+}
+
+function wrNormalizeDevice(rawItem, context) {
+    var c = rawItem.client || {};
+    var sta = rawItem.sta || null;
+    var node = rawItem.nodeMac ? context.nodeByMac.get(rawItem.nodeMac) : null;
+    var bandInfo = wrBandInfo(sta, c);
+    var rssi = sta && sta.sta_rssi !== undefined ? wrNumber(sta.sta_rssi) : wrNumber(c.rssi);
+    var rx = sta && sta.sta_rx !== undefined ? wrNumber(sta.sta_rx) : wrNumber(c.curRx);
+    var tx = sta && sta.sta_tx !== undefined ? wrNumber(sta.sta_tx) : wrNumber(c.curTx);
+    var connected = sta && sta.conn_time !== undefined ? sta.conn_time : c.wlConnectTime;
+    var backhaulOwner = wrBackhaulOwner(rawItem.mac, context.mainMac, context.nodes);
+    var isBackhaul = !!backhaulOwner;
+    var name = wrClientName(rawItem.mac, c, rawItem.saved);
+
+    // Preserve the original v2.1 backhaul naming idea when the controller exposes
+    // a backhaul station: use the matched infrastructure device plus "-BH".
+    if (isBackhaul && (!name || name === rawItem.mac || name === '*')) {
+        name = (backhaulOwner.name || 'NODE') + '-BH';
+    }
+
+    return {
+        mac: rawItem.mac,
+        ip: isBackhaul ? '' : String(wrFirst(c, ['ip']) || ''),
+        name: String(name || rawItem.mac).slice(0, 20),
+        ssid: String(wrFirst(c, ['ssid']) || '').slice(0, 15),
+        iface: String(sta ? (sta.conn_if || '') : wrFirst(c, ['ifname', 'interface']) || ''),
+        rssi: rssi,
+        rxPhy: rx,
+        txPhy: tx,
+        connectedSeconds: connected,
+        bandInfo: bandInfo,
+        nodeMac: node ? node.mac : context.mainMac,
+        nodeIndex: node ? node.index : -1,
+        nodeColor: node ? node.color : WR_CONFIG.mainColor,
+        nodeName: node ? node.name : '',
+        isNode: !!node,
+        showNodeMarker: context.nodes.length > 1,
+        isBackhaul: isBackhaul,
+        locationName: node ? node.name : (WR_CONFIG.mainName || context.productId || 'Main Router'),
+        historyTime: context.historyTime
+    };
+}
+
+async function wrCollectControllerData() {
+    // -------------------------
+    // Layer 2: data acquisition
+    // -------------------------
+    // This is the only part that knows about ASUS controller APIs. Presentation
+    // code below consumes the normalized model and never reads raw API objects.
     var mainHealthFirstPromise = wrGetMainHealthSample().catch(function(e) {
         console.warn('Primary CPU/memory first sample failed', e);
         return { cpu: {}, memory: {} };
@@ -2079,43 +2167,48 @@ async function loadWirelessReport() {
 
     var live = base.get_clientlist || {};
     var saved = base.get_clientlist_from_json_database || {};
-    var allNodes = Array.isArray(base.get_cfg_clientlist) ? base.get_cfg_clientlist : [];
     var mainMac = wrNormMac(base.lan_hwaddr || '');
-    var discoveredNodes = allNodes.filter(function(n) {
-        var mac = wrNormMac(n.mac || n.mac_addr);
+    var discoveredNodes = (Array.isArray(base.get_cfg_clientlist) ? base.get_cfg_clientlist : []).filter(function(raw) {
+        var mac = wrNormMac(raw.mac || raw.mac_addr);
         return wrIsMac(mac) && (!mainMac || mac !== mainMac);
     });
 
-    // v2.1.0 omitted unreachable nodes because failed node collection produced
-    // no node output. Recreate that presentation with the controller's explicit
-    // online flag. Track omitted-node MACs so stale clients from those nodes are
-    // omitted too instead of falling through into the primary-router table.
+    // v2.1 silently omitted nodes it could not collect over SSH. Preserve that
+    // presentation rule by omitting only nodes the controller explicitly marks offline.
     var offlineNodeMacs = new Set();
-    var nodes = discoveredNodes.filter(function(node) {
-        if (!wrNodeIsExplicitlyOffline(node)) return true;
-        var mac = wrNormMac(node.mac || node.mac_addr);
+    var onlineRawNodes = discoveredNodes.filter(function(raw) {
+        if (!wrNodeIsExplicitlyOffline(raw)) return true;
+        var mac = wrNormMac(raw.mac || raw.mac_addr);
         if (mac) offlineNodeMacs.add(mac);
         return false;
     });
 
-    var nodeByMac = new Map();
-    nodes.forEach(function(node, index) {
-        var mac = wrNormMac(node.mac || node.mac_addr);
-        nodeByMac.set(mac, { node: node, index: index });
-    });
-
+    // Broad stainfo queries are hints only on the tested controller: they can
+    // return just one/latest row. Seed maps cheaply, then resolve misses per client.
     var staTargets = [];
     if (mainMac) staTargets.push(mainMac);
-    nodes.forEach(function(node) {
-        var mac = wrNormMac(node.mac || node.mac_addr);
+    onlineRawNodes.forEach(function(raw) {
+        var mac = wrNormMac(raw.mac || raw.mac_addr);
         if (mac && staTargets.indexOf(mac) === -1) staTargets.push(mac);
     });
-
     var staResults = await Promise.all(staTargets.map(function(mac) { return wrGetStaRows(mac); }));
     var staMaps = new Map();
     staTargets.forEach(function(mac, i) { staMaps.set(mac, wrIndexSta(staResults[i] || [])); });
 
-    var items = [];
+    // Node diagnostics can run in parallel while the slower per-client stainfo
+    // fallbacks are being resolved.
+    var nodeDiagPromise = Promise.all(onlineRawNodes.map(async function(raw) {
+        var mac = wrNormMac(raw.mac || raw.mac_addr);
+        try { return [mac, await wrGetNodeDiag(mac)]; }
+        catch (e) { console.warn('Node diagnostic query failed for ' + mac, e); return [mac, null]; }
+    }));
+
+    var rawNodeByMac = new Map();
+    onlineRawNodes.forEach(function(raw, index) {
+        rawNodeByMac.set(wrNormMac(raw.mac || raw.mac_addr), { raw: raw, index: index });
+    });
+
+    var rawItems = [];
     Object.entries(live).forEach(function(entry) {
         var macRaw = entry[0];
         var c = entry[1] || {};
@@ -2124,66 +2217,25 @@ async function loadWirelessReport() {
 
         var parent = wrNormMac(c.amesh_papMac || c.amesh_pap_mac);
         if (parent && offlineNodeMacs.has(parent)) return;
-        var nodeInfo = nodeByMac.get(parent);
-        var savedClient = wrSavedClient(saved, macRaw, mac);
-        items.push({
+        var nodeInfo = rawNodeByMac.get(parent);
+        rawItems.push({
             mac: mac,
             client: c,
-            saved: savedClient,
-            node: nodeInfo ? nodeInfo.node : null,
+            saved: wrSavedClient(saved, macRaw, mac),
+            rawNode: nodeInfo ? nodeInfo.raw : null,
             nodeIndex: nodeInfo ? nodeInfo.index : -1,
-            nodeMac: nodeInfo ? parent : mainMac
+            nodeMac: nodeInfo ? parent : mainMac,
+            sta: null
         });
     });
 
-    // Keep per-client stainfo fallback sequential. The diagnostic endpoint may
-    // return only one/latest row for a broad node query, so every client missing
-    // from the batch fast-path is resolved individually without flooding the CGI.
-    for (var itemIndex = 0; itemIndex < items.length; itemIndex++) {
-        items[itemIndex].sta = await wrResolveSta(items[itemIndex], staMaps);
+    // Deliberately sequential: this endpoint may need one query per client and
+    // flooding it caused less predictable behavior than bounded serial fallback.
+    for (var i = 0; i < rawItems.length; i++) {
+        rawItems[i].sta = await wrResolveSta(rawItems[i], staMaps);
     }
 
-    // Match v2.1.0's report-wide sample time so the Main, Node and All views show
-    // the same timestamp for a given refresh and the persisted sample matches it.
-    var historySampleTime = Date.now();
-    items.forEach(function(item) { item.historyTime = historySampleTime; });
-
-    var mainItems = items.filter(function(item) { return !item.node; });
-    var nodeItems = items.filter(function(item) { return !!item.node; });
-
-    var diagPairs = await Promise.all(nodes.map(async function(node) {
-        var mac = wrNormMac(node.mac || node.mac_addr);
-        try { return [mac, await wrGetNodeDiag(mac)]; }
-        catch (e) { console.warn('Node diagnostic query failed for ' + mac, e); return [mac, null]; }
-    }));
-    var diagByMac = new Map(diagPairs);
-
-    var history = wrLoadJson('wirelessReportRssiHistory', {});
-    var known = wrLoadJson('wirelessReportKnownMacs', {});
-    var firstHistoryLoad = Object.keys(known).length === 0;
-
-    var mainRows = mainItems.map(function(item) { return wrRenderRow(item, history, known, firstHistoryLoad); }).join('');
-    var nodeRows = nodeItems.map(function(item) { return wrRenderRow(item, history, known, firstHistoryLoad); }).join('');
-    var allRows = items.map(function(item) { return wrRenderRow(item, history, known, firstHistoryLoad); }).join('');
-
-    document.querySelector('#mainTable tbody').innerHTML = mainRows || "<tr><td colspan='7'>No wireless clients reported on the primary router.</td></tr>";
-    document.querySelector('#nodeTable tbody').innerHTML = nodeRows || "<tr><td colspan='7'>No AiMesh-node wireless clients reported.</td></tr>";
-    document.querySelector('#allTable tbody').innerHTML = allRows || "<tr><td colspan='7'>No active wireless clients reported.</td></tr>";
-
-    items.forEach(function(item) {
-        var rssi = item.sta && item.sta.sta_rssi !== undefined ? wrNumber(item.sta.sta_rssi) : wrNumber(item.client.rssi);
-        wrStoreRssiHistory(item, rssi, history);
-        known[item.mac] = 1;
-    });
-    localStorage.setItem('wirelessReportRssiHistory', JSON.stringify(history));
-    localStorage.setItem('wirelessReportKnownMacs', JSON.stringify(known));
-
-    wrApplyRssiCounts(items);
-    wrSetText('wr-grand-total', items.length);
-    wrSetText('wr-main-count', mainItems.length);
-    wrSetText('wr-node-count', nodeItems.length);
-    wrSetText('wr-all-count', items.length);
-
+    var diagByMac = new Map(await nodeDiagPromise);
     var mainHealthFirst = await mainHealthFirstPromise;
     var mainHealth;
     try {
@@ -2192,72 +2244,167 @@ async function loadWirelessReport() {
         console.warn('Primary CPU/memory query failed', e);
         mainHealth = { cpuUsage: null, memoryUsage: wrMemoryUsage(mainHealthFirst.memory) };
     }
-    wrSetMetric('wr-main-cpu', mainHealth.cpuUsage, '%');
-    wrSetMetric('wr-all-main-cpu', mainHealth.cpuUsage, '%');
-    wrSetMetric('wr-main-memory', mainHealth.memoryUsage, '%');
-    wrSetMetric('wr-all-main-memory', mainHealth.memoryUsage, '%');
 
-    var uptimeSecs = wrParseUptime(base.uptime);
-    wrSetText('wr-main-uptime', wrFormatRouterUptime(uptimeSecs));
-    wrSetText('wr-main-reboot', Number.isFinite(uptimeSecs) ? wrFormatDateTime(new Date(Date.now() - uptimeSecs * 1000)) : '--');
+    return {
+        base: base,
+        mainMac: mainMac,
+        rawNodes: onlineRawNodes,
+        rawItems: rawItems,
+        diagByMac: diagByMac,
+        mainHealth: mainHealth,
+        historyTime: Date.now()
+    };
+}
 
-    var mainNameEl = document.getElementById('wr-main-name');
-    if (mainNameEl && !mainNameEl.textContent.trim()) mainNameEl.textContent = base.productid || 'Main Router';
+function wrNormalizeControllerData(snapshot) {
+    // --------------------------------------
+    // Boundary: raw ASUS data -> WR variables
+    // --------------------------------------
+    // Everything after this function uses these normalized objects. That keeps
+    // the original report/display behavior independent from ASUS response schemas.
+    var nodes = snapshot.rawNodes.map(function(raw, index) {
+        var mac = wrNormMac(raw.mac || raw.mac_addr);
+        return wrNormalizeNode(raw, index, snapshot.diagByMac.get(mac));
+    });
+    var nodeByMac = new Map();
+    nodes.forEach(function(node) { nodeByMac.set(node.mac, node); });
 
+    var context = {
+        mainMac: snapshot.mainMac,
+        productId: snapshot.base.productid || '',
+        nodes: nodes,
+        nodeByMac: nodeByMac,
+        historyTime: snapshot.historyTime
+    };
+
+    var devices = snapshot.rawItems.map(function(rawItem) {
+        return wrNormalizeDevice(rawItem, context);
+    }).filter(function(device) {
+        return WR_CONFIG.backhaul || !device.isBackhaul;
+    });
+
+    return {
+        updatedAt: snapshot.historyTime,
+        main: {
+            name: WR_CONFIG.mainName || snapshot.base.productid || 'Main Router',
+            model: snapshot.base.productid || '',
+            mac: snapshot.mainMac,
+            uptimeSeconds: wrParseUptime(snapshot.base.uptime),
+            cpuUsage: snapshot.mainHealth.cpuUsage,
+            memoryUsage: snapshot.mainHealth.memoryUsage
+        },
+        nodes: nodes,
+        devices: devices,
+        mainDevices: devices.filter(function(device) { return !device.isNode; }),
+        nodeDevices: devices.filter(function(device) { return device.isNode; })
+    };
+}
+
+function wrRenderModel(model) {
+    // --------------------------
+    // Layer 3: presentation only
+    // --------------------------
+    // This intentionally mirrors the original report: Main/Node/All tables,
+    // shared RSSI boxes, node numbering, host colors, uptime/footer semantics.
+    var history = wrLoadJson('wirelessReportRssiHistory', {});
+    var known = wrLoadJson('wirelessReportKnownMacs', {});
+    var firstHistoryLoad = Object.keys(known).length === 0;
+
+    var mainRows = model.mainDevices.map(function(device) { return wrRenderRow(device, history, known, firstHistoryLoad); }).join('');
+    var nodeRows = model.nodeDevices.map(function(device) { return wrRenderRow(device, history, known, firstHistoryLoad); }).join('');
+    var allRows = model.devices.map(function(device) { return wrRenderRow(device, history, known, firstHistoryLoad); }).join('');
+
+    document.querySelector('#mainTable tbody').innerHTML = mainRows || "<tr><td colspan='7'>No wireless clients reported on the primary router.</td></tr>";
+    document.querySelector('#nodeTable tbody').innerHTML = nodeRows || "<tr><td colspan='7'>No AiMesh-node wireless clients reported.</td></tr>";
+    document.querySelector('#allTable tbody').innerHTML = allRows || "<tr><td colspan='7'>No active wireless clients reported.</td></tr>";
+
+    model.devices.forEach(function(device) {
+        wrStoreRssiHistory(device, device.rssi, history);
+        known[device.mac] = 1;
+    });
+    localStorage.setItem('wirelessReportRssiHistory', JSON.stringify(history));
+    localStorage.setItem('wirelessReportKnownMacs', JSON.stringify(known));
+
+    wrApplyRssiCounts(model.devices);
+    wrSetText('wr-grand-total', model.devices.length);
+    wrSetText('wr-main-count', model.mainDevices.length);
+    wrSetText('wr-all-count', model.devices.length);
+
+    wrSetMetric('wr-main-cpu', model.main.cpuUsage, '%');
+    wrSetMetric('wr-all-main-cpu', model.main.cpuUsage, '%');
+    wrSetMetric('wr-main-memory', model.main.memoryUsage, '%');
+    wrSetMetric('wr-all-main-memory', model.main.memoryUsage, '%');
+    wrSetText('wr-main-uptime', wrFormatRouterUptime(model.main.uptimeSeconds));
+    wrSetText('wr-main-reboot', Number.isFinite(model.main.uptimeSeconds)
+        ? wrFormatDateTime(new Date(Date.now() - model.main.uptimeSeconds * 1000))
+        : '--');
+    wrSetText('wr-main-name', model.main.name);
+
+    var bullet = " <span style='color:white;'>•</span> ";
     var nodeNamesHtml = [];
     var cpuHtml = [];
     var memHtml = [];
     var nodeCountParts = [];
     var nodeDiagParts = [];
 
-    nodes.forEach(function(node, index) {
-        var mac = wrNormMac(node.mac || node.mac_addr);
-        var ip = String(wrFirst(node, ['ip', 'ip_addr', 'ipAddr']) || '');
-        var name = wrNodeDisplayName(node);
-        var color = wrNodeColor(index);
-        var marker = nodes.length > 1 ? '<sup>' + (index + 1) + '</sup>' : '';
-        var diag = diagByMac.get(mac);
-        var nodeClientCount = nodeItems.filter(function(item) { return item.nodeIndex === index; }).length;
+    model.nodes.forEach(function(node) {
+        var marker = model.nodes.length > 1 ? '<sup>' + (node.index + 1) + '</sup>' : '';
+        var nodeClientCount = model.nodeDevices.filter(function(device) { return device.nodeIndex === node.index; }).length;
+        nodeNamesHtml.push("<span style='color:" + node.color + ";'>" + wrEscape(node.name) + marker + "</span>");
+        nodeCountParts.push("<span style='color:" + node.color + ";'>" + nodeClientCount + marker + "</span>");
 
-        nodeNamesHtml.push("<span style='color:" + color + ";'>" + wrEscape(name) + marker + "</span>");
-        nodeCountParts.push("<span style='color:" + color + ";'>" + nodeClientCount + marker + "</span>");
-
-        if (diag && diag.cpuUsage !== null) {
-            cpuHtml.push("<span class='" + wrMetricClass(diag.cpuUsage) + "'>" + diag.cpuUsage + "%" + marker + "</span>");
+        if (node.diag && node.diag.cpuUsage !== null) {
+            cpuHtml.push("<span class='" + wrMetricClass(node.diag.cpuUsage) + "'>" + node.diag.cpuUsage + '%' + marker + "</span>");
         } else {
-            cpuHtml.push("<span style='color:" + color + ";'>--" + marker + "</span>");
+            cpuHtml.push("<span style='color:" + node.color + ";'>--" + marker + "</span>");
         }
-        if (diag && diag.memoryUsage !== null) {
-            memHtml.push("<span class='" + wrMetricClass(diag.memoryUsage) + "'>" + diag.memoryUsage + "%" + marker + "</span>");
+        if (node.diag && node.diag.memoryUsage !== null) {
+            memHtml.push("<span class='" + wrMetricClass(node.diag.memoryUsage) + "'>" + node.diag.memoryUsage + '%' + marker + "</span>");
         } else {
-            memHtml.push("<span style='color:" + color + ";'>--" + marker + "</span>");
+            memHtml.push("<span style='color:" + node.color + ";'>--" + marker + "</span>");
         }
 
-        var model = wrFirst(node, ['model_name', 'product_id']) || '';
-        var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
-        var details = "<span style='color:" + color + ";'>" + wrEscape(name) + "</span>";
-        if (model) details += ' ' + wrEscape(model);
-        if (ip) details += ' • ' + wrEscape(ip);
-        if (firmware) details += ' • FW ' + wrEscape(firmware);
-        if (diag && Number.isFinite(diag.timestamp)) details += ' • Telemetry ' + wrFormatDateTime(new Date(diag.timestamp * 1000));
+        var details = "<span style='color:" + node.color + ";'>" + wrEscape(node.name) + "</span>";
+        if (node.model) details += ' ' + wrEscape(node.model);
+        if (node.ip) details += ' • ' + wrEscape(node.ip);
+        if (node.firmware) details += ' • FW ' + wrEscape(node.firmware);
+        if (node.diag && Number.isFinite(node.diag.timestamp)) {
+            details += ' • Telemetry ' + wrFormatDateTime(new Date(node.diag.timestamp * 1000));
+        }
         nodeDiagParts.push(details);
     });
 
-    var bullet = " <span style='color:white;'>•</span> ";
     wrSetHtml('wr-node-names', nodeNamesHtml.length ? nodeNamesHtml.join(bullet) : 'No AiMesh nodes detected');
     wrSetHtml('wr-node-cpu', cpuHtml.length ? cpuHtml.join(bullet) : '--');
     wrSetHtml('wr-node-memory', memHtml.length ? memHtml.join(bullet) : '--');
-    wrSetHtml('wr-node-count', nodes.length > 1 && nodeCountParts.length ? nodeItems.length + " <span class='right-arrow'>—›</span> " + nodeCountParts.join(bullet) : nodeItems.length);
+    wrSetHtml('wr-node-count', model.nodes.length > 1 && nodeCountParts.length
+        ? model.nodeDevices.length + " <span class='right-arrow'>—›</span> " + nodeCountParts.join(bullet)
+        : model.nodeDevices.length);
     wrSetHtml('wr-node-diag', nodeDiagParts.length ? nodeDiagParts.join('<br>') : 'No node diagnostic telemetry available.');
 
-    var allNames = ["<span style='color:" + WR_CONFIG.mainColor + ";'>" + wrEscape(document.getElementById('wr-main-name').textContent) + "</span>"];
-    allNames = allNames.concat(nodeNamesHtml);
+    var allNames = ["<span style='color:" + WR_CONFIG.mainColor + ";'>" + wrEscape(model.main.name) + "</span>"].concat(nodeNamesHtml);
     wrSetHtml('wr-all-names', allNames.join(bullet));
 
     var nodeCol = document.getElementById('nodeCol');
-    if (nodeCol) nodeCol.style.display = nodes.length ? 'flex' : 'none';
+    if (nodeCol) nodeCol.style.display = model.nodes.length ? 'flex' : 'none';
 
-    document.querySelectorAll('.wr-updated-time').forEach(function(el) { el.textContent = 'Updated: ' + wrFormatDateTime(new Date()); });
+    // Preserve v2.1 router-only presentation: without a usable AiMesh node there
+    // is no redundant Main/All/Side-by-Side view selector.
+    ['btnMain', 'btnAll', 'btnSideBySide'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = model.nodes.length ? '' : 'none';
+    });
+    if (!model.nodes.length) {
+        switchTab('split');
+        var allCol = document.getElementById('allCol');
+        var allBar = document.getElementById('allDevicesQualityBar');
+        if (allCol) allCol.style.display = 'none';
+        if (allBar) allBar.style.display = 'none';
+    }
+
+    document.querySelectorAll('.wr-updated-time').forEach(function(el) {
+        el.textContent = 'Updated: ' + wrFormatDateTime(new Date(model.updatedAt));
+    });
     wrRestoreTableState();
 
     if (localStorage.getItem('wifiReportPopoutOpen') === 'true') {
@@ -2266,6 +2413,12 @@ async function loadWirelessReport() {
     }
 }
 
+async function loadWirelessReport() {
+    var snapshot = await wrCollectControllerData();
+    var model = wrNormalizeControllerData(snapshot);
+    wrRenderModel(model);
+    return model;
+}
 async function initial() {
     show_menu();
     wrPrepareRssiHistoryStorage();
@@ -2642,7 +2795,7 @@ document.addEventListener('mouseout', function(e) {
                             </div>
                             <button id="btnMain" class="button-tables active" onclick="switchTab('split')" style="$ROUTER_ONLY">Main</button>
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')" style="$ROUTER_ONLY">All Devices</button>
-                            <button class="button-tables" onclick="openPopout()" style="$ROUTER_ONLY">Side by Side ⇗</button>
+                            <button id="btnSideBySide" class="button-tables" onclick="openPopout()" style="$ROUTER_ONLY">Side by Side ⇗</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
                         </div>
                     </div>
@@ -2765,6 +2918,7 @@ document.addEventListener('mouseout', function(e) {
     </div>
 </body>
 HTML
+
 }
 case "$1" in
     install)
@@ -2772,15 +2926,20 @@ case "$1" in
         startup
         install_menu
         ;;
-    install-apply)
-        # Internal second stage used after an update/reinstall.  Do not reopen
-        # the menu; finish persistence and WebUI injection immediately.
+    update-apply)
+        # The WebUI target is already bind-mounted. Rebuild /tmp/wireless.asp
+        # with the new executable and keep the existing ASUS page allocation.
         startup
-        # install-apply bypasses show_header(), so initialize the menu/install
-        # variables explicitly (including services-start/service-event paths).
-        menu_vars
-        REMOTE_VERSION="$SCRIPT_VERSION"
-        do_install --apply
+        if apply_updated_page; then
+            if [ "$2" != "quiet" ]; then
+                echo -e "${GR}[✓] Wireless Report updated and WebUI regenerated.${NC}"
+                echo -e "${YL}[i] Reload the Wireless Report browser page to load the new JavaScript.${NC}"
+                pause
+            fi
+            exit 0
+        fi
+        echo -e "${RD}[!] Wireless Report update applied, but WebUI regeneration failed.${NC}" >&2
+        exit 1
         ;;
     inject|inject1|inject2|inject3)
         case "$1" in

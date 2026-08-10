@@ -11,7 +11,11 @@ I created this script to solve a specific gap in the ASUS WebGUI: the lack of re
 \
 \
 $\color{blue}{\Large\text{CONTROLLER-ONLY DATA INTEGRATION}}$<br>
-Wireless Report v2.2 no longer logs in to AiMesh nodes and no longer uses SSH keys. The report page runs inside the authenticated primary-router WebUI and retrieves data with same-origin requests to ASUS controller endpoints.
+Wireless Report v2.3 keeps the original report/install/presentation structure wherever possible and replaces the old local/SSH wireless collection layer with a small browser-side controller collector. The report page runs inside the authenticated primary-router WebUI and retrieves data with same-origin requests to ASUS controller endpoints.
+
+The v2.3 data path is intentionally split into three stages: raw ASUS controller collection, normalization into Wireless Report device/node variables, and presentation. The table/rendering layer does not depend directly on ASUS response schemas.
+
+> **Display settings:** Terminal changes regenerate `/tmp/wireless.asp`. The ASUS `userN.asp` page is already a bind mount of that source, so routine updates/settings do not require a remount. Reload the Wireless Report browser tab after changing a display setting because the already-running page keeps its existing JavaScript variables until reload. The in-page Refresh control refreshes telemetry only.
 
 * `/appGet.cgi` supplies AiMesh inventory and normal client metadata.
 * `/get_diag_latest_content_data.cgi` supplies `stainfo` wireless-station telemetry plus `sys_detect` node CPU/memory telemetry.
@@ -73,7 +77,9 @@ $\color{green}{\text{Option (5):}}$ Edit Device Colors: Customize individual dev
 \
 $\color{green}{\text{Option (6):}}$ Set Options
  * $\color{blue}{\text{Toggle Browser Refresh Runtime:}}$ Shows the elapsed API-refresh time on the Refresh button and keeps average/min/max values in browser local storage.
+ * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Preserves the original v2.1 backhaul display control when the controller exposes a matching infrastructure station.
  * $\color{blue}{\text{Configure Connection Alert Pulse:}}$ Sets the threshold (Default: 15 mins, Max: 1440 mins) used to highlight recently associated/reconnected wireless clients.<br>
+ * $\color{blue}{\text{Configure RSSI History:}}$ Stores 5–20 RSSI samples per client in browser local storage, with optional timestamps and original-style trend/history tooltips.<br>
  * $\color{blue}{\text{Set Theme:}}$ Switch between Original, Darkmode, and Asus WebUI theme styles.<br>
  * $\color{blue}{\text{Toggle IP Padding:}}$ Aligns IP columns using the existing three display modes.<br>
  * $\color{blue}{\text{Toggle Node Hostname Display:}}$ Switches between numbered white hostnames and node-colored hostnames.<br>
@@ -89,7 +95,7 @@ $\color{blue}{\Large\text{KEY FEATURES + NAVIGATION}}$
 
 * $\color{green}{\text{CPU-Memory Health:}}$ The primary router and AiMesh nodes use matching health headers: CPU utilization %, memory utilization %, and wireless device count. The primary router derives CPU utilization from ASUS CPU counter samples and memory utilization from the primary WebUI API; AiMesh nodes use controller-reported `sys_detect` CPU/memory telemetry.
 
-* $\color{green}{\text{AiMesh Node Health:}}$ Node headers show controller-reported CPU utilization and memory utilization. Nodes explicitly reported offline by the AiMesh inventory are omitted from the report, matching the original v2.1.0 presentation behavior. The footer retains model/IP/firmware plus a labeled telemetry timestamp; committed memory and online/status text are not displayed. Node CPU temperature, Linux load averages, and node system uptime are not requested from the node because v2.2 is deliberately controller-only.
+* $\color{green}{\text{AiMesh Node Health:}}$ Node headers show controller-reported CPU utilization and memory utilization. Nodes explicitly reported offline by the AiMesh inventory are omitted from the report, matching the original v2.1.0 presentation behavior. The footer retains model/IP/firmware plus a labeled telemetry timestamp; committed memory and online/status text are not displayed. Node CPU temperature, Linux load averages, and node system uptime are not requested from the node because v2.3 is deliberately controller-only.
 
 * $\color{green}{\text{Auto-Refresh:}}$ The table refreshes in place through the primary-router WebUI APIs. Manual and scheduled refreshes no longer restart Wireless Report or wait for SSH scans.
 * $\color{green}{\text{Unified Dashboard:}}$ View all connected clients across your entire mesh system in one place. The table includes Hostnames, IP/MAC Addresses, RSSI, RX/TX PHY/link rates, SSID/Interface, Band, and wireless connection duration. The PHY values are link rates, not live application throughput.
