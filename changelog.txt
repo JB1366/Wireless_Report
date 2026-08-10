@@ -1,3 +1,11 @@
+v2.2.10 - Restore functional date/time formatting after Temp/Load removal
+
+- Rename menu option 3 from Edit Temp/Date to Edit Date/Time Format; temperature units are no longer presented because v2.2 uses CPU/Memory utilization instead of temperature/load.
+- Add USA (`MM/DD/YYYY hh:mm:ss AM/PM`), International (`DD/MM/YYYY HH:mm:ss`), and ISO (`YYYY-MM-DD HH:mm:ss`) display modes.
+- Apply the selected format consistently to Updated, primary Reboot, and node Telemetry timestamps in the browser.
+- Automatically migrate legacy `REPORT_UNIT=F/C/ISO` configuration to `DATE_FORMAT=USA/INTL/ISO` and remove the obsolete temperature setting.
+- Remove the unused browser `wrTemp()` helper and obsolete temperature-unit plumbing.
+
 v2.2.9 - Fix primary-router STAINFO fallback and wireless Band coverage
 
 - Confirmed on GT-BE98 Pro that a broad `stainfo` query filtered by primary `node_mac` + `sta_active=1` returns only one/latest station row rather than the complete active-station set.

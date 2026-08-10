@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.2.9"
+SCRIPT_VERSION="2.2.10"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -74,7 +74,7 @@ install_menu() {
 		echo -e "                                                       "
 		echo -e "  $N1  Install/Update                                  "
 		echo -e "  $N2  Uninstall                                       "
-		echo -e "  $N3  Edit Temp/Date ($DU) ($CT)                      "
+		echo -e "  $N3  Edit Date/Time Format ($DF) ($CT)                "
 		echo -e "  $N4  Edit Device Nicknames                           "
         echo -e "  $N5  Edit Device Colors                              "
 		echo -e "  $N6  Configure Display Options ($TM_STAT)            "
@@ -89,7 +89,7 @@ install_menu() {
                     freeze || continue
 					case "$choice" in
 						2) do_uninstall ;;
-						3) set_temp_date; run_report ;;
+						3) set_date_time; run_report ;;
 						4) set_nicknames; run_report ;;
 						5) set_colors; run_report ;;
 						6) set_options; run_report ;;
@@ -151,10 +151,13 @@ menu_vars() {
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
 	STATUS=" ${BL}STATUS:${NC}"; CURRENT="${GR}Current: v$SCRIPT_VERSION${NC}"
     SS_FILE="/jffs/scripts/services-start"; SE_FILE="/jffs/scripts/service-event"
-	DISPLAY_UNIT="${REPORT_UNIT:-F}"
-    if [ "$REPORT_UNIT" = "ISO" ]; then DISPLAY_UNIT="C"; fi
-	DU="${GR}°$DISPLAY_UNIT${NC}"; CT="${GR}$CUR_TIME${NC}"
-	DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
+	DATE_FORMAT=${DATE_FORMAT:-USA}
+	case "$DATE_FORMAT" in USA|INTL|ISO) ;; *) DATE_FORMAT="USA" ;; esac
+	update_time
+	DF="${GR}$DATE_FORMAT${NC}"; CT="${GR}$CUR_TIME${NC}"
+	DATE_USA=$(date +"%m/%d/%Y %I:%M %p")
+	DATE_INTL=$(date +"%d/%m/%Y %H:%M")
+	DATE_ISO=$(date +"%Y-%m-%d %H:%M:%S")
 	RTIME=${RTIME:-1}; if [ "$RTIME" = "0" ]; then RT_STAT="$OFF"; else RT_STAT="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}; if [ "$BACKHAUL" = "no" ]; then WB_STAT="$OFF"; else WB_STAT="$ON"; fi
     PULSE_MINS=${PULSE_MINS:-15}; if [ "$PULSE_MINS" = "0" ]; then UP_STAT="$OFF"; else UP_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
@@ -407,24 +410,24 @@ do_uninstall() {
 	rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
 	logger -p user.info -t "Wireless_Report" "(v$SCRIPT_VERSION) successfully uninstalled."
     unset RTIME BACKHAUL CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES
-    unset THEME IPPAD PULSE_MINS DISPLAY_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
+    unset THEME IPPAD PULSE_MINS DATE_FORMAT REPORT_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
 	echo -e "${GR}[+] System cleaned. Existing SSH keys were left untouched.${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
 	pause
 }
 
-set_temp_date() {
+set_date_time() {
     while true; do
         show_header
         echo -e "${BL}=================================================="
-        echo -e "${NC}                  Set Temp/Date                   "
+        echo -e "${NC}                Set Date/Time Format               "
         echo -e "${BL}=================================================="
-        echo -e "${BL}  Unit:${NC} $DU              ${BL}Date:${NC} $CT "
+        echo -e "${BL}  Current:${NC} $DF          ${BL}Now:${NC} $CT "
         echo -e "${BL}=================================================="
         echo -e "                                                       "
-        echo -e "  $N1  Fahrenheit (°F) / USA  ($DATE_USA)              "
-        echo -e "  $N2  Celsius    (°C) / INTL ($DATE_INTL)             "
-        echo -e "  $N3  Technical  (°C) / TECH ($DATE_ISO)              "
+        echo -e "  $N1  USA           ($DATE_USA)                       "
+        echo -e "  $N2  International ($DATE_INTL)                      "
+        echo -e "  $N3  ISO           ($DATE_ISO)                       "
         echo -e "                                                       "
         echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
@@ -432,16 +435,17 @@ set_temp_date() {
         while true; do
             printf "\n ${NC}Selection: ${BL}"; read -r t_choice
             case "$t_choice" in
-                1) NEW_UNIT="F" ;;
-                2) NEW_UNIT="C" ;;
-                3) NEW_UNIT="ISO" ;;
+                1) NEW_FORMAT="USA" ;;
+                2) NEW_FORMAT="INTL" ;;
+                3) NEW_FORMAT="ISO" ;;
                 e|E) sort -u -o "$CONFIG" "$CONFIG"; return ;;
                 *) freeze2; continue ;;
             esac
-            sed -i '/REPORT_UNIT=/d' "$CONFIG"
-            echo "REPORT_UNIT=\"$NEW_UNIT\"" >> "$CONFIG"
-            REPORT_UNIT="$NEW_UNIT"
-            echo -e "\n${GR}[+] Settings updated to $NEW_UNIT${NC}"
+            sed -i '/^DATE_FORMAT=/d; /^REPORT_UNIT=/d' "$CONFIG"
+            echo "DATE_FORMAT=\"$NEW_FORMAT\"" >> "$CONFIG"
+            DATE_FORMAT="$NEW_FORMAT"
+            update_time
+            echo -e "\n${GR}[+] Date/time format updated to $NEW_FORMAT${NC}"
             pause; break
         done
     done
@@ -907,24 +911,38 @@ echo -e "${NC}\n\n\n" #=========================================================
 #====================#
 #  Report Functions  #
 #====================#
-update_time() {
-    if [ "$REPORT_UNIT" = "ISO" ]; then
-        T_FMT="+%Y-%m-%d %H:%M:%S"
-        D_FMT="+%Y-%m-%d %H:%M"
-        TEMP_UNIT="C"
-    elif [ "$REPORT_UNIT" = "C" ]; then
-        T_FMT="+%-d-%b %-H:%M:%S"
-        D_FMT="+%-d-%b %-H:%M"
-        TEMP_UNIT="C"
-    else
-        T_FMT="+%b-%-d %-H:%M:%S"
-        D_FMT="+%b-%-d %-H:%M"
-        TEMP_UNIT="F"
+normalize_date_format() {
+    # v2.1.x/v2.2.0-v2.2.9 tied date style to REPORT_UNIT.  Temperature is no
+    # longer displayed, so migrate that legacy preference once to DATE_FORMAT.
+    case "${DATE_FORMAT:-}" in
+        USA|INTL|ISO) ;;
+        *)
+            case "${REPORT_UNIT:-}" in
+                C)   DATE_FORMAT="INTL" ;;
+                ISO) DATE_FORMAT="ISO" ;;
+                *)   DATE_FORMAT="USA" ;;
+            esac
+            ;;
+    esac
+
+    if [ -f "$CONFIG" ]; then
+        if grep -q '^REPORT_UNIT=' "$CONFIG" 2>/dev/null || ! grep -q '^DATE_FORMAT=' "$CONFIG" 2>/dev/null; then
+            sed -i '/^DATE_FORMAT=/d; /^REPORT_UNIT=/d' "$CONFIG" 2>/dev/null
+            echo "DATE_FORMAT=\"$DATE_FORMAT\"" >> "$CONFIG"
+        fi
     fi
+}
+
+update_time() {
+    case "${DATE_FORMAT:-USA}" in
+        INTL) T_FMT="+%d/%m/%Y %H:%M:%S" ;;
+        ISO)  T_FMT="+%Y-%m-%d %H:%M:%S" ;;
+        *)    DATE_FORMAT="USA"; T_FMT="+%m/%d/%Y %I:%M:%S %p" ;;
+    esac
     CUR_TIME=$(date "$T_FMT")
 }
 
-startup() { mesh_init; check_github; update_time; }
+startup() { mesh_init; check_github; normalize_date_format; update_time; }
 
 run_report() {
 #======================================#
@@ -1163,7 +1181,7 @@ var WR_CONFIG = {
     nodeColors: String("$NODE_COLORS").trim().split(/\s+/).filter(Boolean),
     hostColor: Number("$HOST_COLOR") || 0,
     pulseMins: Number("$PULSE_MINS"),
-    reportUnit: String("${REPORT_UNIT:-F}"),
+    dateFormat: String("${DATE_FORMAT:-USA}"),
     runtimeTracking: Number("${RTIME:-1}") || 0,
     ipPad: Number("${IPPAD:-1}") || 0
 };
@@ -1278,14 +1296,32 @@ function wrParseUptime(raw) {
     return m ? Number(m[1]) : null;
 }
 
-function wrTemp(value) {
-    var c = parseFloat(value);
-    if (!Number.isFinite(c)) return { text: '--', cls: 'stat-cool' };
-    if (WR_CONFIG.reportUnit === 'C' || WR_CONFIG.reportUnit === 'ISO') {
-        return { text: c.toFixed(1) + '°C', cls: c >= 90 ? 'stat-hot' : c >= 75 ? 'stat-warm' : 'stat-cool' };
+function wrPad2(value) {
+    return String(value).padStart(2, '0');
+}
+
+function wrFormatDateTime(value) {
+    var d = value instanceof Date ? value : new Date(value);
+    if (!d || Number.isNaN(d.getTime())) return '--';
+
+    var y = d.getFullYear();
+    var month = wrPad2(d.getMonth() + 1);
+    var day = wrPad2(d.getDate());
+    var hh24 = d.getHours();
+    var minute = wrPad2(d.getMinutes());
+    var second = wrPad2(d.getSeconds());
+
+    switch (WR_CONFIG.dateFormat) {
+        case 'INTL':
+            return day + '/' + month + '/' + y + ' ' + wrPad2(hh24) + ':' + minute + ':' + second;
+        case 'ISO':
+            return y + '-' + month + '-' + day + ' ' + wrPad2(hh24) + ':' + minute + ':' + second;
+        case 'USA':
+        default:
+            var suffix = hh24 >= 12 ? 'PM' : 'AM';
+            var hh12 = hh24 % 12 || 12;
+            return month + '/' + day + '/' + y + ' ' + wrPad2(hh12) + ':' + minute + ':' + second + ' ' + suffix;
     }
-    var f = c * 9 / 5 + 32;
-    return { text: f.toFixed(1) + '°F', cls: f >= 194 ? 'stat-hot' : f >= 167 ? 'stat-warm' : 'stat-cool' };
 }
 
 function wrMetricClass(value) {
@@ -1883,7 +1919,7 @@ async function loadWirelessReport() {
 
     var uptimeSecs = wrParseUptime(base.uptime);
     wrSetText('wr-main-uptime', wrFormatRouterUptime(uptimeSecs));
-    wrSetText('wr-main-reboot', Number.isFinite(uptimeSecs) ? new Date(Date.now() - uptimeSecs * 1000).toLocaleString() : '--');
+    wrSetText('wr-main-reboot', Number.isFinite(uptimeSecs) ? wrFormatDateTime(new Date(Date.now() - uptimeSecs * 1000)) : '--');
 
     var mainNameEl = document.getElementById('wr-main-name');
     if (mainNameEl && !mainNameEl.textContent.trim()) mainNameEl.textContent = base.productid || 'Main Router';
@@ -1923,7 +1959,7 @@ async function loadWirelessReport() {
         if (model) details += ' ' + wrEscape(model);
         if (ip) details += ' • ' + wrEscape(ip);
         if (firmware) details += ' • FW ' + wrEscape(firmware);
-        if (diag && Number.isFinite(diag.timestamp)) details += ' • Telemetry ' + new Date(diag.timestamp * 1000).toLocaleTimeString();
+        if (diag && Number.isFinite(diag.timestamp)) details += ' • Telemetry ' + wrFormatDateTime(new Date(diag.timestamp * 1000));
         nodeDiagParts.push(details);
     });
 
@@ -1941,7 +1977,7 @@ async function loadWirelessReport() {
     var nodeCol = document.getElementById('nodeCol');
     if (nodeCol) nodeCol.style.display = nodes.length ? 'flex' : 'none';
 
-    document.querySelectorAll('.wr-updated-time').forEach(function(el) { el.textContent = 'Updated: ' + new Date().toLocaleString(); });
+    document.querySelectorAll('.wr-updated-time').forEach(function(el) { el.textContent = 'Updated: ' + wrFormatDateTime(new Date()); });
     wrRestoreTableState();
 
     if (localStorage.getItem('wifiReportPopoutOpen') === 'true') {

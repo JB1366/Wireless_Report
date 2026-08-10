@@ -56,7 +56,7 @@ $\color{blue}{\text{Note:}}$ At this stage, Wireless Report is active and ready 
 \
 $\color{blue}{\Large\text{OPTIONAL CONFIGURATION:}}$<br>
 
-$\color{green}{\text{Option (3):}}$ Regional Settings: Toggle between Fahrenheit (default) and Celsius. Selecting Celsius will also automatically adjust the date to a non-US format (DD/MM/YYYY). Default is $\color{green}{\text{(1)}}$, if you do nothing.<br>
+$\color{green}{\text{Option (3):}}$ Date/Time Format: Choose how Wireless Report displays browser-generated timestamps. USA uses `MM/DD/YYYY hh:mm:ss AM/PM`, International uses `DD/MM/YYYY HH:mm:ss`, and ISO uses `YYYY-MM-DD HH:mm:ss`. The selected format is applied consistently to report update times, the primary-router reboot time, and AiMesh telemetry timestamps. Existing `REPORT_UNIT=F/C/ISO` settings from older releases are migrated automatically to `USA/INTL/ISO`.<br>
 
 ![Instructions2](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions2.png)<br>
 \
