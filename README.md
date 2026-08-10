@@ -180,6 +180,8 @@ Once configured, simply typing wr from any location in the SSH terminal will lau
 $\color{blue}{\Large\text{UNINSTALL}}$<br>
 If you need to remove Wireless Report AiMesh, you can do so through the installer menu. Both methods below will strip the script files and remove the WebGUI tab.
 
+When uninstalling v2.2.13 or later, Wireless Report also checks currently mounted USB storage for the legacy v2.1 `wirelessreport` data directory. If one is identified by its old history/runtime marker files, the uninstaller displays the exact path and asks whether to remove it. Legacy USB data is never deleted automatically during an upgrade, and answering **No** during uninstall preserves it. USB storage that is not mounted at uninstall time cannot be detected.
+
 $\color{green}{\text{Method A:}}$ Via amtm<br>
    * Open the amtm menu and type wr.<br>
    * Select Option (2) to perform the uninstall.<br>

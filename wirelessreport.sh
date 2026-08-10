@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.2.12"
+SCRIPT_VERSION="2.2.4"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -425,12 +425,51 @@ inject_menu() {
     else "$REPORT_SCRIPT" & fi
 }
 
+find_legacy_usb_data() {
+    # v2.1 stored persistent report state under /tmp/mnt/<USB>/wirelessreport.
+    # Only report directories containing known v2.1 marker files so an unrelated
+    # user-created directory with the same basename is not offered for deletion.
+    local legacy_dir
+    for legacy_dir in /tmp/mnt/*/wirelessreport; do
+        [ -d "$legacy_dir" ] || continue
+        if [ -e "$legacy_dir/rssi_history.db" ] || \
+           [ -e "$legacy_dir/known_macs.db" ] || \
+           [ -e "$legacy_dir/runtime.db" ] || \
+           [ -e "$legacy_dir/ssh_error.log" ]; then
+            printf '%s\n' "$legacy_dir"
+        fi
+    done
+}
+
 do_uninstall() {
     echo -e "\n${RD}[!] WARNING: Removing Wireless Report...${NC}\n"
     while true; do
         printf "Are you sure? (y/n): "; read -r confirm
         case "$confirm" in [yY]) break ;; [nN]) return ;; *) printf "\033[1A\033[J" ;; esac; done
 	if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
+
+    # v2.2+ never uses the old USB history/runtime directory, and upgrades leave
+    # it untouched intentionally. On uninstall, detect mounted v2.1 data and let
+    # the user explicitly choose whether to remove it.
+    LEGACY_USB_DIRS=$(find_legacy_usb_data)
+    LEGACY_USB_CLEANUP="no"
+    if [ -n "$LEGACY_USB_DIRS" ]; then
+        echo -e "\n${YL}[i] Legacy v2.1 Wireless Report data found on mounted USB storage:${NC}"
+        printf '%s\n' "$LEGACY_USB_DIRS" | while IFS= read -r legacy_dir; do
+            [ -n "$legacy_dir" ] && printf '    %s\n' "$legacy_dir"
+        done
+        echo -e "${YL}[i] This data is not used by v2.2+ and is never removed during upgrades.${NC}"
+        while true; do
+            printf "Remove the legacy USB data director%s too? (y/n): " "$(printf '%s\n' "$LEGACY_USB_DIRS" | grep -c . | awk '{print ($1 == 1 ? "y" : "ies")}')"
+            read -r legacy_cleanup
+            case "$legacy_cleanup" in
+                [yY]) LEGACY_USB_CLEANUP="yes"; break ;;
+                [nN]) LEGACY_USB_CLEANUP="no"; break ;;
+                *) printf "\033[1A\033[J" ;;
+            esac
+        done
+    fi
+
 	if mount | grep -q "menuTree.js"; then
 		umount -l "$SYSTEM_MENU" >/dev/null 2>&1
 		sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
@@ -446,6 +485,25 @@ do_uninstall() {
 	sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"; sed -i "/# sshpairs/d" "$SS_FILE" 2>/dev/null; sed -i "/wireless_report/d" "$SE_FILE"
 	restart_httpd; mesh_init
 	rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
+
+    if [ "$LEGACY_USB_CLEANUP" = "yes" ] && [ -n "$LEGACY_USB_DIRS" ]; then
+        printf '%s\n' "$LEGACY_USB_DIRS" | while IFS= read -r legacy_dir; do
+            [ -n "$legacy_dir" ] || continue
+            case "$legacy_dir" in
+                /tmp/mnt/*/wirelessreport)
+                    if rm -rf "$legacy_dir" 2>/dev/null; then
+                        echo -e "${GR}[+] Removed legacy USB data: $legacy_dir${NC}"
+                        logger -p user.info -t "Wireless_Report" "Removed legacy v2.1 USB data: $legacy_dir"
+                    else
+                        echo -e "${RD}[!] Unable to remove legacy USB data: $legacy_dir${NC}"
+                    fi
+                    ;;
+            esac
+        done
+    elif [ -n "$LEGACY_USB_DIRS" ]; then
+        echo -e "${YL}[i] Legacy USB data preserved.${NC}"
+    fi
+
 	logger -p user.info -t "Wireless_Report" "(v$SCRIPT_VERSION) successfully uninstalled."
     unset RTIME BACKHAUL CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES
     unset THEME IPPAD PULSE_MINS DATE_FORMAT REPORT_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
