@@ -2,17 +2,6 @@
 # Wireless Report - Changelog #
 #=============================#
 
-v2.3.0 - Preservation architecture: replace only the wireless data-acquisition layer
-- Reorganize the controller-only implementation around the original Wireless Report lifecycle and presentation model: ASUS collection -> normalized Wireless Report device/node variables -> existing-style renderer.
-- Keep raw `/appGet.cgi`, `stainfo`, and `sys_detect` schemas inside the Layer-2 collector/normalizer so presentation code no longer consumes raw ASUS client/station objects.
-- Preserve the original Main / AiMesh Node / All Devices tables, RSSI grading, sorting/toggles, node numbering rules, nickname/color handling, IP padding, connection pulse, RSSI history behavior, and router-only/single-node presentation as far as controller data permits.
-- Restore the Wireless Backhaul display option using the original middle-MAC-prefix heuristic when the controller exposes a backhaul station.
-- Preserve controller-only operation: no node SSH authentication, no node credentials, and no direct node WebUI requests.
-- Keep the proven per-client `node_mac + sta_mac` stainfo fallback because broad stainfo queries can return only one/latest station on the tested GT-BE98 Pro.
-- Correct the update lifecycle: routine updates regenerate `/tmp/wireless.asp` with the new executable but do not reallocate/remount the already bind-mounted ASUS `userN.asp` page.
-- Remove the v2.2.14 `sync_installed_webui_page()` copy workaround; the bind mount already exposes regenerated `/tmp/wireless.asp`.
-- AMTM updates also regenerate the existing WebUI source after replacing the executable.
-
 v2.2.4 - Optional cleanup of legacy v2.1 USB data on uninstall
 - Detect mounted `/tmp/mnt/<USB>/wirelessreport` directories only when they contain known v2.1 marker files (`rssi_history.db`, `known_macs.db`, `runtime.db`, or `ssh_error.log`).
 - Keep legacy USB data untouched during install/update; v2.2+ does not use it.
