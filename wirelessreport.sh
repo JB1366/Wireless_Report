@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.2.11"
+SCRIPT_VERSION="2.2.12"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -191,9 +191,14 @@ menu_vars() {
 	RTIME=${RTIME:-1}; if [ "$RTIME" = "0" ]; then RT_STAT="$OFF"; else RT_STAT="$ON"; fi
     BACKHAUL=${BACKHAUL:-no}; if [ "$BACKHAUL" = "no" ]; then WB_STAT="$OFF"; else WB_STAT="$ON"; fi
     PULSE_MINS=${PULSE_MINS:-15}; if [ "$PULSE_MINS" = "0" ]; then UP_STAT="$OFF"; else UP_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
-    RS_HIST=${RS_HIST:-0}; CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}
-	CUR_ENTRIES=${CUR_ENTRIES:-${RS_HIST_ENTRIES:-5}}
-	CUR_DATE=${CUR_DATE:-${RS_HIST_DATE:-0}}; CE="${GR}$CUR_ENTRIES${NC}"
+    RS_HIST=${RS_HIST:-0}; case "$RS_HIST" in 0|1) ;; *) RS_HIST=0 ;; esac
+    RS_HIST_ENTRIES=${RS_HIST_ENTRIES:-5}
+    case "$RS_HIST_ENTRIES" in ""|*[!0-9]*) RS_HIST_ENTRIES=5 ;; esac
+    if [ "$RS_HIST_ENTRIES" -lt 5 ] || [ "$RS_HIST_ENTRIES" -gt 20 ]; then RS_HIST_ENTRIES=5; fi
+    RS_HIST_DATE=${RS_HIST_DATE:-0}; case "$RS_HIST_DATE" in 0|1) ;; *) RS_HIST_DATE=0 ;; esac
+    CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}
+	CUR_ENTRIES=${CUR_ENTRIES:-$RS_HIST_ENTRIES}
+	CUR_DATE=${CUR_DATE:-$RS_HIST_DATE}; CE="${GR}$CUR_ENTRIES${NC}"
     if [ "$RS_HIST" = "1" ]; then RH_STAT="$ON"; else RH_STAT="$OFF"; fi
 	if [ "$CUR_RS_HIST" = "1" ]; then CH="$ON"; else CH="$OFF"; fi
 	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
@@ -759,9 +764,10 @@ set_options() {
         echo -e "                                                       "
         echo -e "  $N1  Toggle Browser Refresh Runtime: ($RT_STAT)      "
         echo -e "  $N2  Configure Connection Alert Pulse: ($UP_STAT)    "
-        echo -e "  $N3  Set Theme: ($TM_STAT)                           "
-        echo -e "  $N4  Toggle IP Padding: ($PD_STAT)                   "
-        echo -e "  $N5  Toggle Node Hostname Display: ($HN_STAT)        "
+        echo -e "  $N3  Configure RSSI History: ($RH_STAT)              "
+        echo -e "  $N4  Set Theme: ($TM_STAT)                           "
+        echo -e "  $N5  Toggle IP Padding: ($PD_STAT)                   "
+        echo -e "  $N6  Toggle Node Hostname Display: ($HN_STAT)        "
         echo -e "                                                       "
         echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
@@ -794,8 +800,10 @@ set_options() {
                     done
                     pause; break ;;
                 3)
-                    theme_submenu; break ;;
+                    rssi_submenu; break ;;
                 4)
+                    theme_submenu; break ;;
+                5)
                     if grep -q "IPPAD=" "$CONFIG"; then
                         if [ "$IPPAD" = "1" ]; then
                             echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
@@ -814,7 +822,7 @@ set_options() {
                         pause
                     fi
                     break ;;
-                5)
+                6)
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
                         if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
@@ -824,6 +832,68 @@ set_options() {
                     break ;;
                 e|E)
                     sort -u -o "$CONFIG" "$CONFIG"; return 0 ;;
+                *)
+                    freeze2; continue ;;
+            esac
+        done
+    done
+}
+
+rssi_submenu() {
+    while true; do
+        show_header
+        echo -e "${BL}=================================================="
+        echo -e "${NC}           RSSI History Configuration             "
+        echo -e "${BL}=================================================="
+        echo -e "                                                       "
+        echo -e "  $N1 Toggle RSSI History: [$CH]                       "
+        echo -e "  $N2 Set History Depth:   [$CE] entries               "
+        echo -e "  $N3 Toggle Timestamps:   [$TS]                       "
+        echo -e "                                                       "
+        echo -e "  $NQ Cancel and Discard Changes                       "
+        echo -e "  $NE Exit and Save Changes                            "
+        echo -e "                                                       "
+        echo -e "${BL}=================================================="
+        while true; do
+            printf "\n ${NC}Selection: ${BL}"; read -r sub_choice
+            case "$sub_choice" in
+                1)
+                    if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
+                    break ;;
+                2)
+                    while true; do
+                        printf "\n ${NC}Enter new depth (${BL}5-20${NC}) [Current: $CE]: "; read -r new_depth
+                        case "$new_depth" in *[!0-9]*|"") freeze2; continue ;; esac
+                        if [ "$new_depth" -ge 5 ] && [ "$new_depth" -le 20 ]; then
+                            CUR_ENTRIES="$new_depth"
+                            CE="${GR}$CUR_ENTRIES${NC}"
+                            break 2
+                        fi
+                        freeze2
+                    done ;;
+                3)
+                    if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
+                    break ;;
+                c|C)
+                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
+                    return 0 ;;
+                e|E)
+                    RS_HIST="$CUR_RS_HIST"
+                    RS_HIST_ENTRIES="$CUR_ENTRIES"
+                    RS_HIST_DATE="$CUR_DATE"
+                    for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
+                        eval "val=\$${var}"
+                        if grep -q "^$var=" "$CONFIG"; then
+                            sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
+                        else
+                            echo "$var=\"$val\"" >> "$CONFIG"
+                        fi
+                    done
+                    echo -e "\n${GR}[+] RSSI history configuration saved.${NC}"
+                    echo -e "${BL}[i] History is stored only in browser localStorage."
+                    echo -e "    If these settings changed, browser history resets on the next report reload.${NC}"
+                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
+                    pause; return 0 ;;
                 *)
                     freeze2; continue ;;
             esac
@@ -1216,7 +1286,10 @@ var WR_CONFIG = {
     pulseMins: Number("$PULSE_MINS"),
     dateFormat: String("${DATE_FORMAT:-USA}"),
     runtimeTracking: Number("${RTIME:-1}") || 0,
-    ipPad: Number("${IPPAD:-1}") || 0
+    ipPad: Number("${IPPAD:-1}") || 0,
+    rssiHistory: Number("${RS_HIST:-0}") || 0,
+    rssiHistoryEntries: Number("${RS_HIST_ENTRIES:-5}") || 5,
+    rssiHistoryDate: Number("${RS_HIST_DATE:-0}") || 0
 };
 
 var WR_STA_COLUMNS = [
@@ -1412,13 +1485,124 @@ function wrLoadJson(key, fallback) {
     }
 }
 
-function wrGetTrend(mac, rssi, history) {
+function wrRssiHistoryEntries(raw) {
+    if (Array.isArray(raw)) {
+        return raw.filter(function(entry) {
+            return entry && Number.isFinite(wrNumber(entry.rssi));
+        }).map(function(entry) {
+            return {
+                rssi: wrNumber(entry.rssi),
+                name: String(entry.name || ''),
+                band: String(entry.band || ''),
+                time: Number.isFinite(wrNumber(entry.time)) ? wrNumber(entry.time) : null
+            };
+        });
+    }
+
+    // v2.2.0-v2.2.11 stored just one numeric RSSI value per MAC. Preserve that
+    // value as the first browser-history sample when upgrading to the richer model.
+    var legacy = wrNumber(raw);
+    if (Number.isFinite(legacy)) {
+        return [{ rssi: legacy, name: '', band: '', time: null }];
+    }
+    return [];
+}
+
+function wrRssiHistorySignature() {
+    return [
+        WR_CONFIG.rssiHistory ? 1 : 0,
+        WR_CONFIG.rssiHistoryEntries,
+        WR_CONFIG.rssiHistoryDate ? 1 : 0
+    ].join('|');
+}
+
+function wrPrepareRssiHistoryStorage() {
+    var sigKey = 'wirelessReportRssiHistoryConfig';
+    var current = wrRssiHistorySignature();
+    var previous = localStorage.getItem(sigKey);
+
+    // On the first v2.2.12 load, keep/migrate the single-sample v2.2 history.
+    // After that, mirror v2.1.0 behavior: changing history settings starts clean.
+    if (previous !== null && previous !== current) {
+        localStorage.removeItem('wirelessReportRssiHistory');
+    }
+    localStorage.setItem(sigKey, current);
+}
+
+function wrRssiHistoryBand(item) {
+    if (item && item.sta && item.sta.sta_band !== undefined) {
+        return wrBandName(item.sta.sta_band);
+    }
+    return wrBandName(wrFirst(item && item.client, ['band', 'wlBand']) || '');
+}
+
+function wrRssiHistoryLocation(item) {
+    if (item && item.node) return wrNodeDisplayName(item.node);
+    var el = document.getElementById('wr-main-name');
+    return el && el.textContent.trim() ? el.textContent.trim() : 'Main Router';
+}
+
+function wrRssiHistoryEntry(item, rssi, nowMs) {
+    return {
+        rssi: wrNumber(rssi),
+        name: wrRssiHistoryLocation(item),
+        band: wrRssiHistoryBand(item),
+        time: Number(nowMs) || Date.now()
+    };
+}
+
+function wrRssiHistoryStyle(rssi) {
+    var quality = wrQuality(rssi);
+    return quality.style || 'color:#fff;font-weight:bold;';
+}
+
+function wrGetTrend(item, rssi, history) {
+    var mac = item.mac;
     var now = wrNumber(rssi);
-    var old = wrNumber(history[mac]);
-    if (!Number.isFinite(now) || !Number.isFinite(old)) return "<span class='trend-box'>•</span>";
-    if (now > old) return "<span class='trend-box trend-up rssi-excl'>↑</span>";
-    if (now < old) return "<span class='trend-box trend-down rssi-poor'>↓</span>";
-    return "<span class='trend-box'>•</span>";
+    var entries = wrRssiHistoryEntries(history[mac]);
+    var old = entries.length ? wrNumber(entries[entries.length - 1].rssi) : null;
+    var icon = "<span class='trend-box'>•</span>";
+
+    if (Number.isFinite(now) && Number.isFinite(old)) {
+        if (now > old) icon = "<span class='trend-box trend-up rssi-excl'>↑</span>";
+        else if (now < old) icon = "<span class='trend-box trend-down rssi-poor'>↓</span>";
+    }
+
+    if (!WR_CONFIG.rssiHistory || !Number.isFinite(now)) return icon;
+
+    var current = wrRssiHistoryEntry(item, now, item.historyTime || Date.now());
+    var display = entries.concat([current]);
+    var depth = Math.max(5, Math.min(20, Number(WR_CONFIG.rssiHistoryEntries) || 5));
+    if (display.length > depth) display = display.slice(display.length - depth);
+
+    var tooltip = display.map(function(entry) {
+        var text = String(entry.rssi) +
+            ' [' + wrEscape(entry.name || '--') + ']' +
+            ' [' + wrEscape(entry.band || '--') + ']';
+        if (WR_CONFIG.rssiHistoryDate && Number.isFinite(wrNumber(entry.time))) {
+            text += ' ' + wrEscape(wrFormatDateTime(new Date(Number(entry.time))));
+        }
+        return "<span style='" + wrRssiHistoryStyle(entry.rssi) + "'>" + text + "</span>";
+    }).join('<br>');
+
+    return icon + "<span class='rssi-tooltip'>" + tooltip + "</span>";
+}
+
+function wrStoreRssiHistory(item, rssi, history) {
+    var now = wrNumber(rssi);
+    if (!Number.isFinite(now)) return;
+
+    var entry = wrRssiHistoryEntry(item, now, item.historyTime || Date.now());
+    if (!WR_CONFIG.rssiHistory) {
+        history[item.mac] = [entry];
+        return;
+    }
+
+    var entries = wrRssiHistoryEntries(history[item.mac]);
+    entries.push(entry);
+    var depth = Math.max(5, Math.min(20, Number(WR_CONFIG.rssiHistoryEntries) || 5));
+    if (entries.length > depth) entries = entries.slice(entries.length - depth);
+    history[item.mac] = entries;
 }
 
 function wrClientName(mac, liveClient, savedClient) {
@@ -1682,7 +1866,7 @@ function wrRenderRow(item, history, known, firstHistoryLoad) {
     var tx = sta && sta.sta_tx !== undefined ? wrNumber(sta.sta_tx) : wrNumber(c.curTx);
     var connected = sta && sta.conn_time !== undefined ? sta.conn_time : c.wlConnectTime;
     var quality = wrQuality(rssi);
-    var trend = wrGetTrend(mac, rssi, history);
+    var trend = wrGetTrend(item, rssi, history);
     var isNew = !firstHistoryLoad && !known[mac] ? 'new-device-row' : '';
     var nodeMarker = '';
 
@@ -1901,6 +2085,11 @@ async function loadWirelessReport() {
         items[itemIndex].sta = await wrResolveSta(items[itemIndex], staMaps);
     }
 
+    // Match v2.1.0's report-wide sample time so the Main, Node and All views show
+    // the same timestamp for a given refresh and the persisted sample matches it.
+    var historySampleTime = Date.now();
+    items.forEach(function(item) { item.historyTime = historySampleTime; });
+
     var mainItems = items.filter(function(item) { return !item.node; });
     var nodeItems = items.filter(function(item) { return !!item.node; });
 
@@ -1925,7 +2114,7 @@ async function loadWirelessReport() {
 
     items.forEach(function(item) {
         var rssi = item.sta && item.sta.sta_rssi !== undefined ? wrNumber(item.sta.sta_rssi) : wrNumber(item.client.rssi);
-        if (Number.isFinite(rssi)) history[item.mac] = rssi;
+        wrStoreRssiHistory(item, rssi, history);
         known[item.mac] = 1;
     });
     localStorage.setItem('wirelessReportRssiHistory', JSON.stringify(history));
@@ -2021,6 +2210,7 @@ async function loadWirelessReport() {
 
 async function initial() {
     show_menu();
+    wrPrepareRssiHistoryStorage();
     var savedView = localStorage.getItem('wifiReportView') || 'split';
     switchTab(savedView);
 

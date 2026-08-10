@@ -1,3 +1,13 @@
+v2.2.12 - Restore configurable browser-side RSSI history
+
+- Restore the v2.1-style RSSI History configuration submenu with enable/disable, 5–20 sample depth, and optional timestamps.
+- Store all RSSI history in browser `localStorage`; no JFFS/USB history database, SSH, or background scan is required.
+- Restore RSSI hover tooltips showing color-coded historical RSSI, Router/Node source, wireless band, and optional timestamp.
+- Keep trend arrows active when full history is disabled by retaining a single previous browser sample.
+- Migrate the v2.2.0-v2.2.11 single numeric RSSI sample into the richer browser-history model on first load.
+- Reset browser history when history configuration changes, matching v2.1.0's clean-history behavior.
+- Use one report-wide sample timestamp per refresh so Main, Node, and All views remain consistent.
+
 v2.2.11 - Fix semantic version comparison across installer/update paths
 
 - Replace dot-stripping integer comparisons with a component-by-component dotted numeric version comparator.

@@ -95,7 +95,7 @@ $\color{blue}{\Large\text{KEY FEATURES + NAVIGATION}}$
 * $\color{green}{\text{Unified Dashboard:}}$ View all connected clients across your entire mesh system in one place. The table includes Hostnames, IP/MAC Addresses, RSSI, RX/TX PHY/link rates, SSID/Interface, Band, and wireless connection duration. The PHY values are link rates, not live application throughput.
 * $\color{green}{\text{Interactive Sorting:}}$ Click any column header (except IP and SSID) to sort data alphabetically or numerically.
 * $\color{green}{\text{Device Summary:}}$ The header displays the Grand Total of connected devices, followed by a color-coded breakdown of exactly how many clients are on each specific Router or Node.
-* $\color{green}{\text{Visual RSSI Cues:}}$ Connection quality is auto-graded and color-coded. The browser retains the previous RSSI sample locally so trend arrows survive in-page refreshes.
+* $\color{green}{\text{Visual RSSI Cues:}}$ Connection quality is auto-graded and color-coded. RSSI history is stored entirely in browser `localStorage`: enable 5–20 sample history, optionally include timestamps, and hover RSSI to view color-coded samples with the Router/Node source and wireless band. Trend arrows continue to compare the current RSSI against the previous sample even when full history is disabled.
 
 \
 \
