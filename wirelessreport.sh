@@ -26,23 +26,15 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.1.0"
+SCRIPT_VERSION="2.2.9"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
 CONFIG="$INSTALL_DIR/webui.conf"
 WEB_PAGE="/tmp/wireless.asp"
 TEMP_MENU="/tmp/menuTree.js"
-NEW_HISTORY="/tmp/rssi_new.db"
-SEEN_MACS="/tmp/seen_macs.txt"
-YAZ_CACHE="/tmp/yaz_cache.tmp"
-ARP_CACHE="/tmp/arp_cache.tmp"
-KNOWN_CACHE="/tmp/known_macs.cache"
-HISTORY_CACHE="/tmp/rssi_history.cache"
-LEASES_CACHE="/tmp/dnsmasq_leases.cache"
-DHCPSTATIC_CACHE="/tmp/dhcp_static.cache"
-DEVICE_LIST_CACHE="/tmp/asus_device_list.cache"
-CUSTOM_CLIENTS_CACHE="/tmp/custom_clients.cache"
+SS_FILE="/jffs/scripts/services-start"
+SE_FILE="/jffs/scripts/service-event"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"; unset LD_LIBRARY_PATH
 
@@ -86,8 +78,6 @@ install_menu() {
 		echo -e "  $N4  Edit Device Nicknames                           "
         echo -e "  $N5  Edit Device Colors                              "
 		echo -e "  $N6  Configure Display Options ($TM_STAT)            "
-		echo -e "  $N7  Manage Node Authentication                      "
-		echo -e "  $N8  Configure SSH Options  Key:($KEY)               "
 		echo -e "  $NE  Exit                                            "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
@@ -95,16 +85,14 @@ install_menu() {
 			printf "\n ${NC}Selection: ${BL}"; read -r choice
 			case "$choice" in
 				1) do_install; break ;;
-				2|3|4|5|6|7|8)
+				2|3|4|5|6)
                     freeze || continue
 					case "$choice" in
 						2) do_uninstall ;;
-						3) set_temp_date ;;
-						4) set_nicknames ;;
-						5) set_colors ;;
-						6) set_options ;;
-						7) node_auth "pause" ;;
-						8) check_ssh ;;
+						3) set_temp_date; run_report ;;
+						4) set_nicknames; run_report ;;
+						5) set_colors; run_report ;;
+						6) set_options; run_report ;;
 					esac
 					break ;;
 				e|E) clear; hasta; exit 0 ;;
@@ -163,8 +151,7 @@ menu_vars() {
 	NE="${BL}(e)${NC}"; NQ="${BL}(c)${NC}"; ON="${GR}ON${NC}"; OFF="${RD}OFF${NC}"
 	STATUS=" ${BL}STATUS:${NC}"; CURRENT="${GR}Current: v$SCRIPT_VERSION${NC}"
     SS_FILE="/jffs/scripts/services-start"; SE_FILE="/jffs/scripts/service-event"
-	if [ -z "$SSH_KEY" ]; then KEY="${RD}NO${NC}"; else KEY="${GR}YES${NC}"; fi
-	PORT="${GR}$SSH_PORT${NC}"; DISPLAY_UNIT="${REPORT_UNIT:-F}"
+	DISPLAY_UNIT="${REPORT_UNIT:-F}"
     if [ "$REPORT_UNIT" = "ISO" ]; then DISPLAY_UNIT="C"; fi
 	DU="${GR}°$DISPLAY_UNIT${NC}"; CT="${GR}$CUR_TIME${NC}"
 	DATE_USA=$(date +"%b-%d"); DATE_INTL=$(date +"%d-%b"); DATE_ISO=$(date +"%Y-%m-%d")
@@ -190,64 +177,96 @@ menu_vars() {
 do_install() {
 	mkdir -p "$INSTALL_DIR" 2>/dev/null
     if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
-	local is_update=0
+	local is_update=0 apply_only=0
+	[ "$1" = "--apply" ] && apply_only=1
 	if [ -f "$REPORT_SCRIPT" ]; then is_update=1; fi
-	if [ "$is_update" = "1" ]; then
+
+	# When updating/reinstalling, restart into the newly installed script once,
+	# then continue directly into the WebUI mounting phase.  Previously this
+	# exec'd back into `install`, which reopened the menu and skipped inject_menu().
+	if [ "$is_update" = "1" ] && [ "$apply_only" != "1" ]; then
         while true; do
             check_version do_install
             printf "Do you want to $UP (y/n): "; read -r update
             case "$update" in [yY]) break ;; [nN]) return ;; *) printf "\033[4A\033[J" ;; esac; done
-    fi
-    do_update || return 1
-    echo -e "\n${GR}[+] Downloading latest version (${NC}v$REMOTE_VERSION${GR})${NC}"
-	if [ "$is_update" = "1" ]; then
-		echo -e "\n${BL}[✓] Wireless Report successfully installed.${NC}"
-		printf "\nPress ${BL}[Enter]${NC} to apply changes & restart script..."; read -r discard
-		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
-		exec "$REPORT_SCRIPT" install "$@"
-		echo -e "${RD}Error: Failed to restart script!${NC}" >&2
+        do_update || return 1
+        echo -e "\n${GR}[+] Preparing Wireless Report (${NC}v$REMOTE_VERSION${GR})${NC}"
+		echo -e "\n${BL}[✓] Wireless Report files updated.${NC}"
+		printf "\nPress ${BL}[Enter]${NC} to apply changes & mount the WebUI..."; read -r discard
+		logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) files updated; applying WebUI mount."
+		exec "$REPORT_SCRIPT" install-apply
+		echo -e "${RD}Error: Failed to restart script for WebUI apply!${NC}" >&2
 		exit 1
+	fi
+
+	# A fresh install still needs to place/update the script before mounting.
+	if [ "$apply_only" != "1" ]; then
+        do_update || return 1
+        echo -e "\n${GR}[+] Preparing Wireless Report (${NC}v$REMOTE_VERSION${GR})${NC}"
 	fi
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "${RD}[!] ERROR: JFFS custom scripts not enabled.${NC}"
         pause; return 1
     fi
-	if [ "${USB_PATH#*/tmp/mnt/}" != "$USB_PATH" ]; then
-        echo -e "\n${GR}[+] USB Found: Using $USB_PATH for reports and history.${NC}"
-    else
-        echo -e "\n${YL}[!] No USB detected: Using JFFS at $USB_PATH.${NC}"
-    fi
-	if [ -f "$SSH_KEY" ]; then node_auth
-	else
-		install="1"
-		echo -e "\n${BL}[+] Press ${WH}[Enter]${BL} to proceed to SSH Environment Setup${NC}"
-		echo -e "${BL}[+] Generate RSA keys or provision router-only setup${NC}"
-        read -r discard
-		check_ssh || return 1
-	fi
+	# v2.2+ is controller-only. Remove legacy add-on persistence hooks,
+	# but never delete the user's SSH keys or authorized_keys.
+	if [ -f "$SS_FILE" ]; then sed -i '/# sshpairs/d' "$SS_FILE" 2>/dev/null; fi
+	sed -i '/^SSH_NODES=/d; /^MESH_NODES=/d' "$CONFIG" 2>/dev/null
     echo -e "\n${GR}[+] Processing Wireless Report Files...${NC}\n"
     inject_menu
     echo -e "${GR}[+] Mounting Menu [Wireless] Tab [Wireless Report]${NC}\n"
-    if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
+    if ! mkdir -p /jffs/scripts 2>/dev/null; then
+        echo -e "${RD}[!] ERROR: Unable to access /jffs/scripts.${NC}"
+        return 1
+    fi
+    if [ ! -f "$SS_FILE" ]; then
+        if ! printf '#!/bin/sh\n' > "$SS_FILE"; then
+            echo -e "${RD}[!] ERROR: Unable to create $SS_FILE.${NC}"
+            return 1
+        fi
+    fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
-    echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
-    chmod +x "$SS_FILE"
-    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
-    sed -i "/wireless_report/d" "$SE_FILE" 2>/dev/null
-    echo 'if [ "$1" = "restart" ] && [ "$2" = "wireless_report" ]; then '$REPORT_SCRIPT' & fi # Wireless Report' >> "$SE_FILE"
-    chmod +x "$SE_FILE"
+    if ! echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"; then
+        echo -e "${RD}[!] ERROR: Unable to update $SS_FILE.${NC}"
+        return 1
+    fi
+    if ! chmod +x "$SS_FILE"; then
+        echo -e "${RD}[!] ERROR: Unable to make $SS_FILE executable.${NC}"
+        return 1
+    fi
+    # Dynamic refreshes are handled in the browser; no service-event scan hook is required.
+    if [ -f "$SE_FILE" ]; then sed -i "/wireless_report/d" "$SE_FILE" 2>/dev/null; fi
     install=""; SCRIPT_VERSION="$REMOTE_VERSION"
     logger -p user.info -t "Wireless_Report" "(v$REMOTE_VERSION) successfully installed."
     echo -e "${GR}[✓] SUCCESS: Installation complete!${NC}\n"
     echo -e "${YL}[i] To access Report, navigate to Advanced Settings > Wireless "
     echo -e "${YL}    in the ASUS WebGUI and select the Wireless Report tab on the far right.${NC}\n"
-    echo -e "${BL}[i] Tip: On router only install, you can add node(s) later."
-    echo -e "${BL}         Use option #7 in main menu to authenticate new node(s).${NC}"
+    echo -e "${BL}[i] AiMesh nodes are discovered automatically from the primary router."
+    echo -e "${BL}    No node SSH keys, passwords, cookies, or direct node login are required.${NC}"
 	pause
 }
 
 do_update() {
     TEMP_SCRIPT="/tmp/wirelessreport.sh"
+    local CURRENT_PATH TARGET_PATH local_ver remote_ver
+    local_ver=$(echo "$SCRIPT_VERSION" | tr -d '.')
+    remote_ver=$(echo "$REMOTE_VERSION" | tr -d '.')
+
+    # Never let a local/dev build be silently replaced by an older public build.
+    # This also makes packaged test builds installable before the matching release
+    # has been published to the upstream repository.
+    if [ -n "$remote_ver" ] && [ "$local_ver" -gt "$remote_ver" ] 2>/dev/null; then
+        CURRENT_PATH=$(readlink -f "$0" 2>/dev/null); [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
+        TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null); [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
+        if [ "$CURRENT_PATH" != "$TARGET_PATH" ]; then
+            cp "$0" "$REPORT_SCRIPT" || return 1
+            chmod +x "$REPORT_SCRIPT" 2>/dev/null
+        fi
+        REMOTE_VERSION="$SCRIPT_VERSION"
+        echo -e "\n${YL}[i] Using local v$SCRIPT_VERSION build; upstream is older.${NC}"
+        return 0
+    fi
+
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" && [ -s "$TEMP_SCRIPT" ]; then
         mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
         chmod +x "$REPORT_SCRIPT" 2>/dev/null
@@ -258,7 +277,6 @@ do_update() {
             echo -e "${RD}[!] Download failed. Aborting installation.${NC}"
             return 1
         fi
-        local CURRENT_PATH; local TARGET_PATH
         CURRENT_PATH=$(readlink -f "$0" 2>/dev/null)
         [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
         TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null)
@@ -293,48 +311,6 @@ ScriptUpdateFromAMTM() {
     fi
 }
 
-get_usb() {
-	if [ -n "$USB_PATH" ]; then return; fi
-	read -r uptime_val _ < /proc/uptime
-	local BUP="${uptime_val%%.*}"
-    local mount
-    local FOUND=0
-    local attempt=0
-    while [ "$attempt" -lt 2 ]; do
-        for mount in /tmp/mnt/*; do
-            [ -d "$mount" ] || continue
-            if [ -d "$mount/wirelessreport" ]; then
-                USB_PATH="$mount/wirelessreport"
-                FOUND=1
-                break 2
-            fi
-        done
-        attempt=$((attempt + 1))
-        if [ "$FOUND" -eq 0 ] && [ "$BUP" -lt 300 ] && [ "$attempt" -eq 1 ]; then sleep 2
-        else break; fi
-    done
-    if [ "$FOUND" -eq 1 ] && [ -d "$INSTALL_DIR/data" ] && [ ! -L "$INSTALL_DIR/data" ]; then
-        [ -n "$(ls -A "$INSTALL_DIR/data")" ] && cp -a "$INSTALL_DIR/data/." "$USB_PATH/"
-        rm -rf "$INSTALL_DIR/data"
-    fi
-    if [ "$FOUND" -eq 0 ]; then
-        local ROOT_PATH
-        ROOT_PATH=$(ls -d /tmp/mnt/*/ 2>/dev/null | grep -v "defaults" | head -n 1 | sed 's/\/$//')
-        if [ -n "$ROOT_PATH" ]; then
-            USB_PATH="$ROOT_PATH/wirelessreport"
-        else
-            USB_PATH="$INSTALL_DIR/data"
-        fi
-    fi
-    if [ -n "$USB_PATH" ] && [ ! -d "$USB_PATH" ]; then mkdir -p "$USB_PATH"; fi
-    if [ -n "$USB_PATH" ]; then
-        touch "$USB_PATH/rssi_history.db"
-        touch "$USB_PATH/known_macs.db"
-    fi
-    KNOWN_DB="$USB_PATH/known_macs.db"; HISTORY_DB="$USB_PATH/rssi_history.db"
-    ERROR_LOG="$USB_PATH/ssh_error.log"
-}
-
 check_github() {
 	GITHUB="https://raw.githubusercontent.com/JB1366/Wireless_Report/main/wirelessreport.sh"
 	LOCAL_HASH=$(sha256sum "$REPORT_SCRIPT" 2>/dev/null | awk '{print $1}')
@@ -348,283 +324,17 @@ check_github() {
 	rm -f "$REMOTE_TMP"
 }
 
-ssh_init () {
-	NODE_USER=$(nvram get http_username)
-	SSH_PORT=$(nvram get sshd_port); SSH_PORT=${SSH_PORT:-22}
-	if [ -f "/root/.ssh/id_dropbear" ]; then SSH_KEY="/root/.ssh/id_dropbear"
-	else  SSH_KEY=""; fi
-}
-
-check_ssh() {
-	while true; do
-		show_header
-		echo -e "${BL}=================================================="
-		echo -e "${NC}                SSH Environment                   "
-		echo -e "${BL}=================================================="
-		echo -e "${NC} SSH-Key: $KEY                         Port: $PORT"
-		echo -e "${BL}=================================================="
-		echo -e "                                                       "
-		echo -e "  $N1  Generate RSA Keys & Provision AiMesh Nodes      "
-		echo -e "  $N2  Remove RSA Keys                                 "
-		echo -e "  $N3  Provision Main Router Only                      "
-		echo -e "  $N4  View Authorized Keys                            "
-		echo -e "  $N5  View Known Hosts                                "
-		echo -e "  $N6  View SSH Error Log                              "
-		echo -e "  $N7  Manage Node Authentication                      "
-		echo -e "                                                       "
-		echo -e "  $NE  Back to main menu                               "
-		echo -e "                                                       "
-		echo -e "${BL}=================================================="
-        while true; do
-            printf "\n ${NC}Selection: ${BL}"; read -r ssh_choice
-            case "$ssh_choice" in
-                1)
-                    ssh_keys
-                    if [ "$install" = "1" ]; then return 0; fi
-                    break ;;
-                2)
-                    del_ssh_keys
-                    break ;;
-                3)
-                    echo -e "\n${YL}[i] Setting Up Router-Only...${NC}"
-                    sed -i '/^SSH_NODES=/d' "$CONFIG"
-                    echo 'SSH_NODES=" "' >> "$CONFIG"
-                    pause; break ;;
-                4)
-                    echo -e "\n${BL}================ Authorized Keys =================${NC}\n"
-                    if [ -f "/root/.ssh/authorized_keys" ]; then cat /root/.ssh/authorized_keys
-                    else echo -e "${YL}[!] File not found.${NC}"; fi
-                    echo -e "\n\n${BL}==================================================${NC}"
-                    pause; break ;;
-                5)
-                    echo -e "\n${BL}================== Known Hosts  ==================${NC}\n"
-                    if [ -f "/jffs/.ssh/known_hosts" ]; then cat /jffs/.ssh/known_hosts
-                    else echo -e "${YL}[!] File not found.${NC}"; fi
-                    echo -e "\n${BL}==================================================${NC}"
-                    pause; break ;;
-                6)
-                    echo -e "\n${BL}================= SSH Error Log ==================${NC}\n"
-                    if [ -f "$ERROR_LOG" ]; then
-                        cat "$ERROR_LOG"
-                        echo -e "\n\n${BL}==================================================${NC}"
-                        printf "\nRemove error log? (y/n): "; read -r rm_log
-                        if [ "$rm_log" = "y" ] || [ "$rm_log" = "Y" ]; then
-                            rm -f "$ERROR_LOG"
-                            echo -e "\n${GR}[✓] Error log removed.${NC}"
-                            pause
-                        fi
-                    else
-                        echo -e "${YL}[!] File not found.${NC}"
-                        echo -e "\n${BL}==================================================${NC}"
-                        pause
-                    fi
-                    break ;;
-                7)
-                    node_auth
-                    pause; break ;;
-                e|E)
-                    return 0 ;;
-                *)
-                    freeze2; continue ;;
-            esac
-        done
-	done
-}
-
-node_auth() {
-	if [ ! -s "$SSH_KEY" ]; then
-        echo -e "\n${YL}[!] Main Router SSH Key not found.${NC}"
-        pause; return
-    fi
-	sed -i '/^SSH_NODES=/d' "$CONFIG"
-	echo -e "\n${GR}[✓] Main Router SSH Key found at: ${WH}$SSH_KEY${NC}\n"
-	echo -e "${BL}=================================================="
-    echo -e "${NC}         Verifying Node Authentication            "
-    echo -e "${BL}==================================================\n"
-	UNSUPPORTED_MODELS="AX4200|AX1800S|XD4"
-	AIMESH_NODES=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | awk -F '>' '{print $2 "|" $3}' | grep -vE "$UNSUPPORTED_MODELS" | sort -t . -k 4,4n)
-	if [ -z "$AIMESH_NODES" ]; then
-		AIMESH_NODES=$(nvram get cfg_device_list | sed 's/</\n/g' | grep '>0$' | awk -F '>' '{print $1 "|" $2}' | grep -vE "$UNSUPPORTED_MODELS" | sort -t . -k 4,4n)
+mesh_init() {
+	VALID_NODES=""
+	# Terminal-only settings (nicknames/colors) need a lightweight node list.
+	# This reads the primary router's local AiMesh inventory only; it never
+	# contacts a node and never performs authentication.
+	MESH_NODES=$(nvram get asus_device_list | sed 's/</\n/g' | grep '>2$' | \
+		awk -F '>' '{print $2 "|" $3}' | sort -t . -k 4,4n)
+	if [ -z "$MESH_NODES" ]; then
+		MESH_NODES=$(nvram get cfg_device_list | sed 's/</\n/g' | grep '>0$' | \
+			awk -F '>' '{print $1 "|" $2}' | sort -t . -k 4,4n)
 	fi
-	if nvram get asus_device_list | grep -qE "$UNSUPPORTED_MODELS" || nvram get cfg_device_list | grep -qE "$UNSUPPORTED_MODELS"; then
-		echo -e " ${YL}[!]${NC} These models not supported: TUF-AX4200, RT-AX1800S, ZENWIFI_XD4_PLUS."
-	fi
-    if [ -z "$AIMESH_NODES" ]; then
-        echo -e "\n${RD}[!] No AiMesh Nodes detected in NVRAM.${NC}"
-        TOTAL_NODES=0; any_success=0
-        ACTION_MSG="Force ROUTER-ONLY configuration"; KEY_LBL="r"
-    else
-        TOTAL_NODES=$(echo "$AIMESH_NODES" | grep -o "|" | wc -l)
-		any_success=0; VALID_NODES=""; new_nodes=0
-        for line in $AIMESH_NODES; do
-			ROUTER="${line%%|*}"; IP="${line#*|}"
-            [ -z "$IP" ] || [ "$IP" = "$ROUTER" ] && continue
-			if [ -z "$ROUTER" ]; then ROUTER="Node_$IP"; fi
-			printf "${NC}[*] Testing ${GR}%-14s${NC} (%s) " "$ROUTER" "$IP"
-            SSH_ERR=$(/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "exit" 2>&1 >/dev/null)
-			SSH_RC=$?
-			if [ -n "$SSH_ERR" ]; then
-				echo "$SSH_ERR" | while read -r line; do
-					ssh_error "$line"
-				done
-			fi
-			if [ "$SSH_RC" -eq 0 ]; then
-				echo -e "${GR}[✓] AUTHENTICATED${NC}"
-				any_success=$((any_success + 1))
-				VALID_NODES="$VALID_NODES $ROUTER|$IP"
-				if ! grep -q "$IP" /jffs/.ssh/known_hosts 2>/dev/null; then
-					echo -ne "    Capturing fingerprint & updating known_hosts "
-					dbclient -y -p "$SSH_PORT" "$IP" "exit" > /dev/null 2>&1
-					if grep -q "$IP" /root/.ssh/known_hosts 2>/dev/null; then
-						grep "$IP" /root/.ssh/known_hosts >> /jffs/.ssh/known_hosts
-						sort -u /jffs/.ssh/known_hosts -o /jffs/.ssh/known_hosts
-						echo -e "${GR}[✓] DONE${NC}"
-						new_nodes=$((new_nodes + 1))
-						TARGET_KEY=$(awk -v ip="$IP" '$1 ~ ip {print $2, $3}' /jffs/.ssh/known_hosts 2>/dev/null)
-						if [ -n "$TARGET_KEY" ]; then
-							echo -e "    Node Host Key: ${BL}$TARGET_KEY${NC}"
-						fi
-					else
-						echo -e "${RD}[✗] FAILED${NC}"
-					fi
-				fi
-			else
-				if echo "$SSH_ERR" | grep -q "No auth methods"; then
-					echo -e "${RD}[✗] Failed: Invalid Username or SSH Key.${NC}"
-				elif echo "$SSH_ERR" | grep -q "Connection refused"; then
-					echo -e "${RD}[✗] Failed: SSH Connection refused.${NC}"
-				else
-					echo -e "${RD}[✗] Failed: Unknown connection issue.${NC}"
-				fi
-			fi
-		done
-    fi
-    sed -i '/SSH_NODES=/d' "$CONFIG"
-    if [ -z "$VALID_NODES" ]; then echo 'SSH_NODES=" "' >> "$CONFIG"
-    else echo "SSH_NODES=\"$VALID_NODES\"" >> "$CONFIG"; fi
-    if [ "$any_success" -gt 0 ] && [ "$any_success" -eq "$TOTAL_NODES" ]; then
-        echo -e "\n${GR}[✓] All nodes ($any_success/$TOTAL_NODES) authenticated successfully!${NC}"
-        if [ "$new_nodes" -gt 0 ]; then
-            [ "$new_nodes" -eq 1 ] && suffix="" || suffix="s"
-            echo -e "\n${YL}[!] $new_nodes new node$suffix successfully authenticated.${NC}"
-        fi
-        [ "$1" = "pause" ] && pause; return
-    else
-        if [ "$any_success" -gt 0 ]; then
-            echo -e "\n${YL}[!] Partial Success: Only $any_success of $TOTAL_NODES nodes authenticated.${NC}"
-            ACTION_MSG="Continue with current nodes only"
-            KEY_LBL="c"
-        else
-            echo -e "\n${RD}[!] CRITICAL: SSH authentication failed on all nodes.${NC}\n"
-            ACTION_MSG="Force ROUTER-ONLY configuration"
-            KEY_LBL="r"
-        fi
-        if [ "$1" = "pause" ]; then
-            echo -e "${BL}Choices:${NC}\n"
-            echo -e "  ${BL}[Enter]${NC} Retry authentication"
-            echo -e "  ${BL}[$KEY_LBL]${NC}     $ACTION_MSG"
-            echo -e "  ${BL}[e]${NC}     Exit to main menu\n"
-            printf "${BL}Selection: ${NC}"; read -rn 1 input
-            case "$input" in
-				[rR]|[cC])
-					echo -e "\n\n${YL}[!] $ACTION_MSG...${NC}\n"
-					if [ "$any_success" -eq 0 ]; then
-						sed -i '/SSH_NODES=/d' "$CONFIG"
-						echo 'SSH_NODES=" "' >> "$CONFIG"
-					fi
-					echo -e "${GR}[✓] Environment configuration locked in.${NC}"
-					pause; return ;;
-				[eE])
-					read -r discard; return ;;
-				*)
-					echo -e "\n\n${BL}[i] Retrying authentication...${NC}"
-					sleep 5
-					node_auth "pause"
-					return ;;
-			esac
-        else
-            sleep 2
-        fi
-    fi
-}
-
-ssh_keys() {
-	if [ -f "$SSH_KEY" ]; then
-		echo -e "\n${YL}[!] Main Router SSH Key already exists.${NC}"
-		pause; return 0
-	fi
-	if [ -f "/jffs/.ssh/id_dropbear" ] && [ ! -f "/root/.ssh/id_dropbear" ]; then
-		echo -e "\n${GR}[!] Stored key detected in /jffs/.ssh/, Linking and configuring...${NC}\n"
-        sleep 3
-	fi
-    if [ ! -f "/jffs/.ssh/id_dropbear" ]; then
-        echo -e "\n${YL}[i] Creating RSA Key in /jffs/.ssh/${NC}\n"
-        mkdir -p /jffs/.ssh
-        dropbearkey -t rsa -f /jffs/.ssh/id_dropbear
-    fi
-	rm -f /jffs/.ssh/known_hosts /root/.ssh/known_hosts >/dev/null 2>&1
-    mkdir -p /root/.ssh
-    cp /jffs/.ssh/id_dropbear /root/.ssh/id_dropbear
-    echo -e "\n${BL}[i] Copying /jffs/.ssh/id_dropbear to /root/.ssh/id_dropbear${NC}\n"
-	SSH_KEY="/root/.ssh/id_dropbear"
-    local pub_key=$(dropbearkey -y -f "/root/.ssh/id_dropbear" | grep "^ssh-rsa")
-    local current_keys=$(nvram get sshd_authkeys)
-	local combined_keys=$(printf "%s\n%s" "$current_keys" "$pub_key" | sed '/^$/d' | sort -u)
-	echo -e "\n${YL}[i] Injecting Key into NVRAM...${NC}\n"
-	nvram set sshd_authkeys="$combined_keys"
-    nvram commit
-	nvram get sshd_authkeys > /root/.ssh/authorized_keys
-    chmod 600 /root/.ssh/authorized_keys
-    if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE" && chmod +x "$SS_FILE"; fi
-    if ! grep -q "id_dropbear" "$SS_FILE"; then
-        echo -e "\n${YL}[i] Adding SSH Key to services-start for persistence on reboots...${NC}"
-		echo -e "\n${YL}[i] Adding known_hosts to services-start...${NC}\n"
-		echo "cp /jffs/.ssh/id_dropbear /tmp/home/root/.ssh/id_dropbear # sshpairs" >> "$SS_FILE"
-        echo "cp /jffs/.ssh/known_hosts /tmp/home/root/.ssh/known_hosts # sshpairs persistence" >> "$SS_FILE"
-    fi
-	echo -e "${BL}=================================================="
-	echo -e "${NC}               ACTION REQUIRED NOW                "
-    echo -e "${BL}=================================================="
-    echo -e "                                                       "
-	echo -e "[*] STEP 1: Go to Asus WebGUI > AiMesh > Management    "
-	echo -e "[*] STEP 2: Click 'Reboot Node' for each node\n        "
-	echo -e "${YL}[!] Do not press [Enter] until Nodes are confirmed to be back online.\n"
-	echo -e "${BL}[*] TIP: If a node is missing after authentication,     "
-	echo -e "${BL}[*]      use option #7 to reauthenticate.          ${NC}"
-	printf "\n[*] Press ${BL}[ENTER]${NC} to begin authentication check..."; read -r discard
-	node_auth "pause"
-}
-
-del_ssh_keys() {
-	if [ -f "$SSH_KEY" ]; then
-		echo -e "\n${YL}[!] Main Router SSH Key exists.${NC}\n"
-        while true; do
-            printf "Do you want to delete Key? (y/n): "; read -r delete
-            case "$delete" in [yY]) break ;; [nN]) return ;; *) printf "\033[1A\033[J" ;; esac; done
-	else
-		echo -e "\n${YL}[!] No active RSA key found to delete.${NC}"
-		pause; return
-	fi
-	echo -e "\n${YL}[i] Purging RSA key footprint from environment...${NC}"
-	if [ -f "/jffs/.ssh/id_dropbear.pub" ]; then
-		PUB_STRING=$(awk '{print $2}' /jffs/.ssh/id_dropbear.pub)
-	else
-		PUB_STRING=""
-	fi
-	if [ -n "$PUB_STRING" ] && [ -f "/root/.ssh/authorized_keys" ]; then
-		sed -i "\|$PUB_STRING|d" /root/.ssh/authorized_keys
-	fi
-	NVRAM_KEYS=$(nvram get sshd_authkeys)
-	if [ -n "$PUB_STRING" ] && echo "$NVRAM_KEYS" | grep -q "$PUB_STRING"; then
-		CLEANED_KEYS=$(echo "$NVRAM_KEYS" | grep -v "$PUB_STRING")
-		nvram set sshd_authkeys="$CLEANED_KEYS"
-		nvram commit
-	fi
-	rm -f "/jffs/.ssh/id_dropbear" "/jffs/.ssh/id_dropbear.pub" "/root/.ssh/id_dropbear"
-	nvram get sshd_authkeys > /root/.ssh/authorized_keys
-	chmod 600 /root/.ssh/authorized_keys
-	echo -e "\n${GR}[✓] RSA Keys removed successfully.${NC}"
-	ssh_init; pause
 }
 
 inject_menu() {
@@ -635,9 +345,18 @@ inject_menu() {
     if [ ! -f "$WEB_PAGE" ]; then echo "<html><body>$TAB_LABEL Loading...</body></html>" > "$WEB_PAGE"; fi
 	LOCKFILE=/tmp/addonwebui.lock; FD=386; eval exec "$FD>$LOCKFILE"; flock -x "$FD"
     am_get_webui_page "$WEB_PAGE"
-	if [ "$am_webui_page" = "none" ]; then echo -e "\n${RD}[!] ERROR: Unable to install $TAB_LABEL.${NC}"; flock -u "$FD"; exit 5; fi
-	cp "$WEB_PAGE" "/www/user/$am_webui_page" 2>/dev/null
+	if [ -z "$am_webui_page" ] || [ "$am_webui_page" = "none" ]; then
+		echo -e "\n${RD}[!] ERROR: Unable to allocate a WebUI page for $TAB_LABEL.${NC}"
+		flock -u "$FD"
+		exit 5
+	fi
+	if ! cp "$WEB_PAGE" "/www/user/$am_webui_page" 2>/dev/null; then
+		echo -e "\n${RD}[!] ERROR: Unable to create /www/user/$am_webui_page.${NC}"
+		flock -u "$FD"
+		exit 5
+	fi
 	echo "INSTALLED_PAGE=$am_webui_page" >> "$CONFIG"
+	echo -e "${BL}[i] WebUI page allocated as ${NC}$am_webui_page"
 	if [ ! -f "$TEMP_MENU" ]; then cp "$SYSTEM_MENU" /tmp/; mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"; fi
 	sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
 	sed -i '/tabName:[[:space:]]*"Wireless Report"/d' "$TEMP_MENU" 2>/dev/null
@@ -683,14 +402,13 @@ do_uninstall() {
 		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 		rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
 	fi
-	sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"; sed -i "/wireless_report/d" "$SE_FILE"
-	restart_httpd; ssh_init
+	sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"; sed -i "/# sshpairs/d" "$SS_FILE" 2>/dev/null; sed -i "/wireless_report/d" "$SE_FILE"
+	restart_httpd; mesh_init
 	rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
-	case "$USB_PATH" in *wirelessreport*) rm -rf "$USB_PATH" 2>/dev/null ;; esac
 	logger -p user.info -t "Wireless_Report" "(v$SCRIPT_VERSION) successfully uninstalled."
     unset RTIME BACKHAUL CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES
     unset THEME IPPAD PULSE_MINS DISPLAY_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
-	echo -e "${GR}[+] System cleaned. SSH Keys and Fingerprints preserved in /jffs/.ssh${NC}\n"
+	echo -e "${GR}[+] System cleaned. Existing SSH keys were left untouched.${NC}\n"
 	echo -e "${GR}[+] Success: Wireless Report uninstalled.${NC}"
 	pause
 }
@@ -746,8 +464,8 @@ set_nicknames() {
         MAIN_ROUTER=$(nvram get productid); MAIN_IP=$(nvram get lan_ipaddr)
         MAIN_CLR=$(hex_to_ansi "$MAIN_COLOR")
         echo -e "\n  ${MAIN_CLR}Main $MAIN_IP -> ${MAIN_NICK:-$MAIN_ROUTER}${NC}"
-        if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
-            VALID_NODES=$(echo "$SSH_NODES" | tr ' ' '\n' | grep '|')
+        if [ -n "$MESH_NODES" ] && [ "$MESH_NODES" != " " ]; then
+            VALID_NODES=$(echo "$MESH_NODES" | tr ' ' '\n' | grep '|')
             get_node_color() { local idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
             node_idx=1
             for node in $VALID_NODES; do
@@ -771,7 +489,7 @@ set_nicknames() {
                     sed -i '/^MAIN_NICK=/d' "$CONFIG"
                     unset MAIN_NICK
                     echo -e "    ${MAIN_CLR}$OLD_NAME -> $MAIN_ROUTER${NC}"; sleep 1
-                    if [ -n "$SSH_NODES" ] && [ "$SSH_NODES" != " " ]; then
+                    if [ -n "$MESH_NODES" ] && [ "$MESH_NODES" != " " ]; then
                         node_idx=1
                         for node in $VALID_NODES; do
                             MODEL="${node%%|*}"; IP="${node#*|}"
@@ -882,7 +600,7 @@ set_colors() {
     [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
     [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
     local total_nodes=0
-    for node in $SSH_NODES; do total_nodes=$((total_nodes + 1)); done
+    for node in $MESH_NODES; do total_nodes=$((total_nodes + 1)); done
     local working_colors="" i=1
     while [ $i -le $total_nodes ]; do
         local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
@@ -901,7 +619,7 @@ set_colors() {
         printf "  ${BL}(0) %b%-14s %-16s (Main)${NC}\n" \
             "$main_display_color" "$main_display_name" "$formatted_main_ip"
         local idx=1
-        for node in $SSH_NODES; do
+        for node in $MESH_NODES; do
             local node_ip="${node#*|}"
             local default_nick="${node%%|*}"
             local active_color=$(echo "$working_colors" | awk -v col="$idx" '{print $col}')
@@ -929,7 +647,7 @@ set_colors() {
                 target_name="${MAIN_NICK:-$main_name}"
                 target_hex="$m_color_hex"
             else
-                local target_node=$(echo "$SSH_NODES" | awk -v n="$node_choice" '{print $n}')
+                local target_node=$(echo "$MESH_NODES" | awk -v n="$node_choice" '{print $n}')
                 local target_ip=$(echo "$target_node" | cut -d'|' -f2)
                 local target_ip_underscores=$(echo "$target_ip" | tr '.' '_')
                 local target_nick_var="NODE_NICK_${target_ip_underscores}"
@@ -1002,13 +720,11 @@ set_options() {
         echo -e "${NC}                  Set Options                     "
         echo -e "${BL}=================================================="
         echo -e "                                                       "
-        echo -e "  $N1  Toggle Runtime Tracking: ($RT_STAT)             "
-        echo -e "  $N2  Toggle Wireless Backhaul: ($WB_STAT)            "
-        echo -e "  $N3  Configure Uptime Alert Pulse: ($UP_STAT)        "
-        echo -e "  $N4  Toggle RSSI History: ($RH_STAT)                 "
-        echo -e "  $N5  Set Theme: ($TM_STAT)                           "
-		echo -e "  $N6  Toggle IP Padding: ($PD_STAT)                   "
-		echo -e "  $N7  Toggle Node Hostname Display: ($HN_STAT)        "
+        echo -e "  $N1  Toggle Browser Refresh Runtime: ($RT_STAT)      "
+        echo -e "  $N2  Configure Connection Alert Pulse: ($UP_STAT)    "
+        echo -e "  $N3  Set Theme: ($TM_STAT)                           "
+        echo -e "  $N4  Toggle IP Padding: ($PD_STAT)                   "
+        echo -e "  $N5  Toggle Node Hostname Display: ($HN_STAT)        "
         echo -e "                                                       "
         echo -e "  $NE  Back to main menu                               "
         echo -e "                                                       "
@@ -1020,38 +736,29 @@ set_options() {
                     if grep -q "RTIME=" "$CONFIG"; then
                         if [ "$RTIME" = "1" ]; then sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
                         else sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"; fi
-                    else echo 'RTIME="0"' >> "$CONFIG"; fi
-                    if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
+                    else
+                        echo 'RTIME="0"' >> "$CONFIG"
+                    fi
                     break ;;
                 2)
-                    if grep -q "BACKHAUL=" "$CONFIG"; then
-                        if [ "$BACKHAUL" = "yes" ]; then NEW_BACK="no"; else NEW_BACK="yes"; fi
-                        sed -i "s/BACKHAUL=.*/BACKHAUL=\"$NEW_BACK\"/" "$CONFIG"
-                    else echo 'BACKHAUL="yes"' >> "$CONFIG"; fi
-                    break ;;
-                3)
                     while true; do
                         echo -e "\n (${GR}0${NC}) disable (${GR}15${NC}) def (${GR}1440${NC}) max "
                         printf " ${BL}Enter alert interval in mins:${GR} "; read -r user_mins
                         case "$user_mins" in ""|*[!0-9]*) freeze3; continue ;; esac
                         if [ "$user_mins" -le 1440 ]; then
-                            NEW_MINS="$user_mins"
                             if grep -q "PULSE_MINS=" "$CONFIG"; then
-                                sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$NEW_MINS\"/" "$CONFIG"
+                                sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$user_mins\"/" "$CONFIG"
                             else
-                                echo "PULSE_MINS=\"$NEW_MINS\"" >> "$CONFIG"
+                                echo "PULSE_MINS=\"$user_mins\"" >> "$CONFIG"
                             fi
                             break 2
-                        else
-                            freeze3; continue
                         fi
+                        freeze3
                     done
                     pause; break ;;
-                4)
-                    rssi_submenu; break ;;
-                5)
+                3)
                     theme_submenu; break ;;
-                6)
+                4)
                     if grep -q "IPPAD=" "$CONFIG"; then
                         if [ "$IPPAD" = "1" ]; then
                             echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
@@ -1065,12 +772,12 @@ set_options() {
                         fi
                         sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                     else
-                        echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
+                        echo -e "\n${RD}[-] Disabled:${NC} IP padding"
                         echo 'IPPAD="0"' >> "$CONFIG"
-                        NEW_PAD="0"; pause
+                        pause
                     fi
                     break ;;
-                7)
+                5)
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
                         if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
@@ -1080,67 +787,6 @@ set_options() {
                     break ;;
                 e|E)
                     sort -u -o "$CONFIG" "$CONFIG"; return 0 ;;
-                *)
-                    freeze2; continue ;;
-            esac
-        done
-    done
-}
-
-rssi_submenu() {
-	while true; do
-		show_header
-		echo -e "${BL}=================================================="
-        echo -e "${NC}           RSSI History Configuration             "
-		echo -e "${BL}=================================================="
-		echo -e "                                                       "
-		echo -e "  $N1 Toggle RSSI History: [$CH]                       "
-		echo -e "  $N2 Set History Depth:   [$CE] entries               "
-		echo -e "  $N3 Toggle Timestamps:   [$TS]                       "
-		echo -e "                                                       "
-		echo -e "  $NQ Cancel and Discard Changes                       "
-		echo -e "  $NE Exit and Save Changes                            "
-		echo -e "                                                       "
-		echo -e "${BL}=================================================="
-        while true; do
-            printf "\n ${NC}Selection: ${BL}"; read -r sub_choice
-            case "$sub_choice" in
-                1)
-                    if [ "$CUR_RS_HIST" = "1" ]; then CUR_RS_HIST="0"; else CUR_RS_HIST="1"; fi
-                    break ;;
-                2)
-                    while true; do
-                        printf "\n ${NC}Enter new depth (${BL}5-20${NC}) [Current: $CE]: "; read -r new_days
-                        case "$new_days" in *[!0-9]*|"") freeze2; continue ;; esac
-                        if [ "$new_days" -ge 5 ] && [ "$new_days" -le 20 ]; then
-                            CUR_ENTRIES="$new_days"
-                            break 2
-                        else
-                            freeze2; continue
-                        fi
-                    done ;;
-                3)
-                    if [ "$CUR_DATE" = "1" ]; then CUR_DATE="0"; else CUR_DATE="1"; fi
-                    break ;;
-                c|C)
-                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                    return 0 ;;
-                e|E)
-                    RS_HIST="$CUR_RS_HIST"
-                    RS_HIST_ENTRIES="$CUR_ENTRIES"
-                    RS_HIST_DATE="$CUR_DATE"
-                    for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
-                        eval "val=\$${var}"
-                        if grep -q "^$var=" "$CONFIG"; then
-                            sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
-                        else
-                            echo "$var=\"$val\"" >> "$CONFIG"
-                        fi
-                    done
-                    if [ -f "$HISTORY_DB" ]; then rm -f "$HISTORY_DB"; fi
-                    echo -e "\n${GR}[+] Configuration saved and DB cleared.${NC}"
-                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                    pause; return 0 ;;
                 *)
                     freeze2; continue ;;
             esac
@@ -1189,50 +835,6 @@ theme_submenu() {
 restart_httpd() { service restart_httpd >/dev/null 2>&1; killall -HUP httpd >/dev/null 2>&1; }
 
 pause() { printf "\nPress ${BL}[Enter]${NC} to return..."; read -r discard; }
-
-do_runtime() {
-	RTIME=${RTIME:-1}
-	if [ "$RTIME" = "1" ]; then
-		read -r END_RUNTIME _ < /proc/uptime
-		STATS_FILE="$USB_PATH/runtime.db"
-		DIFF=$(awk "BEGIN {printf \"%.2f\", $END_RUNTIME - $START_RUNTIME}")
-		RUNTIME="${DIFF}s"
-		if [ ! -f "$STATS_FILE" ] || [ "$(wc -w < "$STATS_FILE")" -lt 4 ]; then echo "0 0 999.99 0.00" > "$STATS_FILE"; fi
-		read -r TOTAL_TIME COUNT MIN_TIME MAX_TIME < "$STATS_FILE"
-		NEW_TOTAL=$(awk "BEGIN {printf \"%.2f\", $TOTAL_TIME + $DIFF}")
-		NEW_COUNT=$((COUNT + 1))
-		AVERAGE=$(awk "BEGIN {printf \"%.2f\", $NEW_TOTAL / $NEW_COUNT}")
-		NEW_MIN=$(awk "BEGIN {printf \"%.2f\", ($DIFF < $MIN_TIME) ? $DIFF : $MIN_TIME}")
-		NEW_MAX=$(awk "BEGIN {printf \"%.2f\", ($DIFF > $MAX_TIME) ? $DIFF : $MAX_TIME}")
-		echo "$NEW_TOTAL $NEW_COUNT $NEW_MIN $NEW_MAX" > "$STATS_FILE"
-		logger -p user.info -t "Wireless_Report" "Report completed in $RUNTIME. AVG: ${AVERAGE}s (L: ${NEW_MIN}s/H: ${NEW_MAX}s) over $NEW_COUNT scans."
-		RUNTIME_CSS=".button-refresh:hover select, .button-refresh:hover .button-trigger { color: #0096ff !important; }
-        .button-refresh, .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
-        .button-refresh:before, .button-refresh .button-trigger:before, .button-refresh select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
-        .button-refresh:after, .button-refresh .button-trigger:after, .button-refresh select:after { content: \"\"; position: absolute; width: 4px; height: 4px; background: #0096ff; border-radius: 50%; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 101; pointer-events: none; }
-        .button-refresh:before { content: \"Avg: ${AVERAGE}s over $NEW_COUNT scans\"; left: -110px; bottom: 185%; }
-        .button-refresh:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
-        .button-refresh .button-trigger:before, .button-refresh select:before { content: \"High: ${NEW_MAX}s   Low: ${NEW_MIN}s\"; left: -114px; top: 185%; }
-        .button-refresh .button-trigger:after, .button-refresh select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
-        .button-refresh:has(.button-trigger:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
-        .button-refresh:has(.button-trigger:hover):after { opacity: 1; visibility: visible; }
-        .button-refresh:has(.button-trigger:hover) .button-trigger:before, .button-refresh:has(select:hover) select:before { opacity: 1; visibility: visible; top: 190%; }
-        .button-refresh:has(.button-trigger:hover) .button-trigger:after, .button-refresh:has(select:hover) select:after { opacity: 1; visibility: visible; }"
-        RUNTIME_CSS=$(echo "$RUNTIME_CSS" | sed 's/^    //')
-	else
-		RUNTIME_CSS=""; RUNTIME=""
-		if [ -f "$USB_PATH/runtime.db" ]; then rm -f "$USB_PATH/runtime.db"; fi
-	fi
-}
-
-ssh_error() {
-    if [ -n "$1" ]; then
-        case "$1" in
-            *Ignoring*|*skipping*) ;;
-            *) echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "$ERROR_LOG" ;;
-        esac
-    fi
-}
 
 set_theme() {
     THEME="${THEME:-ORIGINAL}"
@@ -1287,30 +889,6 @@ set_theme() {
     THEME_CSS=$(echo "$THEME_CSS" | sed 's/^        //')
 }
 
-do_numbered_node() {
-    if [ "$NUMBERED_NODE" -lt 1 ]; then ROUTER_ONLY="display: none !important;"
-    else  ROUTER_ONLY=""; fi
-    if [ "$NUMBERED_NODE" = 1 ]; then NTOTAL=""
-	else NTOTAL="<span class='right-arrow'>—›</span> $NODE_TOTALS"; fi
-	if [ "$NUMBERED_NODE" -ge 1 ]; then
-		ALL_DEVICES="Devices: <span class='stat-cool'>$ALL_DEVICES</span> \
-        <span class='right-arrow'>—›</span> \
-        $MAIN_DEVICE_TOTAL$BULLET$NODE_TOTALS"
-	else
-		ALL_DEVICES="Devices: $MAIN_DEVICE_TOTAL"
-	fi
-	if [ "$NUMBERED_NODE" -gt 4 ]; then
-        TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
-        UPTIME_STYLE="text-align: center; justify-content: flex-start; font-size: 8px;"
-    elif [ "$NUMBERED_NODE" -eq 4 ]; then
-        TEMP_STYLE="text-align: center; justify-content: flex-start; font-size: 13px;"
-        UPTIME_STYLE="text-align: center; justify-content: flex-start; font-size: 10px;"
-    else
-        TEMP_STYLE="text-align: center; justify-content: center;"
-        UPTIME_STYLE="text-align: center; justify-content: center;"
-    fi
-}
-
 hasta() {
 echo -e "\n\n\n${BL}" #===========================================================================================================
 echo -e "                                                                                                                        "
@@ -1346,779 +924,81 @@ update_time() {
     CUR_TIME=$(date "$T_FMT")
 }
 
-get_temp_unit() {
-    local t_unit=$1
-    case "$t_unit" in ""|*[!0-9.]*) echo "--"; return ;; esac
-    if [ "$TEMP_UNIT" = "C" ]; then
-        echo "${t_unit}°C"
-    else
-        local f_temp=$(( (t_unit * 9 + (t_unit >= 0 ? 2 : -2)) / 5 + 32 ))
-        echo "${f_temp}°F"
-    fi
-}
-
-get_temp_class() {
-    local temp=$1
-	local val="${temp%%[^0-9]*}"
-    case "$val" in ""|*[!0-9]*) echo "stat-cool"; return ;; esac
-    if [ "$REPORT_UNIT" = "C" ]; then
-        if [ "$val" -ge 90 ]; then echo "stat-hot"
-        elif [ "$val" -ge 75 ]; then echo "stat-warm"
-        else echo "stat-cool"; fi
-    else
-        if [ "$val" -ge 194 ]; then echo "stat-hot"
-        elif [ "$val" -ge 167 ]; then echo "stat-warm"
-        else echo "stat-cool"; fi
-    fi
-}
-
-get_load_class() {
-    local load=$1
-    case "$load" in ""|*[!0-9.]*) echo "stat-cool"; return ;; esac
-    case "$load" in
-        [4-9]*|[0-9][0-9]*) echo "stat-hot" ;;
-        1.[5-9]*|[2-3].*)   echo "stat-warm" ;;
-        *)                  echo "stat-cool" ;;
-    esac
-}
-
-get_mac_address() {
-	mac_prefix="${mac#??:}"
-    mac_prefix="${mac_prefix%:??}"
-	is_node_pfx=0; bh="no"
-	case "$NODE_PFX" in *"$mac_prefix"*) is_node_pfx=1 ;; esac
-	if [ "$mac_prefix" = "$MAIN_PFX" ] || [ "$is_node_pfx" -eq 1 ]; then
-		    if [ "$BACKHAUL" != "yes" ]; then return 1; fi
-			bh="yes"
-	fi
-	if [ "$bh" = "yes" ]; then
-		mac_check="${CLEAN_IP}_${iface}_${mac}"
-	else
-		mac_check="$mac"
-	fi
-	case " $SEEN_MACS_VAR " in *" $mac_check "*) return 1 ;; esac
-	get_name "$mac"
-	if [ "$bh" = "yes" ]; then
-		mac_final="${CLEAN_IP}_${iface}_${mac}"
-	else
-		mac_final="$mac"
-	fi
-	case " $SEEN_MACS_VAR " in *" $mac_final "*) return 1 ;; esac
-	SEEN_MACS_VAR="$SEEN_MACS_VAR $mac_final"
-	return 0
-}
-
-get_name() {
-	name=""
-	# YazDHCP
-	if [ -f "$YAZ_CACHE" ]; then
-		local entry=$(grep -m1 "^$mac|" "$YAZ_CACHE")
-		name="${entry##*|}"
-	fi
-	# Custom Client List
-	if [ -z "$name" ] || [ "$name" = "*" ]; then
-		if [ -f "$CUSTOM_CLIENTS_CACHE" ]; then
-			local entry=$(grep -m1 "^$mac|" "$CUSTOM_CLIENTS_CACHE")
-			name="${entry#*|}"
-		fi
-	fi
-	# Networkmap Client / MLO
-	if [ -z "$name" ] || [ "$name" = "*" ]; then
-		local entry=$(sed 's/},"/ \n"/g' /jffs/nmp_cl_json.js | grep -i "$mac" | head -n 1)
-		local raw_parent=$(echo "$entry" | sed -n 's/.*"mlo_all_mac":"<\([^"]*\)".*/\1/p' | tr '[:lower:]' '[:upper:]')
-		local parent_mac=$(echo "$raw_parent" | cut -d'<' -f1)
-		if [ -n "$parent_mac" ] && [ "$parent_mac" != "$mac" ]; then mac="$parent_mac"; fi
-		name=$(echo "$entry" | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
-    fi
-	# Wireless Backhaul
-	if [ -z "$name" ] || [ "$name" = "*" ] || [ "$name" = "$mac" ]; then
-		local temp="${mac#*:}"; local mid_mac="${temp%:*}"
-		if [ -n "$mid_mac" ]; then
-			local node_match=""
-			if [ -f "$DEVICE_LIST_CACHE" ]; then node_match=$(grep -i "$mid_mac" "$DEVICE_LIST_CACHE"); fi
-			if [ -n "$node_match" ]; then
-				node_alias=$(echo "$node_match" | cut -d'>' -f2)
-				name="${node_alias:-NODE}-BH"
-			fi
-		fi
-	fi
-	# Fallback
-	if [ -z "$name" ] || [ "$name" = "*" ]; then name="$mac"; fi
-}
-
-get_ip() {
-	ip=""
-	if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$ARP_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
-    if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$LEASES_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
-    if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$YAZ_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
-    if [ -z "$ip" ]; then line=$(grep -ihm 1 "^$mac|" "$DHCPSTATIC_CACHE"); if [ -n "$line" ]; then ip="${line#*|}"; ip="${ip%%|*}"; fi; fi
-	case "$name" in *-BH*) ip="" ;; esac
-	case "$ip" in ""|*[!0-9.]*) ip=$(printf "900.000.000.00%d" "${NUMBERED_NODE:-0}") ;; esac
-	if [ "$IPPAD" = "1" ]; then
-		last_octet="${ip##*.}"
-		ip=$(printf "%s.%03d" "${ip%.*}" "${last_octet:-0}")
-	elif [ "$IPPAD" = "2" ]; then
-		ip_base="${ip%.*.*}"
-		ip_last_two="${ip#*.*.}"
-		seg1="${ip_last_two%.*}"
-		seg2="${ip_last_two#*.}"
-		ip=$(printf "%s.%03d.%03d" "$ip_base" "${seg1:-0}" "${seg2:-0}")
-	fi
-	ip_to_num "$ip"; ip_sort="$IP_NUM"
-}
-
-ip_to_num() {
-    local ip="$1" o1 o2 o3 o4
-    o1="${ip%%.*}"; local rest="${ip#*.}"
-    o2="${rest%%.*}"; rest="${rest#*.}"
-    o3="${rest%%.*}"; o4="${rest#*.}"
-    case "$o1" in *[!0-9]*|"") IP_NUM="000000000000"; return ;; esac
-    case "$o2" in *[!0-9]*|"") IP_NUM="000000000000"; return ;; esac
-    case "$o3" in *[!0-9]*|"") IP_NUM="000000000000"; return ;; esac
-    case "$o4" in *[!0-9]*|"") IP_NUM="000000000000"; return ;; esac
-    o1=${o1#${o1%%[!0]*}}; [ -z "$o1" ] && o1=0
-    o2=${o2#${o2%%[!0]*}}; [ -z "$o2" ] && o2=0
-    o3=${o3#${o3%%[!0]*}}; [ -z "$o3" ] && o3=0
-    o4=${o4#${o4%%[!0]*}}; [ -z "$o4" ] && o4=0
-    IP_NUM=$(printf "%03d%03d%03d%03d" "${o1:-0}" "${o2:-0}" "${o3:-0}" "${o4:-0}")
-}
-
-final_chk() {
-    width="${width:-20}"
-    ssid="${ssid:-Wireless}"
-    case "$rssi" in 0|1|""|"-"|*[!0-9-]*) rssi=-54 ;; esac
-}
-
-check_new_mac() {
-	local mac="$1"
-    if [ ! -f "$KNOWN_DB" ]; then touch "$KNOWN_DB"; fi
-    if ! grep -qi "^$mac$" "$KNOWN_CACHE"; then
-        echo "$mac" >> "$KNOWN_DB"
-        echo "$mac" >> "$KNOWN_CACHE"
-        echo "new-device-row"
-    fi
-}
-
-get_trend() {
-    local mac="$1"; local current_rssi="$2"; local rssi_name="${3:-""}"
-	if [ "$RS_HIST" = "1" ]; then
-		local rband=$(get_band "$iface" "$width" "$ROUTER" "band")
-		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
-		local history_str="${entry#*|}"; local prev_entry="${history_str##*,}"
-		local prev_rssi="${prev_entry%%|*}"; local trend_icon=""
-		if [ -z "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box'>•</span>"
-		elif [ "$current_rssi" -gt "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box trend-up rssi-excl'>↑</span>"
-		elif [ "$current_rssi" -lt "$prev_rssi" ]; then
-			trend_icon="<span class='trend-box trend-down rssi-poor'>↓</span>"
-		else
-			trend_icon="<span class='trend-box'>•</span>"
-		fi
-		if [ "$RS_HIST_DATE" = "1" ]; then
-            local new_entry="$current_rssi|$rssi_name|$rband|$CUR_TIME"
-        else
-            local new_entry="$current_rssi|$rssi_name|$rband"
-        fi
-		local new_history="${history_str:+$history_str,}$new_entry"
-		local final_history="$new_history"
-		local commas_only="${final_history//[^,]/}"
-		local count=$(( ${#commas_only} + 1 ))
-		while [ "$count" -gt "$RS_HIST_ENTRIES" ]; do
-			final_history="${final_history#*,}"
-			count=$((count - 1))
-		done
-		echo "$mac|$final_history" >> "$NEW_HISTORY"
-		local rssi_history=""; local IFS=','
-		for entry in $final_history; do
-			rssi="${entry%%|*}"; rest="${entry#*|}"
-			name="${rest%%|*}"; rest="${rest#*|}"
-			if [ "$RS_HIST_DATE" = "1" ]; then
-                rband_val="${rest%%|*}"
-                time="${rest#*|}"
-            else
-                rband_val="$rest"
-                time=""
-            fi
-			if [ "$time" = "$rest" ]; then time=""; fi
-			if [ "$rssi" -ge -50 ]; then style="color: #30d158; font-weight: bold;"
-			elif [ "$rssi" -ge -60 ]; then style="color: #64d2ff; font-weight: bold;"
-			elif [ "$rssi" -ge -70 ]; then style="color: #ffd60a; font-weight: bold;"
-			else style="color: #ff453a; font-weight: bold;"; fi
-			rssi_history="${rssi_history}${rssi_history:+<br>}<span style='$style'>$rssi [$name] [$rband_val]${time:+ $time}</span>"
-		done
-		unset IFS
-		echo -n "$trend_icon<span class='rssi-tooltip'>$rssi_history</span>"
-	else
-		local entry=$(grep -F "$mac|" "$HISTORY_CACHE" 2>/dev/null)
-		local old="${entry##*|}"
-		echo "$mac|$current_rssi" >> "$NEW_HISTORY"
-		if [ -z "$old" ] || [ "$old" -eq 0 ]; then
-            echo "<span class='trend-box'>•</span>"
-            return
-        fi
-        if [ "$current_rssi" -gt "$old" ]; then
-            echo "<span class='trend-box trend-up rssi-excl'>↑</span>"
-        elif [ "$current_rssi" -lt "$old" ]; then
-            echo "<span class='trend-box trend-down rssi-poor'>↓</span>"
-        else
-            echo "<span class='trend-box'>•</span>"
-        fi
-	fi
-}
-
-get_band() {
-    local iface=$1; local width=$2; local model=$3
-    local w_text=""; local Label="Unknown"
-	if [ -n "$width" ]; then w_text=" ($width)"; fi
-    local m=$(echo "$model" | tr '[:lower:]' '[:upper:]')
-    case "$m" in
-		# Quad-Band Mapping (5G, 6G-1, 6G-2, 2.4G)
-		# Models: GT-BE98(Pro), BQ16
-        *BE98*|*BQ16*)
-            case "$iface" in
-                wl0*|eth7*)  Label="5G" ;;
-                wl1*|eth8*)  Label="6G-1" ;;
-                wl2*|eth9*)  Label="6G-2" ;;
-                wl3*|eth10*) Label="2.4G" ;;
-            esac
-            ;;
-		# Quad-Band Mapping (5G, 5G-2, 6G, 2.4G)
-		# Models: GT-AXE16000, GT-BE25000
-        *AXE16000*|*BE25000*)
-            case "$iface" in
-                wl0*|eth7*)  Label="5G" ;;
-                wl1*|eth8*)  Label="5G-2" ;;
-                wl2*|eth9*)  Label="6G" ;;
-                wl3*|eth10*) Label="2.4G" ;;
-            esac
-            ;;
-		# Tri-Band ZenWiFi-BT10 Specific
-        *BT10*)
-            case "$iface" in
-                wl0*) Label="6G" ;;
-                wl1*) Label="5G" ;;
-                wl2*) Label="2.4G" ;;
-            esac
-            ;;
-		# Tri-Band Mapping (2.4G, 5G, 6G)
-        # Models: RT-BE96U, RT-BE92U, GT-BE19000, GS-BE18000, GS-BE12000, BT6, ZENWIFI-BT8(MTK),
-        #         RT-AXE7800, GT-AXE11000, ET8, ET9, ET12
-        *BE96U*|*BE92U*|*BE19000*|*BE18000*|*BE12000*|*BT6*|*BT8*|*AXE7800*|*AXE11000*|*ET8*|*ET9*|*ET12*)
-            case "$iface" in
-                wl0*|eth1*|eth4*|eth8*|ra[0-9]*)         Label="2.4G" ;;
-                wl1*|eth2*|eth5*|eth7*|eth10*|rai[0-9]*) Label="5G" ;;
-                wl2*|eth6*|eth9*|rax[0-9]*)              Label="6G" ;;
-            esac
-            ;;
-		# Tri-Band Mapping (2.4G, 5G-1, 5G-2)
-        # Models:  RT-AX92U, GT6, XT8, XT9, ZENWIFI-XT12
-        *AX92U*|*GT6*|*XT8*|*XT9*|*XT12*)
-            case "$iface" in
-                wl0*|eth1*|eth4*|eth8*)        Label="2.4G" ;;
-                wl1*|eth2*|eth5*|eth7*|eth10*) Label="5G-1" ;;
-                wl2*|eth6*|eth9*)              Label="5G-2" ;;
-            esac
-            ;;
-		# Dual-Band DSL-AX82U Specific
-        *DSL-AX82U*)
-            case "$iface" in
-                wl0*|eth5*) Label="2.4G" ;;
-                wl1*|eth6*) Label="5G" ;;
-                *)          Label="Unknown" ;;
-            esac
-            ;;
-		# Dual-Band Mapping
-		# Models:  RT-AX86U, ZENWIFI-BD4(QCA)
-        *)
-            case "$iface" in
-                wl0*|eth1*|eth4*|eth6*|eth8*|ath0*)  Label="2.4G" ;;
-                wl1*|eth2*|eth5*|eth7*|eth10*|ath1*) Label="5G" ;;
-                *)                                   Label="Unknown" ;;
-            esac
-            ;;
-    esac
-    # Unsupported: TUF-AX4200(MTK), RT-AX1800S(MTK), ZENWIFI_XD4_PLUS(MTK)
-
-	# Wireless Backhaul
-    if [ -n "$width" ]; then
-        if [ "$width" -eq 320 ] && [ "$Label" = "Unknown" ]; then Label="6G"
-        elif [ "$width" -ge 80 ] && [ "$width" -le 160 ]; then
-            if [ "$Label" = "2.4G" ] || [ "$Label" = "Unknown" ]; then Label="5G"; fi
-        elif [ "$Label" = "Unknown" ]; then
-            case "$iface" in *0*) Label="2.4G" ;; *) Label="5G" ;; esac
-        fi
-    fi
-    # Band UI Renderer
-	local class="" sort="0"
-	case "$Label" in
-		2.4G*)  class="band-24g"; sort="2.4" ;;
-		5G*)    class="band-5g"; sort="5"   ;;
-		6G*)    class="band-6g"; sort="6"   ;;
-	esac
-	if [ "$4" = "band" ]; then echo "$Label"
-    else echo "<td data-sort='$sort' style='text-align:center;'><span class='$class'>$Label$w_text</span></td>"; fi
-}
-
-qca_uptime() {
-    [ "$uptime" = "UP_QCA" ] || return 0
-    case "$iface" in *ath*) ;; *) return 0 ;; esac
-    local now=$(date +%s); local clean_mac="$mac"
-    local start_ts=$(jq -r --arg m "$clean_mac" '.[$m].start // 0' "/jffs/wlcnt.json" 2>/dev/null)
-    if [ "${start_ts:-0}" -gt 0 ]; then diff=$((now - start_ts)); uptime=${diff#-}
-    else uptime="0"; fi
-}
-
-device_uptime() {
-    local T=$1; local pulse=""
-    if [ -z "$T" ] || case "$T" in *[!0-9]*) true ;; *) false ;; esac; then
-        echo "<span data-sort='0'>---</span>"
-        return
-    fi
-    local check_mins="${PULSE_MINS:-15}"; local pulse_sec=$((check_mins * 60))
-    if [ "$check_mins" -ne 0 ] && [ "$T" -lt "$pulse_sec" ]; then pulse="pulse-blue"; fi
-    local d=$((T / 86400));  local rem=$((T % 86400))
-    local h=$((rem / 3600)); local m=$(((rem % 3600) / 60))
-    if [ "$d" -gt 0 ]; then
-        printf "<span class='%s' data-sort='%s'>%02dd %02dh</span>" "$pulse" "$T" "$d" "$h"
-    elif [ "$h" -gt 0 ]; then
-        printf "<span class='%s' data-sort='%s'>%02dh %02dm</span>" "$pulse" "$T" "$h" "$m"
-    else
-        printf "<span class='%s' data-sort='%s'>00h %02dm</span>" "$pulse" "$T" "$m"
-    fi
-}
-
-get_bars_rssi_style() {
-    if [ "$rssi" -ge -50 ]; then
-        bars="<span class='rssi_bars rssi-excl'>||||</span>"
-        rssi_style="color: #30d158; font-weight: bold;"
-        T_EXCL=$((T_EXCL+1))
-    elif [ "$rssi" -ge -60 ]; then
-        bars="<span class='rssi_bars rssi-good'>|||</span>"
-        rssi_style="color: #64d2ff; font-weight: bold;"
-        T_GOOD=$((T_GOOD+1))
-    elif [ "$rssi" -ge -70 ]; then
-        bars="<span class='rssi_bars rssi-fair'>||</span>"
-        rssi_style="color: #ffd60a; font-weight: bold;"
-        T_FAIR=$((T_FAIR+1))
-    else
-        bars="<span class='rssi_bars rssi-poor'>|</span>"
-        rssi_style="color: #ff453a; font-weight: bold;"
-        T_POOR=$((T_POOR+1))
-    fi
-}
-
-get_max_column() {
-	if [ "${#name}" -gt 20 ]; then name="${name:0:20}"; fi
-	if [ "${#mac}"  -gt 17 ]; then mac="${mac:0:17}"; fi
-	if [ "${#ip}"   -gt 15 ]; then ip="${ip:0:15}"; fi
-	if [ "${#ssid}" -gt 15 ]; then ssid="${ssid:0:15}"; fi
-}
-
-hostcolor_main_name() {
-	if [ "$HOST_COLOR" = "1" ]; then
-		IP_COLOR=""; MAC_COLOR="color: #64d2ff;"
-		NAME_MAIN="<span style='color: $MAIN_COLOR;'>$name</span>"
-		name="$NAME_MAIN"
-	else
-		IP_COLOR="color: #64d2ff; "MAC_COLOR=""
-	fi
-}
-
-hostcolor_node_name() {
-    if [ "$HOST_COLOR" = "1" ]; then
-        NAME_NODE="<span style='color:$NODE_COLOR;'>$name</span>"
-        NODE_NUM="<span class='hidden-node-number'>$NODE_SUP</span>"
-    else
-        NAME_NODE="<span style='color:#ffffff;'>$name</span>"
-		NODE_NUM="<span style='color:$NODE_COLOR;'>$NODE_SUP</span>"
-    fi
-	name="$NAME_NODE$NODE_NUM"
-}
-
-get_row() {
-	ROW="<tr class='$is_mac_new'>
-		<td style='text-align:left;'>$name</td>
-		<td>
-			<span class='mac-val' data-sort='$mac'>$mac</span>
-			<span class='ip-val' data-sort='$ip_sort'>$ip</span>
-		</td>
-		<td data-sort='$rssi' class='rssi-container'>
-			$bars <span style='$rssi_style'>$rssi</span> $trend
-		</td>
-		<td data-sort='$lrd_val' style='$rssi_style; text-align:center;'>$lrd</td>
-		<td>
-			<span class='ssid-val' data-sort='$ssid'>$ssid</span>
-			<span class='iface-val' data-sort='$iface'>$iface</span>
-		</td>
-		$band
-		<td>$uptime</td>
-	</tr>"
-}
-
-get_rssi_boxes() {
-    RSSI_BOXES="<div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font'>$T_EXCL</span></div>
-    <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font'>$T_GOOD</span></div>
-    <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font'>$T_FAIR</span></div>
-    <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font'>$T_POOR</span></div>"
-}
-
-router_uptime() {
-    local s="${1%.*}" d h m
-    d=$((s / 86400)); h=$((s % 86400 / 3600)); m=$((s % 3600 / 60))
-    if [ $d -gt 0 ]; then echo "${d}d ${h}h ${m}m"
-    elif [ $h -gt 0 ]; then echo "${h}h ${m}m"
-    else echo "${m}m"; fi
-}
-
-parse_main_sta() {
-    local iface="$1" alt_iface="$2"
-    read -r rssi rx tx max width uptime <<EOF
-$({ wl -i "$iface" sta_info "$mac" 2>/dev/null || wl -i "$alt_iface" sta_info "$mac" 2>/dev/null; } | awk '
-    /smoothed rssi:/      { split($0, a, ": "); rssi = a[2] }
-    /rate of last rx pkt/ { rx = int($6 / 1000) }
-    /rate of last tx pkt/ { split($0, a, ": "); split(a[2], b, " "); tx = int(b[1] / 1000) }
-    /Max Rate =/          { max = $4 }
-    /in network/          { uptime = $3 }
-    /link bandwidth/      { for(i=1; i<=NF; i++) { if($i == "bandwidth") width = ($(i+1) == "=" ? $(i+2) : substr($(i+1), 2)) } }
-    END                   { if (rssi != "") print rssi, rx, tx, max, width, uptime }
-')
-EOF
-}
-
-parse_node_out() {
-    N_TEMP_RAW="" N_LOAD="" N_UPTIME_RAW="" N_UPTIME=""
-    while IFS='|' read -r key val; do
-        case "$key" in
-            "TEMP")       N_TEMP_RAW=$val ;;
-            "LOAD")       N_LOAD=$val ;;
-            "UPTIME")     N_UPTIME_RAW=$val ;;
-        esac
-    done <<EOF
-$1
-EOF
-}
-
-parse_node_data() {
-    IFS='|' read -r _ mac rssi iface uptime ssid lrd_val lrd width _ <<ROW
-$1
-ROW
-}
-
-startup() { ssh_init; get_usb; check_github; update_time; }
+startup() { mesh_init; check_github; update_time; }
 
 run_report() {
-#=================#
-#  Node Scan(s)   #
-#=================#
-read -r START_RUNTIME _ < /proc/uptime
-NODE_DATA_DIR="/tmp/node_data"
-rm -rf "$NODE_DATA_DIR" 2>/dev/null; mkdir -p "$NODE_DATA_DIR"
-for line in $SSH_NODES; do
-	ROUTER="${line%%|*}"; IP="${line#*|}"
-    [ -z "$IP" ] || [ "$IP" = "$ROUTER" ] && continue
-	CLEAN_IP="${IP//./_}"
-	(
-		/usr/bin/ssh -p "$SSH_PORT" -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes "${NODE_USER}@${IP}" "
-			NODE_COUNT=0
-			if ifconfig -a | grep -q "ath"; then
-                HW_ENGINE=\"QCA\"
-                ALL_IFACES=\$(ifconfig -a | grep -oE \"(ath|wl)[0-9]*(\.[0-9]+)?\")
-            elif [ -f \"/usr/sbin/wl\" ] || [ -f \"/usr/bin/wl\" ]; then
-                HW_ENGINE=\"BRCM\"
-                ALL_IFACES=\$(ifconfig -a | grep -oE \"(wl|eth6|eth7|eth8|eth9|eth10)[0-9]*(\.[0-9]+)?\")
-            elif [ -d \"/sys/module/mt_wifi\" ] || [ -d \"/sys/module/mt79xx\" ] || [ -f \"/usr/sbin/cfg_client\" ] || ifconfig -a | grep -qE \"(ra|rai|rax)[0-9]\"; then
-                HW_ENGINE=\"MTK\"
-                ALL_IFACES=\$(ifconfig -a | grep -oE \"(ra|rai|rax)[0-9]*(\.[0-9]+)?\")
-            fi
-            ALL_IFACES=\$(echo \"\$ALL_IFACES\" | tr ' ' '\n' | sort -u | tr '\n' ' ')
-            for iface in \$ALL_IFACES; do
-                case \"\$iface\" in wl0.0|wl1.0|wl2.0|wl3.0) continue ;; esac
-                SN=\$(nvram get \"\${iface}_ssid\")
-                if [ -z \"\$SN\" ] || [ \${#SN} -ge 16 ]; then
-                    idx=\${iface#*.}
-                    if [ \"\$idx\" != \"\$iface\" ]; then
-                        SN=\$(nvram get \"gnp_name_\$idx\")
-                    fi
-                    if [ -z \"\$SN\" ] || [ \${#SN} -ge 16 ]; then
-                        case \"\$iface\" in
-                            eth6|eth8)  SN=\$(nvram get wl0_ssid) ;;
-                            eth7|eth10) SN=\$(nvram get wl1_ssid) ;;
-                            eth9)       SN=\$(nvram get wl2_ssid) ;;
-                            *)          SN=\$(nvram get \"\${iface%.*}_ssid\") ;;
-                        esac
-                    fi
-                fi
-                [ -z \"\$SN\" ] && SN=\$(nvram get wl0_ssid)
-                [ \${#SN} -ge 16 ] && SN=\"\"
-                case \"\$HW_ENGINE\" in
-					BRCM)
-                        for mac in \$(wl -i \"\$iface\" assoclist 2>/dev/null | awk '{print \$2}'); do
-                            RAW=\$(wl -i \"\$iface\" sta_info \"\$mac\" 2>/dev/null)
-                            echo \"\$RAW\" | awk -v mac=\"\$mac\" -v iface=\"\$iface\" -v sn=\"\$SN\" '
-                                /smoothed rssi:/ { split(\$0, a, \": \"); rssi = a[2] }
-                                /bandwidth/ && !w { gsub(/[^0-9]/, \"\", \$0); if (\$0 != \"\") w = \$0 }
-                                /in network/ { up = \$3 }
-                                /rate of last rx pkt/ { rx_raw = \$6 / 1000 }
-                                /rate of last tx pkt/ { split(\$0, a, \": \"); tx_raw = a[2] / 1000 }
-                                END {
-                                    w = w ? w : \"20\"
-                                    rxd = (rx_raw == 0) ? \"1\" : sprintf(\"%.0f\", rx_raw)
-                                    txd = (tx_raw == 0) ? \"1\" : sprintf(\"%.0f\", tx_raw)
-                                    lrd = (rxd == \"1\" && txd == \"1\") ? \"1 / 72\" : rxd \" / \" txd
-                                    v1 = rxd; gsub(/[^0-9]/, \"\", v1); v2 = txd; gsub(/[^0-9]/, \"\", v2)
-                                    if (v1 != \"\" && v2 != \"\" && (v1 + 0) > (v2 + 0)) { tmp = rxd; rxd = txd; txd = tmp; lrd = rxd \" / \" txd }
-                                    tx = (txd != \"\") ? txd : 0
-				                    printf \"DATA|%s|%s|%s|%s|%s|%04d|%s|%s|\\n\", mac, rssi, iface, up, sn, tx, lrd, w
-                                }'
-                            NODE_COUNT=\$((NODE_COUNT + 1))
-                        done
-                        ;;
-					QCA)
-						SN=\$(iw dev \"\$iface\" info 2>/dev/null | grep ssid | awk '{print \$2}')
-						[ -z \"\$SN\" ] && SN=\$(nvram get \"\${iface}_ssid\")
-						MACS=\$(wlanconfig \"\$iface\" list 2>/dev/null | awk 'NR>1 {print \$1}' | grep \":\")
-						for mac in \$MACS; do
-							ROW=\$(wlanconfig \"\$iface\" list 2>/dev/null | grep -i \"\$mac\")
-							RSSI=\$(echo \"\$ROW\" | awk '{print \$7}')
-							TX=\$(echo \"\$ROW\" | awk '{print \$5}' | tr -dc '0-9')
-							RX=\$(echo \"\$ROW\" | awk '{print \$6}' | tr -dc '0-9')
-							W=\"20\"; echo \"\$iface\" | grep -q \"ath1\" && W=\"80\"
-							LRD=\"\${RX} / \${TX}\"
-							TXV=\$(printf \"%04d\" \"\${TX:-0}\")
-							echo \"DATA|\$mac|\$RSSI|\$iface|UP_QCA|\$SN|\$TXV|\$LRD|\$W|\"
-							NODE_COUNT=\$((NODE_COUNT + 1))
-						done
-						;;
-                    MTK)
-						IFACE_INFO=\$(iw dev \"\$iface\" info 2>/dev/null)
-						LIVE_CHAN=\$(echo \"\$IFACE_INFO\" | grep \"channel\" | grep -oE '[0-9]+' | head -n1)
-						BASE_IFACE=\$(echo \"\$iface\" | sed 's/[0-9]\$/0/')
-						if [ \"\$BASE_IFACE\" = \"\$(nvram get wl2_ifname)\" ]; then PREFIX=\"wl2\"
-						elif [ \"\$BASE_IFACE\" = \"\$(nvram get wl1_ifname)\" ]; then PREFIX=\"wl1\"
-						else PREFIX=\"wl0\"; fi
-						DRIVER_SSID=\$(echo \"\$IFACE_INFO\" | grep \"ssid\" | sed 's/^[[:space:]]*ssid //')
-						if [ -n \"\$DRIVER_SSID\" ] && ! echo \"\$DRIVER_SSID\" | grep -qE \"^[0-9A-Fa-f]{32}\$\"; then
-							DISPLAY_SSID=\"\$DRIVER_SSID\"
-						else
-							VAP_NUM=\$(echo \"\$iface\" | sed 's/[^0-9]//g')
-							if [ -n \"\$VAP_NUM\" ] && [ \"\$VAP_NUM\" -gt 0 ] && [ \"\$iface\" != \"rax0\" ] && [ \"\$iface\" != \"rai0\" ] && [ \"\$iface\" != \"ra0\" ]; then
-								DISPLAY_SSID=\$(nvram get \"\${PREFIX}.\${VAP_NUM}_ssid\")
-							else
-								DISPLAY_SSID=\$(nvram get \"\${PREFIX}_ssid\")
-							fi
-						fi
-						W=\"20\"
-						if echo \"\$IFACE_INFO\" | grep -q \"6GHz\" || echo \"\$IFACE_INFO\" | grep -q \"width:\"; then
-							echo \"\$IFACE_INFO\" | grep -q \"320 MHz\" && W=\"320\"
-							echo \"\$IFACE_INFO\" | grep -q \"160 MHz\" && W=\"160\"
-							echo \"\$IFACE_INFO\" | grep -q \"80 MHz\" && W=\"80\"
-						elif [ -n \"\$LIVE_CHAN\" ] && [ \"\$(echo \"\$LIVE_CHAN\" | tr -d ',')\" -gt 14 ]; then
-							W=\"80\"; echo \"\$IFACE_INFO\" | grep -q \"160\" && W=\"160\"
-						fi
-						RAW_STAS=\$(iw dev \"\$iface\" station dump 2>/dev/null)
-						if [ -n \"\$RAW_STAS\" ]; then
-							echo \"\$RAW_STAS\" | awk -v def_w=\"\$W\" '
-								/^Station/ { if (mac != \"\") print mac, rssi, tx, rx, uptime, c_width; mac=\$2; rssi=\"-60\"; tx=\"0\"; rx=\"0\"; uptime=\"0\"; c_width=def_w }
-                                /signal:/ && !/last ack/ { gsub(/[^0-9-]/, \"\", \$2); rssi=\$2 }
-                                /tx bitrate:/ { tx=\$3; if (\$0 ~ /[0-9]+MHz/) { match(\$0, /[0-9]+MHz/); str=substr(\$0, RSTART, RLENGTH); gsub(/[^0-9]/, \"\", str); c_width=str } else c_width=\"20\" }
-                                /rx bitrate:/ { rx=\$3 }
-                                /connected time:/ { s=\$3; gsub(/[^0-9]/, \"\", s); uptime=s }
-								END { if (mac != \"\") print mac, rssi, tx, rx, uptime, c_width }' | while read -r c_mac c_rssi c_tx c_rx c_uptime c_width; do
-								[ -z \"\$c_mac\" ] && continue
-								TX_INT=\$(echo \"\$c_tx\" | cut -d. -f1); RX_INT=\$(echo \"\$c_rx\" | cut -d. -f1)
-								[ -z \"\$TX_INT\" ] && TX_INT=0; [ -z \"\$RX_INT\" ] && RX_INT=0
-                                if [ \"\$RX_INT\" -eq 0 ] && [ \"\$TX_INT\" -eq 0 ]; then LRD=\"1\"
-                                elif [ \"\$RX_INT\" -gt \"\$TX_INT\" ]; then LRD=\"\$TX_INT / \$RX_INT\"
-                                else LRD=\"\$RX_INT / \$TX_INT\"; fi
-								TX=\$(printf \"%04d\" \"\${TX_INT:-0}\")
-								echo \"DATA|\$c_mac|\$c_rssi|\$iface|\$c_uptime|\$DISPLAY_SSID|\$TX|\$LRD|\$c_width|\"
-								NODE_COUNT=\$((NODE_COUNT + 1))
-							done
-						fi
-						;;
-				esac
-			done
-            echo \"TEMP|\$(cut -c1-2 /sys/class/thermal/thermal_zone0/temp 2>/dev/null)\"
-            echo \"LOAD|\$(cut -d' ' -f1 /proc/loadavg)\"
-            echo \"UPTIME|\$(cut -d. -f1 /proc/uptime)\"
-		" 2>/dev/null > "$NODE_DATA_DIR/${CLEAN_IP}.out"
-	) &
-done
+#======================================#
+#  Browser/API Report Page Preparation #
+#======================================#
+# v2.2+ deliberately does not scan AiMesh nodes from the shell. The generated
+# page uses the browser's already-authenticated primary-router WebUI session:
+#   /appGet.cgi
+#   /get_diag_latest_content_data.cgi
+# All client/node refreshes happen in-page with same-origin fetch() calls.
 
-#=============================#
-#  Main Scan/Device Assembly  #
-#=============================#
 IPPAD=${IPPAD:-1}; HOST_COLOR=${HOST_COLOR:-0}
-YAZDHCP="/jffs/addons/YazDHCP.d/DHCP_clients"
-awk '$0 ~ /0x2/ {print toupper($4)"|"$1}' /proc/net/arp > "$ARP_CACHE"
-if [ -f "$KNOWN_DB" ]; then cp "$KNOWN_DB" "$KNOWN_CACHE" 2>/dev/null; else > "$KNOWN_CACHE"; fi
-if [ -f "$HISTORY_DB" ]; then cp "$HISTORY_DB" "$HISTORY_CACHE" 2>/dev/null; else > "$HISTORY_CACHE"; fi
-if [ -f "$YAZDHCP" ]; then awk -F',' 'NR>1 {print toupper($1) "|" $2 "|" $3}' "$YAZDHCP" > "$YAZ_CACHE"; else > "$YAZ_CACHE"; fi
-awk '{print toupper($2)"|"$3}' /var/lib/misc/dnsmasq*.leases > "$LEASES_CACHE" 2>/dev/null || > "$LEASES_CACHE"
-nvram get dhcp_staticlist | sed 's/>>/  /g; s/[<>]/ /g' | \
-awk '{print toupper($1)"|"$2}' > "$DHCPSTATIC_CACHE" 2>/dev/null || > "$DHCPSTATIC_CACHE"
-nvram get asus_device_list | sed 's/</\n/g' > "$DEVICE_LIST_CACHE" 2>/dev/null || > "$DEVICE_LIST_CACHE"
-nvram get custom_clientlist | sed 's/</\n/g' | awk -F'>' '{if($2!="") print toupper($2)"|"$1}' > "$CUSTOM_CLIENTS_CACHE" 2>/dev/null || > "$CUSTOM_CLIENTS_CACHE"
-read -r M_LOAD _ < /proc/loadavg
-MC_LOAD=$(get_load_class "$M_LOAD")
-read -r M_T < /sys/class/thermal/thermal_zone0/temp 2>/dev/null
-M_TEMP=$(get_temp_unit $(( ${M_T:-0} / 1000 )))
-MC_TEMP=$(get_temp_class "$M_TEMP")
-read -r s _ < /proc/uptime; s=${s%.*}
-M_UPTIME=$(router_uptime "$s")
-M_TIME=$(( $(date +%s) - s ))
-M_BOOT=$(date -d @$M_TIME "$D_FMT")
-MAIN_PFX=$(nvram get lan_hwaddr | cut -c 4-14 | tr '[:lower:]' '[:upper:]')
-NODE_PFX=$(nvram get cfg_relist | grep -oE '([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}' | cut -c 4-14 | sort -u | tr '[:lower:]' '[:upper:]')
+PULSE_MINS=${PULSE_MINS:-15}
+: "${MAIN_COLOR:=#0096ff}"
+: "${NODE_COLORS:=#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
 ROUTER=$(nvram get productid)
-MAIN_NAME="${MAIN_NICK:-${ROUTER:-"Main Router"}}"; if [ "${#MAIN_NAME}" -gt 25 ]; then MAIN_NAME="${MAIN_NAME:0:25}"; fi
-if [ -z "$MAIN_COLOR" ]; then MAIN_COLOR="#0096ff"; fi
-> "$SEEN_MACS"; > "$NEW_HISTORY"
-SEEN_MACS_VAR=""; NL=$'\n'; MAIN_ROWS=""; NODE_ROWS=""; ALL_ROWS=""
-T_EXCL=0; T_GOOD=0; T_FAIR=0; T_POOR=0; MAIN_DEVICE_TOTAL=0; NODE_DEVICE_TOTAL=0
-WL_BASES=$(nvram get wl_ifnames); set -- $WL_BASES
-WL0_PHYS=$1; WL1_PHYS=$2; WL2_PHYS=$3; WL3_PHYS=$4
-RAW_IFACES=$(printf "%s\n" $WL_BASES $(ifconfig -a | grep -oE "wl[0-9]+\.[0-9]+") | sort -u)
-ACTIVE_IFACES=""
-for iface in $RAW_IFACES; do
-    if wl -i "$iface" bss 2>/dev/null | grep -q "up"; then
-        ACTIVE_IFACES="$ACTIVE_IFACES $iface"
-    fi
-done
-IFACE_LIST=$(echo $ACTIVE_IFACES | xargs)
-for iface in $IFACE_LIST; do
-	case "$iface" in lo|eth0|eth1|eth2|eth3) continue ;; esac
-	case "$iface" in
-		${WL0_PHYS:+"$WL0_PHYS"*}) data_iface="wl0" ;;
-		${WL1_PHYS:+"$WL1_PHYS"*}) data_iface="wl1" ;;
-		${WL2_PHYS:+"$WL2_PHYS"*}) data_iface="wl2" ;;
-		${WL3_PHYS:+"$WL3_PHYS"*}) data_iface="wl3" ;;
-		*) data_iface="$iface" ;;
-	esac
-    MAC_LIST=$(wl -i "$iface" assoclist 2>/dev/null); MAC_LIST=${MAC_LIST//assoclist /}
-	if [ -z "$MAC_LIST" ]; then
-		BRIDGE=$(brctl show 2>/dev/null | grep "$iface" | awk '{print $1}')
-		if [ -z "$BRIDGE" ]; then BRIDGE=$(brctl show 2>/dev/null | grep -B1 "$iface" | grep -v "\-\-" | head -n1 | awk '{print $1}'); fi
-		if [ -n "$BRIDGE" ]; then MAC_LIST=$(brctl showmacs "$BRIDGE" 2>/dev/null | grep -v "yes" | awk '{print $2}'); fi
-	fi
-    [ -z "$MAC_LIST" ] && continue
-    ssid=$(nvram get "${iface}_ssid")
-	if [ -z "$ssid" ] || [ "${#ssid}" -ge 16 ]; then
-        idx=${iface#*.}
-        if [ "$idx" != "$iface" ]; then ssid=$(nvram get "gnp_name_$idx"); else ssid=""; fi
-    fi
-	if [ -z "$ssid" ] && [ -n "$data_iface" ]; then ssid=$(nvram get "${data_iface}_ssid"); fi
-	if [ -z "$ssid" ]; then ssid=$(nvram get "${iface%.*}_ssid"); fi
-	if [ -z "$ssid" ] && [ -n "$data_iface" ]; then ssid=$(nvram get "${data_iface%.*}_ssid"); fi
-	for mac in $MAC_LIST; do
-		if [ -z "$mac" ] || [ "$mac" = "mac" ]; then continue; fi
-		get_mac_address || continue
-		get_ip
-        parse_main_sta "$iface" "$data_iface"
-		rx_disp="${rx:-1}"; [ "$rx_disp" = "0" ] && rx_disp="1"
-        tx_disp="${tx:-${max:-1}}"; [ "$tx_disp" = "0" ] && tx_disp="1"
-        if [ "$rx_disp" = "1" ] && [ "$tx_disp" = "1" ]; then lrd="1 / 72"
-        else lrd="${rx_disp} / ${tx_disp}"; fi
-        if [ "$rx_disp" -gt "$tx_disp" ] 2>/dev/null; then
-            T=$rx_disp; rx_disp=$tx_disp; tx_disp=$T
-            lrd="$rx_disp / $tx_disp"
-        fi
-        lrd_val=$(printf "%04d" "${tx_disp:-0}")
-		final_chk
-		is_mac_new=$(check_new_mac "$mac")
-		trend=$(get_trend "$mac" "$rssi" "$MAIN_NAME")
-		band=$(get_band "$iface" "$width" "$ROUTER")
-		uptime=$(device_uptime "$uptime")
-		get_bars_rssi_style
-		get_max_column
-		hostcolor_main_name
-		get_row
-		MAIN_ROWS="${MAIN_ROWS}${ROW}${NL}"
-		MAIN_DEVICE_TOTAL=$((MAIN_DEVICE_TOTAL + 1))
-	done
-done
-MAIN_NAME="<span class='router-style'>$MAIN_NAME</span>"
-MAIN_TEMP="<span class='${MC_TEMP}'>${M_TEMP}</span>"
-MAIN_LOAD="<span class='${MC_LOAD}'>${M_LOAD}</span>"
-MAIN_UPTIME="<span class='main-color'>${M_UPTIME}</span>"
-MAIN_BOOTTIME="<span class='main-color'>${M_BOOT}</span>"
-wait
+MAIN_NAME="${MAIN_NICK:-${ROUTER:-Main Router}}"
+[ "${#MAIN_NAME}" -gt 25 ] && MAIN_NAME="${MAIN_NAME:0:25}"
 
-#========================#
-#  Node Device Assembly  #
-#========================#
-N_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a}"
-BULLET=" <span style='color:white;'>•</span> "
-NODE_NAMES=""; NODE_TEMPS=""; NODE_LOADS=""; NODE_BOOTTIMES=""; NODE_UPTIMES=""
-NODE_TOTALS=""; COLOR_INDEX=0; NUMBERED_NODE=0
-for line in $SSH_NODES; do
-	NODE_OUT=""
-	ROUTER="${line%%|*}"; IP="${line#*|}"
-    [ -z "$IP" ] || [ "$IP" = "$ROUTER" ] && continue
-	CLEAN_IP="${IP//./_}"; eval CUSTOM_NICK=\$NODE_NICK_$CLEAN_IP
-	NODE_NAME="${CUSTOM_NICK:-${ROUTER:-$IP}}"; if [ "${#NODE_NAME}" -gt 25 ]; then NODE_NAME="${NODE_NAME:0:25}"; fi
-	if [ -f "$NODE_DATA_DIR/${CLEAN_IP}.out" ]; then NODE_OUT=$(cat "$NODE_DATA_DIR/${CLEAN_IP}.out"); fi
-	if [ -n "$NODE_OUT" ]; then
-        NUMBERED_NODE=$((NUMBERED_NODE + 1))
-		COLOR_INDEX=$((COLOR_INDEX + 1))
-        NODE_COLOR=$(echo $N_COLORS | cut -d' ' -f$((COLOR_INDEX)))
-        NODE_SUP="<sup>$NUMBERED_NODE</sup>"
-        NODE_NUM="<span style='color:$NODE_COLOR;'>$NODE_SUP</span>"
-		if [ "$HOST_COLOR" = "1" ]; then NNS=""; else NNS="$NODE_SUP"; fi
-        NODE_BRAND="<span class='router-style' style='color:$NODE_COLOR;'>${NODE_NAME}$NNS</span>"
-		if [ -z "$NODE_NAMES" ]; then NODE_NAMES="$NODE_BRAND"; else NODE_NAMES="$NODE_NAMES$BULLET$NODE_BRAND"; fi
-		parse_node_out "$NODE_OUT"
-		if [ "${#N_TEMP_RAW}" -gt 3 ]; then N_TEMP_RAW=$((N_TEMP_RAW / 1000)); fi
-        N_UPTIME=$(router_uptime "$N_UPTIME_RAW")
-        N_TEMP=$(get_temp_unit "$N_TEMP_RAW")
-		NC_TEMP=$(get_temp_class "$N_TEMP")
-        NC_LOAD=$(get_load_class "$N_LOAD")
-		N_BOOT=$(date -d @$(( $(date +%s) - ${N_UPTIME_RAW:-0} )) "$D_FMT")
-        NODE_DEVICES=0
-        while read -r ssh_node_data; do
-			if [ -z "$ssh_node_data" ]; then continue; fi
-			parse_node_data "$ssh_node_data"
-			get_mac_address || continue
-			get_ip
-			final_chk
-            is_mac_new=$(check_new_mac "$mac")
-			trend=$(get_trend "$mac" "$rssi" "$NODE_NAME")
-			band=$(get_band "$iface" "$width" "$ROUTER")
-			qca_uptime
-			uptime=$(device_uptime "$uptime")
-			get_bars_rssi_style
-			get_max_column
-			hostcolor_node_name
-            get_row
-            NODE_ROWS="${NODE_ROWS}${ROW}${NL}"
-            NODE_DEVICES=$((NODE_DEVICES + 1))
-			NODE_DEVICE_TOTAL=$((NODE_DEVICE_TOTAL + 1))
-        done <<EOF
-$(echo "$NODE_OUT" | grep "DATA|")
-EOF
-        NODE_TEMPS="${NODE_TEMPS}${NODE_TEMPS:+$BULLET}<span class='${NC_TEMP}'>$N_TEMP</span>"
-		NODE_LOADS="${NODE_LOADS}${NODE_LOADS:+$BULLET}<span class='${NC_LOAD}'>$N_LOAD</span>"
-        NODE_UPTIMES="${NODE_UPTIMES}${NODE_UPTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_UPTIME</span>"
-		NODE_BOOTTIMES="${NODE_BOOTTIMES}${NODE_BOOTTIMES:+$BULLET}<span style='color:$NODE_COLOR;'>$N_BOOT</span>"
-        NODE_TOTALS="${NODE_TOTALS}${NODE_TOTALS:+$BULLET}<span style='color:$NODE_COLOR;'>$NODE_DEVICES</span>"
-    fi
-done
-ALL_ROWS="${MAIN_ROWS}${NODE_ROWS}"
-ALL_TEMP="$MAIN_TEMP$BULLET$NODE_TEMPS"
-ALL_LOAD="$MAIN_LOAD$BULLET$NODE_LOADS"
-ALL_UPTIME="$MAIN_UPTIME$BULLET$NODE_UPTIMES"
-ALL_BOOTTIME="$MAIN_BOOTTIME$BULLET$NODE_BOOTTIMES"
-ALL_NAMES="$MAIN_NAME$BULLET$NODE_NAMES"
-ALL_DEVICES="$((MAIN_DEVICE_TOTAL + NODE_DEVICE_TOTAL))"
-GRAND_TOTAL_DEVICES="<span class='count-highlight'>$ALL_DEVICES</span>"
-MAIN_DEVICE_TOTAL="<span class='main-color'>${MAIN_DEVICE_TOTAL}</span>"
-NODE_DEVICE_TOTAL="<span class='stat-cool'>${NODE_DEVICE_TOTAL}</span>"
-UPDATED_TIME="<span class="total-count">Updated: $CUR_TIME</span>"
-get_rssi_boxes; do_numbered_node; set_theme
-check_version header_box; do_runtime
-JS_DIFF="${DIFF:-5.00}"
-mv "$NEW_HISTORY" "$HISTORY_DB"
+# Preserve custom node nicknames configured by the add-on without exposing any
+# credentials to the page. Values are emitted as JavaScript string literals.
+NODE_NICK_JS=""
+if [ -f "$CONFIG" ]; then
+	while IFS='=' read -r nick_key nick_value; do
+		case "$nick_key" in NODE_NICK_*) ;; *) continue ;; esac
+		nick_ip=${nick_key#NODE_NICK_}
+		nick_ip=$(printf '%s' "$nick_ip" | tr '_' '.')
+		nick_value=${nick_value#\"}; nick_value=${nick_value%\"}
+		nick_value=$(printf '%s' "$nick_value" | sed "s/\\\\/\\\\\\\\/g; s/'/\\\\'/g; s#</#<\\\\/#g")
+		NODE_NICK_JS="${NODE_NICK_JS}WR_CUSTOM_NODE_NAMES['${nick_ip}']='${nick_value}';"
+	done < "$CONFIG"
+fi
+
+set_theme
+check_version header_box
+RUNTIME_CSS=""
+RUNTIME=""
+ROUTER_ONLY=""
+TEMP_STYLE="text-align: center; justify-content: center;"
+UPTIME_STYLE="text-align: center; justify-content: center;"
+MAC_COLOR=""
+IP_COLOR="color: #64d2ff;"
+
+MAIN_NAME="<span id='wr-main-name' class='router-style'>${MAIN_NAME}</span>"
+UPDATED_TIME="<span class='wr-updated-time total-count'>Loading controller data...</span>"
+GRAND_TOTAL_DEVICES="<span id='wr-grand-total' class='count-highlight'>0</span>"
+MAIN_TEMP="<span id='wr-main-cpu' class='stat-cool'>--</span>"
+MAIN_LOAD="<span id='wr-main-memory' class='stat-cool'>--</span>"
+MAIN_DEVICE_TOTAL="<span id='wr-main-count' class='main-color'>0</span>"
+MAIN_UPTIME="<span id='wr-main-uptime' class='main-color'>--</span>"
+MAIN_BOOTTIME="<span id='wr-main-reboot' class='main-color'>--</span>"
+
+NODE_NAMES="<span id='wr-node-names' class='router-style'>AiMesh nodes</span>"
+NODE_TEMPS="<span id='wr-node-cpu' class='stat-cool'>--</span>"
+NODE_LOADS="<span id='wr-node-memory' class='stat-cool'>--</span>"
+NODE_DEVICE_TOTAL="<span id='wr-node-count' class='stat-cool'>0</span>"
+NODE_UPTIMES="<span id='wr-node-diag'>Controller telemetry pending...</span>"
+NODE_BOOTTIMES=""
+
+ALL_NAMES="<span id='wr-all-names' class='router-style'>Loading...</span>"
+ALL_TEMP="<span id='wr-all-main-cpu'>--</span>"
+ALL_LOAD="<span id='wr-all-main-memory'>--</span>"
+ALL_DEVICES="Devices: <span id='wr-all-count' class='stat-cool'>0</span>"
+ALL_UPTIME="<span id='wr-all-api-note'>Primary-router WebUI APIs • no direct node authentication</span>"
+ALL_BOOTTIME=""
+NTOTAL=""
+MAIN_ROWS=""
+NODE_ROWS=""
+ALL_ROWS=""
+
+RSSI_BOXES="<div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font wr-rssi-excellent'>0</span></div>
+    <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font wr-rssi-good'>0</span></div>
+    <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font wr-rssi-fair'>0</span></div>
+    <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font wr-rssi-poor'>0</span></div>"
 
 #=================#
 #  Generate HTML  #
@@ -2229,11 +1109,36 @@ cat <<HTML >> "$WEB_PAGE"
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
     sup { font-size: 0.6em; margin-left: 2px; }
     .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
+    /* Wide View keeps the normal ASUS page available, but lets the report itself use
+       the complete browser viewport when more horizontal room is useful. */
+    body.wr-wide-mode { overflow: hidden !important; }
+    body.wr-wide-mode #wifiReportContainer { position: fixed !important; inset: 0 !important; z-index: 9000 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; margin: 0 !important; padding: 4px 18px 24px 18px !important; box-sizing: border-box !important; overflow: auto !important; background: rgba(0,0,0,0.98); }
+    body.wr-wide-mode #wifiReportContainer .grid-container,
+    body.wr-wide-mode #wifiReportContainer #splitView,
+    body.wr-wide-mode #wifiReportContainer #allCol { width: 100% !important; max-width: none !important; }
+    body.wr-wide-mode #wifiReportContainer table.report_table { min-width: 900px; }
+    body.wr-wide-mode #wifiReportContainer table.report_table tbody td { font-size: 13px; }
+    body.wr-wide-mode #wifiReportContainer table.report_table thead th { font-size: 13px; }
+    body.wr-wide-mode #wifiReportContainer .router-style { font-size: 22px; }
+    body.wr-wide-mode #btnWide { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); background: rgba(0,150,255,0.15); }
+
+    /* Roomier column hints for Wide View and Side-by-Side.  These are minimums,
+       not fixed widths, so larger displays can continue to expand naturally. */
+    body.wr-wide-mode table.report_table th:nth-child(1), #popoutModal table.report_table th:nth-child(1) { min-width: 110px; }
+    body.wr-wide-mode table.report_table th:nth-child(2), #popoutModal table.report_table th:nth-child(2) { min-width: 125px; }
+    body.wr-wide-mode table.report_table th:nth-child(3), #popoutModal table.report_table th:nth-child(3) { min-width: 75px; }
+    body.wr-wide-mode table.report_table th:nth-child(4), #popoutModal table.report_table th:nth-child(4) { min-width: 130px; }
+    body.wr-wide-mode table.report_table th:nth-child(5), #popoutModal table.report_table th:nth-child(5) { min-width: 185px; }
+    body.wr-wide-mode table.report_table th:nth-child(6), #popoutModal table.report_table th:nth-child(6) { min-width: 115px; }
+    body.wr-wide-mode table.report_table th:nth-child(7), #popoutModal table.report_table th:nth-child(7) { min-width: 90px; }
+
     .popout-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-    .popout-content { background: rgba(0, 0, 0, 0.2); width: 95%; max-width: 1450px; margin: auto; padding:15px; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); overflow-x: hidden !important; }
-    .popout-close-x { position: absolute; top: 10px; right: 20px; color: #fff; font-size: 30px; font-weight: bold; }
-    .popout-grid { display: flex; width: 100%; gap: 5px; margin-top: 5px; align-items: flex-start; justify-content: center; }
-    .popout-grid .report-column { flex: 1; max-width: 49.5%; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    .popout-content { background: rgba(0, 0, 0, 0.2); width: calc(100vw - 24px); max-width: none; height: calc(100vh - 24px); max-height: none; margin: 12px; padding:12px; box-sizing: border-box; border-radius:15px; border:1px solid rgba(0, 150, 255, 0.4); position: relative; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); overflow-x: hidden !important; }
+    .popout-close-x { position: absolute; top: 8px; right: 20px; color: #fff; font-size: 30px; font-weight: bold; }
+    .popout-grid { display: flex; width: 100%; gap: 10px; margin-top: 2px; align-items: flex-start; justify-content: center; }
+    .popout-grid > .report-column, .popout-grid > .popout-main-wrapper { flex: 1 1 0; min-width: 0; max-width: none; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    .popout-main-wrapper { display: flex; flex-direction: column; }
+    .popout-main-wrapper > .report-column { flex: none !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
     #popoutModal .separator-line { margin: 8px -12px; display: block; width: calc(100% + 24px); }
     #popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
     #popoutModal table.report_table tbody td:not([style*="font-weight: bold"]) { font-size: 12px !important; font-weight: normal !important; }
@@ -2246,104 +1151,884 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal .rssi-container { position: relative !important; }
     #popoutModal .rssi-tooltip { position: absolute !important; bottom: 100% !important; left: 50% !important; top: auto !important; right: auto !important; transform: translateX(-50%) !important; margin-bottom: 6px !important; z-index: 999999 !important; }
     #popoutModal, #popoutModal * { cursor: pointer !important; -webkit-tap-highlight-color: transparent !important; }
-    @media (min-width: 992px) { #popoutModal .separator-line { min-width: 600px; } #popoutModal table.report_table { min-width: 600px !important; } @media (orientation: landscape) { .popout-grid .report-column::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; } .popout-grid .report-column { -ms-overflow-style: none; scrollbar-width: none; } } @media (orientation: portrait) { #popoutModal table.report_table { width: max-content !important; } .popout-grid .report-column { scrollbar-width: auto !important; -ms-overflow-style: auto !important; } } }
-    @media (max-width: 991px) { .popout-grid .report-column { display: block !important; } #popoutModal table.report_table { min-width: 100% !important; width: max-content !important; display: block !important; } #popoutModal .separator-line { min-width: max-content !important; width: calc(100% + 24px) !important; display: inline-block !important; } }
+    @media (min-width: 992px) { #popoutModal .separator-line { min-width: 815px; } #popoutModal table.report_table { min-width: 815px !important; } @media (orientation: landscape) { .popout-grid > .report-column::-webkit-scrollbar, .popout-grid > .popout-main-wrapper::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; } .popout-grid > .report-column, .popout-grid > .popout-main-wrapper { -ms-overflow-style: none; scrollbar-width: none; } } @media (orientation: portrait) { #popoutModal table.report_table { width: max-content !important; } .popout-grid .report-column { scrollbar-width: auto !important; -ms-overflow-style: auto !important; } } }
+    @media (max-width: 991px) { .popout-grid > .report-column, .popout-grid > .popout-main-wrapper { display: block !important; } #popoutModal table.report_table { min-width: 100% !important; width: max-content !important; display: block !important; } #popoutModal .separator-line { min-width: max-content !important; width: calc(100% + 24px) !important; display: inline-block !important; } }
 </style>
 <script>
-function initial() {
-    show_menu();
-    var savedView = localStorage.getItem('wifiReportView') || 'split';
-    switchTab(savedView);
-    if (localStorage.getItem('wifiReportPopoutOpen') === 'true') {
-        openPopout();
+var WR_CUSTOM_NODE_NAMES = {};
+$NODE_NICK_JS
+
+var WR_CONFIG = {
+    mainColor: "$MAIN_COLOR",
+    nodeColors: String("$NODE_COLORS").trim().split(/\s+/).filter(Boolean),
+    hostColor: Number("$HOST_COLOR") || 0,
+    pulseMins: Number("$PULSE_MINS"),
+    reportUnit: String("${REPORT_UNIT:-F}"),
+    runtimeTracking: Number("${RTIME:-1}") || 0,
+    ipPad: Number("${IPPAD:-1}") || 0
+};
+
+var WR_STA_COLUMNS = [
+    'data_time', 'node_type', 'node_ip', 'node_mac', 'sta_mac',
+    'sta_band', 'sta_rssi', 'sta_active', 'sta_tx', 'sta_rx',
+    'sta_tbyte', 'sta_rbyte', 'conn_time', 'tx_mcs', 'rx_mcs',
+    'tx_nss', 'rx_nss', 'bw', 'conn_if', 'conn_if_idx', 'conn_if_vidx'
+];
+
+function wrNormMac(mac) {
+    return String(mac || '').split(String.fromCharCode(92)).join('').trim().toUpperCase();
+}
+
+function wrIsMac(mac) {
+    return /^[0-9A-F]{2}(?::[0-9A-F]{2}){5}$/.test(wrNormMac(mac));
+}
+
+function wrEscape(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function wrNumber(value) {
+    if (value === undefined || value === null || String(value).trim() === '') return null;
+    var n = Number(value);
+    return Number.isFinite(n) ? n : null;
+}
+
+function wrFirst(obj, keys) {
+    for (var i = 0; i < keys.length; i++) {
+        if (obj && obj[keys[i]] !== undefined && obj[keys[i]] !== null && obj[keys[i]] !== '') {
+            return obj[keys[i]];
+        }
     }
-    var savedRate = localStorage.getItem('wifiReportAutoRefresh') || "0";
-    document.getElementById('refresh-option').value = savedRate;
-    initAutoRefresh(parseInt(savedRate));
+    return '';
+}
+
+function wrNodeColor(index) {
+    if (!WR_CONFIG.nodeColors.length) return '#30d158';
+    return WR_CONFIG.nodeColors[index % WR_CONFIG.nodeColors.length] || '#30d158';
+}
+
+function wrIpSort(ip) {
+    var parts = String(ip || '').split('.');
+    if (parts.length !== 4) return '999.999.999.999';
+    return parts.map(function(p) {
+        var n = parseInt(p, 10);
+        return Number.isFinite(n) ? String(n).padStart(3, '0') : '999';
+    }).join('.');
+}
+
+function wrDisplayIp(ip) {
+    var parts = String(ip || '').split('.');
+    if (parts.length !== 4 || WR_CONFIG.ipPad === 0) return String(ip || '');
+    if (WR_CONFIG.ipPad === 1) {
+        parts[3] = String(parseInt(parts[3], 10)).padStart(3, '0');
+    } else if (WR_CONFIG.ipPad === 2) {
+        parts[2] = String(parseInt(parts[2], 10)).padStart(3, '0');
+        parts[3] = String(parseInt(parts[3], 10)).padStart(3, '0');
+    }
+    return parts.join('.');
+}
+
+function wrFormatSeconds(value) {
+    var sec = wrNumber(value);
+    if (!Number.isFinite(sec) || sec < 0) return "<span data-sort='0'>---</span>";
+    var d = Math.floor(sec / 86400);
+    var h = Math.floor((sec % 86400) / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    var text = d > 0
+        ? String(d).padStart(2, '0') + 'd ' + String(h).padStart(2, '0') + 'h'
+        : h > 0
+            ? String(h).padStart(2, '0') + 'h ' + String(m).padStart(2, '0') + 'm'
+            : '00h ' + String(m).padStart(2, '0') + 'm';
+    var pulse = WR_CONFIG.pulseMins > 0 && sec < WR_CONFIG.pulseMins * 60 ? 'pulse-blue' : '';
+    return "<span class='" + pulse + "' data-sort='" + Math.floor(sec) + "'>" + text + "</span>";
+}
+
+function wrFormatConnection(value) {
+    var sec = wrNumber(value);
+    if (Number.isFinite(sec) && sec >= 0) return wrFormatSeconds(sec);
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return "<span data-sort='0'>" + wrEscape(String(value)) + "</span>";
+    }
+    return "<span data-sort='0'>---</span>";
+}
+
+function wrFormatRouterUptime(value) {
+    var sec = wrNumber(value);
+    if (!Number.isFinite(sec) || sec < 0) return '--';
+    var d = Math.floor(sec / 86400);
+    var h = Math.floor((sec % 86400) / 3600);
+    var m = Math.floor((sec % 3600) / 60);
+    if (d > 0) return d + 'd ' + h + 'h ' + m + 'm';
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m + 'm';
+}
+
+function wrParseUptime(raw) {
+    if (raw === undefined || raw === null) return null;
+    if (typeof raw === 'number') return raw;
+    var text = String(raw);
+    var m = text.match(/\(([0-9]+)\s+secs since boot\)/);
+    if (m) return Number(m[1]);
+    m = text.match(/^([0-9]+(?:\.[0-9]+)?)$/);
+    return m ? Number(m[1]) : null;
+}
+
+function wrTemp(value) {
+    var c = parseFloat(value);
+    if (!Number.isFinite(c)) return { text: '--', cls: 'stat-cool' };
+    if (WR_CONFIG.reportUnit === 'C' || WR_CONFIG.reportUnit === 'ISO') {
+        return { text: c.toFixed(1) + '°C', cls: c >= 90 ? 'stat-hot' : c >= 75 ? 'stat-warm' : 'stat-cool' };
+    }
+    var f = c * 9 / 5 + 32;
+    return { text: f.toFixed(1) + '°F', cls: f >= 194 ? 'stat-hot' : f >= 167 ? 'stat-warm' : 'stat-cool' };
+}
+
+function wrMetricClass(value) {
+    var n = Number(value);
+    if (!Number.isFinite(n)) return 'stat-cool';
+    if (n >= 85) return 'stat-hot';
+    if (n >= 60) return 'stat-warm';
+    return 'stat-cool';
+}
+
+function wrBandName(band) {
+    var map = {
+        '2G': '2.4 GHz',
+        '5G': '5 GHz',
+        '5G1': '5 GHz-2',
+        '6G': '6 GHz',
+        '6G1': '6 GHz-2'
+    };
+    return map[String(band || '')] || String(band || '');
+}
+
+function wrWidth(code) {
+    var map = { 0: '', 1: '20 MHz', 2: '40 MHz', 3: '80 MHz', 4: '160 MHz', 5: '320 MHz' };
+    var n = Number(code);
+    return Object.prototype.hasOwnProperty.call(map, n) ? map[n] : '';
+}
+
+function wrBandHtml(sta, client) {
+    var band = sta ? wrBandName(sta.sta_band) : String(wrFirst(client, ['band', 'wlBand']) || '');
+    var width = sta ? wrWidth(sta.bw) : '';
+    var label = band + (width ? ' (' + width + ')' : '');
+    var cls = '';
+    var sort = '0';
+    if (/2\.4|2G/i.test(band)) { cls = 'band-24g'; sort = '2.4'; }
+    else if (/5/.test(band)) { cls = 'band-5g'; sort = '5'; }
+    else if (/6/.test(band)) { cls = 'band-6g'; sort = '6'; }
+    return "<td data-sort='" + sort + "' style='text-align:center;'><span class='" + cls + "'>" + wrEscape(label || '--') + "</span></td>";
+}
+
+function wrQuality(rssi) {
+    var n = Number(rssi);
+    if (!Number.isFinite(n) || n >= 0 || n < -120) return { key: '', bars: '', cls: '', style: '' };
+    if (n >= -50) return { key: 'excellent', bars: '||||', cls: 'rssi-excl', style: 'color:#30d158;font-weight:bold;' };
+    if (n >= -60) return { key: 'good', bars: '|||', cls: 'rssi-good', style: 'color:#64d2ff;font-weight:bold;' };
+    if (n >= -70) return { key: 'fair', bars: '||', cls: 'rssi-fair', style: 'color:#ffd60a;font-weight:bold;' };
+    return { key: 'poor', bars: '|', cls: 'rssi-poor', style: 'color:#ff453a;font-weight:bold;' };
+}
+
+function wrLoadJson(key, fallback) {
+    try {
+        var raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (_) {
+        return fallback;
+    }
+}
+
+function wrGetTrend(mac, rssi, history) {
+    var now = wrNumber(rssi);
+    var old = wrNumber(history[mac]);
+    if (!Number.isFinite(now) || !Number.isFinite(old)) return "<span class='trend-box'>•</span>";
+    if (now > old) return "<span class='trend-box trend-up rssi-excl'>↑</span>";
+    if (now < old) return "<span class='trend-box trend-down rssi-poor'>↓</span>";
+    return "<span class='trend-box'>•</span>";
+}
+
+function wrClientName(mac, liveClient, savedClient) {
+    return wrFirst(liveClient, ['nickName', 'name']) ||
+           wrFirst(savedClient, ['nickName', 'name']) ||
+           mac;
+}
+
+function wrSavedClient(saved, macRaw, mac) {
+    return saved[macRaw] || saved[mac] || saved[String(mac).toLowerCase()] || {};
+}
+
+function wrGetMloCandidates(mac, liveClient, savedClient) {
+    var candidates = new Set();
+    function add(value) {
+        if (!value) return;
+        if (typeof value === 'string') {
+            var matches = value.match(/[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}/g);
+            if (matches) matches.forEach(function(x) { candidates.add(wrNormMac(x)); });
+        }
+    }
+    add(mac);
+    [
+        savedClient && savedClient.mlo_2G_mac,
+        savedClient && savedClient.mlo_5G_mac,
+        savedClient && savedClient.mlo_5G1_mac,
+        savedClient && savedClient.mlo_6G_mac,
+        savedClient && savedClient.mlo_6G1_mac,
+        savedClient && savedClient.mlo_all_mac
+    ].forEach(add);
+    if (liveClient && liveClient.mlo_links) {
+        try { add(JSON.stringify(liveClient.mlo_links)); } catch (_) {}
+    }
+    return Array.from(candidates);
+}
+
+async function wrAppGet(hook) {
+    var r = await fetch('/appGet.cgi', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ hook: hook })
+    });
+    if (!r.ok) throw new Error('appGet.cgi HTTP ' + r.status);
+    return r.json();
+}
+
+async function wrDiag(db, content, filter) {
+    var r = await fetch('/get_diag_latest_content_data.cgi', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ db: db, content: content, filter: filter || '' })
+    });
+    if (!r.ok) throw new Error('diagnostic API HTTP ' + r.status);
+    return r.json();
+}
+
+async function wrGetNodeDiag(mac) {
+    var cols = ['data_time', 'node_type', 'node_ip', 'node_mac', 'cpu_usage', 'mem_usage', 'cpu_temp'];
+    var data = await wrDiag('sys_detect', cols.join(';'), 'node_mac>txt>' + wrNormMac(mac) + '>0;');
+    var row = data && data.contents && data.contents[0];
+    if (!row) return null;
+    return {
+        timestamp: Number(row[0]),
+        nodeType: row[1],
+        ip: row[2],
+        mac: wrNormMac(row[3]),
+        cpuUsage: wrNumber(row[4]),
+        memoryUsage: wrNumber(row[5]),
+        cpuTemp: wrNumber(row[6])
+    };
+}
+
+function wrCpuUsageBetween(first, second) {
+    var totalDelta = 0;
+    var usageDelta = 0;
+    first = first || {};
+    second = second || {};
+
+    // GT-BE98 Pro cpu_usage() schema:
+    // cpu_usage.cpu0.total / cpu_usage.cpu0.usage, etc.
+    Object.keys(second).forEach(function(key) {
+        if (!/^cpu[0-9]+$/.test(key)) return;
+        var before = first[key] || {};
+        var after = second[key] || {};
+        var beforeTotal = wrNumber(before.total);
+        var afterTotal = wrNumber(after.total);
+        var beforeUsage = wrNumber(before.usage);
+        var afterUsage = wrNumber(after.usage);
+        if (!Number.isFinite(beforeTotal) || !Number.isFinite(afterTotal) ||
+            !Number.isFinite(beforeUsage) || !Number.isFinite(afterUsage)) return;
+        var td = afterTotal - beforeTotal;
+        var ud = afterUsage - beforeUsage;
+        if (td > 0 && ud >= 0) {
+            totalDelta += td;
+            usageDelta += ud;
+        }
+    });
+
+    return totalDelta > 0 ? Math.round((usageDelta / totalDelta) * 100) : null;
+}
+
+function wrMemoryUsage(memory) {
+    memory = memory || {};
+    var total = wrNumber(memory.total);
+    // ASUS exposes raw used (includes reclaimable cache) and simple_used.
+    // simple_used is the useful human-facing utilization value.
+    var used = wrNumber(memory.simple_used);
+    if (!Number.isFinite(used)) used = wrNumber(memory.used);
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(used)) return null;
+    return Math.round((used / total) * 100);
+}
+
+function wrMainHealthSampleUsable(sample) {
+    sample = sample || {};
+    var cpu = sample.cpu || {};
+    var memory = sample.memory || {};
+    var hasCpu = Object.keys(cpu).some(function(key) {
+        var core = cpu[key] || {};
+        return /^cpu[0-9]+$/.test(key) &&
+            wrNumber(core.total) !== null && wrNumber(core.usage) !== null;
+    });
+    return hasCpu && wrNumber(memory.total) !== null &&
+        (wrNumber(memory.simple_used) !== null || wrNumber(memory.used) !== null);
+}
+
+async function wrGetMainHealthSample() {
+    // Tested GT-BE98 Pro behavior:
+    //   cpu_usage(appobj) / memory_usage(appobj) => malformed {{...}} wrappers
+    //   cpu_usage() / memory_usage()             => clean JSON
+    // Request the clean hooks independently and consume their actual nested schema.
+    var responses = await Promise.all([
+        wrAppGet('cpu_usage();'),
+        wrAppGet('memory_usage();')
+    ]);
+
+    var sample = {
+        cpu: (responses[0] && responses[0].cpu_usage) || {},
+        memory: (responses[1] && responses[1].memory_usage) || {}
+    };
+
+    if (!wrMainHealthSampleUsable(sample)) {
+        throw new Error('primary CPU/memory response did not contain usable counters');
+    }
+    return sample;
+}
+
+async function wrGetMainHealth(first) {
+    first = first || { cpu: {}, memory: {} };
+    var second = await wrGetMainHealthSample();
+    var cpu = wrCpuUsageBetween(first.cpu, second.cpu);
+
+    // CPU usage is counter based. If the first pair is unusable, take another
+    // sample after a short interval rather than fabricating a utilization value.
+    if (cpu === null) {
+        await new Promise(function(resolve) { setTimeout(resolve, 250); });
+        var third = await wrGetMainHealthSample();
+        cpu = wrCpuUsageBetween(second.cpu, third.cpu);
+        second = third;
+    }
+
+    var memory = wrMemoryUsage(second.memory);
+    if (memory === null) memory = wrMemoryUsage(first.memory);
+    return { cpuUsage: cpu, memoryUsage: memory };
+}
+
+function wrNodeIsExplicitlyOffline(node) {
+    if (!node) return false;
+
+    // Match the original v2.1.0 presentation behavior: an unavailable node is
+    // omitted from the report rather than shown with a status label. ASUS's
+    // AiMesh inventory exposes the online field; use only explicit boolean-style
+    // state signals here. Do not interpret the generic status field as an enum.
+    if (node.online !== undefined && node.online !== null && node.online !== '') {
+        return String(node.online) !== '1';
+    }
+
+    if (node.isOnline !== undefined && node.isOnline !== null && node.isOnline !== '') {
+        var raw = String(node.isOnline).toLowerCase();
+        if (node.isOnline === false || raw === 'false' || raw === '0') return true;
+        if (node.isOnline === true || raw === 'true' || raw === '1') return false;
+    }
+
+    // If ASUS omits the explicit state flag, keep the node rather than risk
+    // hiding a healthy node because a firmware exposes a different schema.
+    return false;
+}
+
+async function wrGetStaRows(nodeMac) {
+    try {
+        var filter = 'node_mac>txt>' + wrNormMac(nodeMac) + '>0;sta_active>txt>1>0;';
+        var data = await wrDiag('stainfo', WR_STA_COLUMNS.join(';'), filter);
+        var rows = data && Array.isArray(data.contents) ? data.contents : [];
+        return rows.map(function(row) {
+            var obj = {};
+            WR_STA_COLUMNS.forEach(function(name, i) { obj[name] = row[i]; });
+            return obj;
+        });
+    } catch (e) {
+        console.warn('STAINFO batch query failed for ' + nodeMac, e);
+        return [];
+    }
+}
+
+async function wrGetSta(nodeMac, staMac) {
+    try {
+        var filter =
+            'node_mac>txt>' + wrNormMac(nodeMac) + '>0;' +
+            'sta_mac>txt>' + wrNormMac(staMac) + '>0;' +
+            'sta_active>txt>1>0;';
+        var data = await wrDiag('stainfo', WR_STA_COLUMNS.join(';'), filter);
+        var row = data && data.contents && data.contents[0];
+        if (!row) return null;
+        var obj = {};
+        WR_STA_COLUMNS.forEach(function(name, i) { obj[name] = row[i]; });
+        return obj;
+    } catch (_) {
+        return null;
+    }
+}
+
+function wrIndexSta(rows) {
+    var map = new Map();
+    rows.forEach(function(sta) {
+        var mac = wrNormMac(sta.sta_mac);
+        if (!mac) return;
+        var old = map.get(mac);
+        if (!old || Number(sta.data_time) > Number(old.data_time)) map.set(mac, sta);
+    });
+    return map;
+}
+
+function wrLooksWireless(c) {
+    if (!c) return false;
+    if (c.isOnline !== undefined && (c.isOnline === false || String(c.isOnline) === '0')) return false;
+    if (c.isWL !== undefined && c.isWL !== null && c.isWL !== '') {
+        var w = Number(c.isWL);
+        if (Number.isFinite(w)) return w > 0;
+    }
+    return Boolean(c.ssid || c.wlAuth || c.amesh_papMac || c.amesh_pap_mac);
+}
+
+function wrNodeDisplayName(node) {
+    var ip = String(wrFirst(node, ['ip', 'ip_addr', 'ipAddr']) || '');
+    var custom = WR_CUSTOM_NODE_NAMES[ip];
+    return custom || wrFirst(node, ['alias', 'model_name', 'product_id']) || ip || wrNormMac(wrFirst(node, ['mac', 'mac_addr']));
+}
+
+function wrRenderRow(item, history, known, firstHistoryLoad) {
+    var c = item.client;
+    var saved = item.saved;
+    var sta = item.sta;
+    var mac = item.mac;
+    var ip = wrFirst(c, ['ip']) || '';
+    var name = wrClientName(mac, c, saved);
+    var ssid = wrFirst(c, ['ssid']) || '';
+    var iface = sta ? (sta.conn_if || '') : wrFirst(c, ['ifname', 'interface']);
+    var rssi = sta && sta.sta_rssi !== undefined ? wrNumber(sta.sta_rssi) : wrNumber(c.rssi);
+    var rx = sta && sta.sta_rx !== undefined ? wrNumber(sta.sta_rx) : wrNumber(c.curRx);
+    var tx = sta && sta.sta_tx !== undefined ? wrNumber(sta.sta_tx) : wrNumber(c.curTx);
+    var connected = sta && sta.conn_time !== undefined ? sta.conn_time : c.wlConnectTime;
+    var quality = wrQuality(rssi);
+    var trend = wrGetTrend(mac, rssi, history);
+    var isNew = !firstHistoryLoad && !known[mac] ? 'new-device-row' : '';
+    var nodeMarker = '';
+
+    if (item.node) {
+        var markerColor = wrNodeColor(item.nodeIndex);
+        nodeMarker = "<sup style='color:" + markerColor + ";'>" + (item.nodeIndex + 1) + "</sup>";
+        if (WR_CONFIG.hostColor) {
+            name = "<span style='color:" + markerColor + ";'>" + wrEscape(name) + "</span><span class='hidden-node-number'>" + nodeMarker + "</span>";
+        } else {
+            name = "<span style='color:#ffffff;'>" + wrEscape(name) + "</span>" + nodeMarker;
+        }
+    } else if (WR_CONFIG.hostColor) {
+        name = "<span style='color:" + WR_CONFIG.mainColor + ";'>" + wrEscape(name) + "</span>";
+    } else {
+        name = wrEscape(name);
+    }
+
+    var rxText = Number.isFinite(rx) && rx >= 0 ? rx : '--';
+    var txText = Number.isFinite(tx) && tx >= 0 ? tx : '--';
+    var rateText = rxText + ' / ' + txText;
+    var rateSort = Number.isFinite(tx) && tx >= 0 ? tx : 0;
+    var rssiText = Number.isFinite(rssi) && rssi < 0 && rssi >= -120 ? rssi : '--';
+    var bars = quality.bars ? "<span class='rssi_bars " + quality.cls + "'>" + quality.bars + "</span>" : '';
+
+    return "<tr class='" + isNew + "'>" +
+        "<td style='text-align:left;'>" + name + "</td>" +
+        "<td><span class='mac-val' data-sort='" + wrEscape(mac) + "'>" + wrEscape(mac) + "</span>" +
+        "<span class='ip-val' data-sort='" + wrIpSort(ip) + "'>" + wrEscape(wrDisplayIp(ip) || '--') + "</span></td>" +
+        "<td data-sort='" + (Number.isFinite(rssi) ? rssi : -999) + "' class='rssi-container'>" +
+            bars + " <span style='" + quality.style + "'>" + rssiText + "</span> " + trend + "</td>" +
+        "<td data-sort='" + rateSort + "' style='" + quality.style + "text-align:center;'>" + wrEscape(rateText) + "</td>" +
+        "<td><span class='ssid-val' data-sort='" + wrEscape(ssid) + "'>" + wrEscape(ssid || '--') + "</span>" +
+        "<span class='iface-val' data-sort='" + wrEscape(iface) + "'>" + wrEscape(iface || '--') + "</span></td>" +
+        wrBandHtml(sta, c) +
+        "<td>" + wrFormatConnection(connected) + "</td>" +
+        "</tr>";
+}
+
+function wrApplyRssiCounts(items) {
+    var counts = { excellent: 0, good: 0, fair: 0, poor: 0 };
+    items.forEach(function(item) {
+        var sta = item.sta;
+        var rssi = sta && sta.sta_rssi !== undefined ? wrNumber(sta.sta_rssi) : wrNumber(item.client.rssi);
+        var q = wrQuality(rssi);
+        if (q.key) counts[q.key]++;
+    });
+    Object.keys(counts).forEach(function(key) {
+        document.querySelectorAll('.wr-rssi-' + key).forEach(function(el) {
+            el.textContent = counts[key];
+        });
+    });
+}
+
+function wrSetHtml(id, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+}
+
+function wrSetText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function wrSetMetric(id, value, suffix) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.className = wrMetricClass(value);
+    el.textContent = value === null || value === undefined ? '--' : value + (suffix || '');
+}
+
+function wrRestoreTableState() {
     var ids = ['allTable', 'mainTable', 'nodeTable', 'popMainTable', 'popNodeTable'];
     ids.forEach(function(id) {
         var tableObj = document.getElementById(id);
-        if (tableObj && tableObj.rows && tableObj.rows.length > 1) {
-            var ipState = localStorage.getItem('toggle_' + id + '_show-ip');
-            var ipHeader = tableObj.querySelector('thead th:nth-child(2)');
-            if (ipState === "true") {
-                tableObj.classList.add('show-ip');
-                if (ipHeader) ipHeader.innerHTML = "IP ADDRESS ⇅";
-            } else {
-                tableObj.classList.remove('show-ip');
-                if (ipHeader) ipHeader.innerHTML = "MAC ADDRESS ⇅";
-            }
-            var ifaceState = localStorage.getItem('toggle_' + id + '_show-iface');
-            var ifaceHeader = tableObj.querySelector('thead th:nth-child(5)');
-            if (ifaceState === "true") {
-                tableObj.classList.add('show-iface');
-                if (ifaceHeader) ifaceHeader.innerHTML = "IFACE ⇅";
-            } else {
-                tableObj.classList.remove('show-iface');
-                if (ifaceHeader) ifaceHeader.innerHTML = "SSID ⇅";
-            }
-            var savedCol = localStorage.getItem('savedSortCol_' + id);
-            var savedDir = localStorage.getItem('savedSortDir_' + id);
-            if (savedCol !== null) {
-                try {
-                    sortTable(parseInt(savedCol), id, true, (savedDir === 'desc'));
-                } catch (e) {
-                    console.error("Sort failed for " + id, e);
-                }
-            } else {
-                try {
-                    sortTable(2, id, false, true);
-                } catch (e) {
-                    console.error("Default sort failed for " + id, e);
-                }
-            }
+        if (!tableObj || !tableObj.rows || tableObj.rows.length <= 1) return;
+
+        var ipState = localStorage.getItem('toggle_' + id + '_show-ip');
+        var ipHeader = tableObj.querySelector('thead th:nth-child(2)');
+        if (ipState === 'true' || ipState === null) {
+            tableObj.classList.add('show-ip');
+            if (ipHeader) ipHeader.innerHTML = 'IP ADDRESS ⇅';
+        } else {
+            tableObj.classList.remove('show-ip');
+            if (ipHeader) ipHeader.innerHTML = 'MAC ADDRESS ⇅';
+        }
+
+        var ifaceState = localStorage.getItem('toggle_' + id + '_show-iface');
+        var ifaceHeader = tableObj.querySelector('thead th:nth-child(5)');
+        if (ifaceState === 'true') {
+            tableObj.classList.add('show-iface');
+            if (ifaceHeader) ifaceHeader.innerHTML = 'IFACE ⇅';
+        } else {
+            tableObj.classList.remove('show-iface');
+            if (ifaceHeader) ifaceHeader.innerHTML = 'SSID ⇅';
+        }
+
+        var savedCol = localStorage.getItem('savedSortCol_' + id);
+        var savedDir = localStorage.getItem('savedSortDir_' + id);
+        try {
+            if (savedCol !== null) sortTable(parseInt(savedCol, 10), id, true, savedDir === 'desc');
+            else sortTable(2, id, false, true);
+        } catch (e) {
+            console.warn('Sort restore failed for ' + id, e);
         }
     });
 }
 
-var timeLeft = 0; var refreshTimer = null; var isRefreshing = false;
-function triggerRefresh() {
-    if (isRefreshing) return; isRefreshing = true;
-    var btn = document.querySelector('.button-trigger');
-    if (btn) {
-        btn.innerText = "Refreshing...";
-        btn.classList.add('refresh-pulse');
+async function wrResolveSta(item, staMaps) {
+    var nodeMac = item.nodeMac;
+    if (!nodeMac) return null;
+    var map = staMaps.get(nodeMac);
+    var candidates = wrGetMloCandidates(item.mac, item.client, item.saved);
+    var best = null;
+
+    if (map) {
+        candidates.forEach(function(candidate) {
+            var found = map.get(candidate);
+            if (found && (!best || Number(found.data_time) > Number(best.data_time))) best = found;
+        });
     }
-    var expires = new Date(Date.now() + 30000).toUTCString();
-    document.cookie = "report_done=true; expires=" + expires + "; path=/";
-    fetch('/apply.cgi', {
-        method: 'POST',
-        body: 'action_mode=apply&rc_service=restart_wireless_report&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-    });
-    var scanTime = parseFloat("$JS_DIFF") || 5.0;
-    var delay = Math.max(2500, Math.ceil((scanTime * 1000) + 1500));
-    setTimeout(function() { window.location.reload(); }, delay);
+    if (best) return best;
+
+    // ASUS get_diag_latest_content_data.cgi returns only one/latest matching
+    // stainfo row for a broad node_mac query on the tested GT-BE98 Pro.
+    // Therefore the batch map is only a fast-path hint, not a complete station
+    // inventory. Fall back to the proven per-client node_mac + sta_mac query
+    // for BOTH primary-router and AiMesh-node clients when the batch map misses.
+    for (var i = 0; i < candidates.length; i++) {
+        var found = await wrGetSta(nodeMac, candidates[i]);
+        if (found && (!best || Number(found.data_time) > Number(best.data_time))) best = found;
+    }
+    return best;
 }
 
-window.addEventListener('load', function() {
-    if (document.cookie.indexOf("report_done=true") === -1) {
-        setTimeout(function() {
-            triggerRefresh();
-        }, 250);
-    } else {
-        console.log("Cookie found: Skipping auto-refresh to prevent loop.");
+async function loadWirelessReport() {
+    // Primary CPU usage is derived from two clean cpu_usage() counter samples.
+    // Start the first sample alongside the larger client-inventory request so
+    // the normal page load provides a useful interval without slowing refreshes.
+    var mainHealthFirstPromise = wrGetMainHealthSample().catch(function(e) {
+        console.warn('Primary CPU/memory first sample failed', e);
+        return { cpu: {}, memory: {} };
+    });
+
+    var base = await wrAppGet(
+        'get_cfg_clientlist();' +
+        'get_clientlist();' +
+        'get_clientlist_from_json_database();' +
+        'nvram_get(productid);' +
+        'nvram_get(lan_hwaddr);' +
+        'uptime();'
+    );
+
+    var live = base.get_clientlist || {};
+    var saved = base.get_clientlist_from_json_database || {};
+    var allNodes = Array.isArray(base.get_cfg_clientlist) ? base.get_cfg_clientlist : [];
+    var mainMac = wrNormMac(base.lan_hwaddr || '');
+    var discoveredNodes = allNodes.filter(function(n) {
+        var mac = wrNormMac(n.mac || n.mac_addr);
+        return wrIsMac(mac) && (!mainMac || mac !== mainMac);
+    });
+
+    // v2.1.0 omitted unreachable nodes because failed node collection produced
+    // no node output. Recreate that presentation with the controller's explicit
+    // online flag. Track omitted-node MACs so stale clients from those nodes are
+    // omitted too instead of falling through into the primary-router table.
+    var offlineNodeMacs = new Set();
+    var nodes = discoveredNodes.filter(function(node) {
+        if (!wrNodeIsExplicitlyOffline(node)) return true;
+        var mac = wrNormMac(node.mac || node.mac_addr);
+        if (mac) offlineNodeMacs.add(mac);
+        return false;
+    });
+
+    var nodeByMac = new Map();
+    nodes.forEach(function(node, index) {
+        var mac = wrNormMac(node.mac || node.mac_addr);
+        nodeByMac.set(mac, { node: node, index: index });
+    });
+
+    var staTargets = [];
+    if (mainMac) staTargets.push(mainMac);
+    nodes.forEach(function(node) {
+        var mac = wrNormMac(node.mac || node.mac_addr);
+        if (mac && staTargets.indexOf(mac) === -1) staTargets.push(mac);
+    });
+
+    var staResults = await Promise.all(staTargets.map(function(mac) { return wrGetStaRows(mac); }));
+    var staMaps = new Map();
+    staTargets.forEach(function(mac, i) { staMaps.set(mac, wrIndexSta(staResults[i] || [])); });
+
+    var items = [];
+    Object.entries(live).forEach(function(entry) {
+        var macRaw = entry[0];
+        var c = entry[1] || {};
+        var mac = wrNormMac(macRaw);
+        if (!wrIsMac(mac) || !wrLooksWireless(c)) return;
+
+        var parent = wrNormMac(c.amesh_papMac || c.amesh_pap_mac);
+        if (parent && offlineNodeMacs.has(parent)) return;
+        var nodeInfo = nodeByMac.get(parent);
+        var savedClient = wrSavedClient(saved, macRaw, mac);
+        items.push({
+            mac: mac,
+            client: c,
+            saved: savedClient,
+            node: nodeInfo ? nodeInfo.node : null,
+            nodeIndex: nodeInfo ? nodeInfo.index : -1,
+            nodeMac: nodeInfo ? parent : mainMac
+        });
+    });
+
+    // Keep per-client stainfo fallback sequential. The diagnostic endpoint may
+    // return only one/latest row for a broad node query, so every client missing
+    // from the batch fast-path is resolved individually without flooding the CGI.
+    for (var itemIndex = 0; itemIndex < items.length; itemIndex++) {
+        items[itemIndex].sta = await wrResolveSta(items[itemIndex], staMaps);
     }
-});
+
+    var mainItems = items.filter(function(item) { return !item.node; });
+    var nodeItems = items.filter(function(item) { return !!item.node; });
+
+    var diagPairs = await Promise.all(nodes.map(async function(node) {
+        var mac = wrNormMac(node.mac || node.mac_addr);
+        try { return [mac, await wrGetNodeDiag(mac)]; }
+        catch (e) { console.warn('Node diagnostic query failed for ' + mac, e); return [mac, null]; }
+    }));
+    var diagByMac = new Map(diagPairs);
+
+    var history = wrLoadJson('wirelessReportRssiHistory', {});
+    var known = wrLoadJson('wirelessReportKnownMacs', {});
+    var firstHistoryLoad = Object.keys(known).length === 0;
+
+    var mainRows = mainItems.map(function(item) { return wrRenderRow(item, history, known, firstHistoryLoad); }).join('');
+    var nodeRows = nodeItems.map(function(item) { return wrRenderRow(item, history, known, firstHistoryLoad); }).join('');
+    var allRows = items.map(function(item) { return wrRenderRow(item, history, known, firstHistoryLoad); }).join('');
+
+    document.querySelector('#mainTable tbody').innerHTML = mainRows || "<tr><td colspan='7'>No wireless clients reported on the primary router.</td></tr>";
+    document.querySelector('#nodeTable tbody').innerHTML = nodeRows || "<tr><td colspan='7'>No AiMesh-node wireless clients reported.</td></tr>";
+    document.querySelector('#allTable tbody').innerHTML = allRows || "<tr><td colspan='7'>No active wireless clients reported.</td></tr>";
+
+    items.forEach(function(item) {
+        var rssi = item.sta && item.sta.sta_rssi !== undefined ? wrNumber(item.sta.sta_rssi) : wrNumber(item.client.rssi);
+        if (Number.isFinite(rssi)) history[item.mac] = rssi;
+        known[item.mac] = 1;
+    });
+    localStorage.setItem('wirelessReportRssiHistory', JSON.stringify(history));
+    localStorage.setItem('wirelessReportKnownMacs', JSON.stringify(known));
+
+    wrApplyRssiCounts(items);
+    wrSetText('wr-grand-total', items.length);
+    wrSetText('wr-main-count', mainItems.length);
+    wrSetText('wr-node-count', nodeItems.length);
+    wrSetText('wr-all-count', items.length);
+
+    var mainHealthFirst = await mainHealthFirstPromise;
+    var mainHealth;
+    try {
+        mainHealth = await wrGetMainHealth(mainHealthFirst);
+    } catch (e) {
+        console.warn('Primary CPU/memory query failed', e);
+        mainHealth = { cpuUsage: null, memoryUsage: wrMemoryUsage(mainHealthFirst.memory) };
+    }
+    wrSetMetric('wr-main-cpu', mainHealth.cpuUsage, '%');
+    wrSetMetric('wr-all-main-cpu', mainHealth.cpuUsage, '%');
+    wrSetMetric('wr-main-memory', mainHealth.memoryUsage, '%');
+    wrSetMetric('wr-all-main-memory', mainHealth.memoryUsage, '%');
+
+    var uptimeSecs = wrParseUptime(base.uptime);
+    wrSetText('wr-main-uptime', wrFormatRouterUptime(uptimeSecs));
+    wrSetText('wr-main-reboot', Number.isFinite(uptimeSecs) ? new Date(Date.now() - uptimeSecs * 1000).toLocaleString() : '--');
+
+    var mainNameEl = document.getElementById('wr-main-name');
+    if (mainNameEl && !mainNameEl.textContent.trim()) mainNameEl.textContent = base.productid || 'Main Router';
+
+    var nodeNamesHtml = [];
+    var cpuHtml = [];
+    var memHtml = [];
+    var nodeCountParts = [];
+    var nodeDiagParts = [];
+
+    nodes.forEach(function(node, index) {
+        var mac = wrNormMac(node.mac || node.mac_addr);
+        var ip = String(wrFirst(node, ['ip', 'ip_addr', 'ipAddr']) || '');
+        var name = wrNodeDisplayName(node);
+        var color = wrNodeColor(index);
+        var marker = nodes.length > 1 ? '<sup>' + (index + 1) + '</sup>' : '';
+        var diag = diagByMac.get(mac);
+        var nodeClientCount = nodeItems.filter(function(item) { return item.nodeIndex === index; }).length;
+
+        nodeNamesHtml.push("<span style='color:" + color + ";'>" + wrEscape(name) + marker + "</span>");
+        nodeCountParts.push("<span style='color:" + color + ";'>" + nodeClientCount + marker + "</span>");
+
+        if (diag && diag.cpuUsage !== null) {
+            cpuHtml.push("<span class='" + wrMetricClass(diag.cpuUsage) + "'>" + diag.cpuUsage + "%" + marker + "</span>");
+        } else {
+            cpuHtml.push("<span style='color:" + color + ";'>--" + marker + "</span>");
+        }
+        if (diag && diag.memoryUsage !== null) {
+            memHtml.push("<span class='" + wrMetricClass(diag.memoryUsage) + "'>" + diag.memoryUsage + "%" + marker + "</span>");
+        } else {
+            memHtml.push("<span style='color:" + color + ";'>--" + marker + "</span>");
+        }
+
+        var model = wrFirst(node, ['model_name', 'product_id']) || '';
+        var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
+        var details = "<span style='color:" + color + ";'>" + wrEscape(name) + "</span>";
+        if (model) details += ' ' + wrEscape(model);
+        if (ip) details += ' • ' + wrEscape(ip);
+        if (firmware) details += ' • FW ' + wrEscape(firmware);
+        if (diag && Number.isFinite(diag.timestamp)) details += ' • Telemetry ' + new Date(diag.timestamp * 1000).toLocaleTimeString();
+        nodeDiagParts.push(details);
+    });
+
+    var bullet = " <span style='color:white;'>•</span> ";
+    wrSetHtml('wr-node-names', nodeNamesHtml.length ? nodeNamesHtml.join(bullet) : 'No AiMesh nodes detected');
+    wrSetHtml('wr-node-cpu', cpuHtml.length ? cpuHtml.join(bullet) : '--');
+    wrSetHtml('wr-node-memory', memHtml.length ? memHtml.join(bullet) : '--');
+    wrSetHtml('wr-node-count', nodes.length > 1 && nodeCountParts.length ? nodeItems.length + " <span class='right-arrow'>—›</span> " + nodeCountParts.join(bullet) : nodeItems.length);
+    wrSetHtml('wr-node-diag', nodeDiagParts.length ? nodeDiagParts.join('<br>') : 'No node diagnostic telemetry available.');
+
+    var allNames = ["<span style='color:" + WR_CONFIG.mainColor + ";'>" + wrEscape(document.getElementById('wr-main-name').textContent) + "</span>"];
+    allNames = allNames.concat(nodeNamesHtml);
+    wrSetHtml('wr-all-names', allNames.join(bullet));
+
+    var nodeCol = document.getElementById('nodeCol');
+    if (nodeCol) nodeCol.style.display = nodes.length ? 'flex' : 'none';
+
+    document.querySelectorAll('.wr-updated-time').forEach(function(el) { el.textContent = 'Updated: ' + new Date().toLocaleString(); });
+    wrRestoreTableState();
+
+    if (localStorage.getItem('wifiReportPopoutOpen') === 'true') {
+        openPopout();
+        wrRestoreTableState();
+    }
+}
+
+async function initial() {
+    show_menu();
+    var savedView = localStorage.getItem('wifiReportView') || 'split';
+    switchTab(savedView);
+
+    var selectEl = document.getElementById('refresh-option');
+    var savedRate = localStorage.getItem('wifiReportAutoRefresh') || '0';
+    if (selectEl) selectEl.value = savedRate;
+    initAutoRefresh(parseInt(savedRate, 10));
+
+    await triggerRefresh();
+}
+
+var timeLeft = 0;
+var refreshTimer = null;
+var isRefreshing = false;
+
+async function triggerRefresh() {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    var btn = document.querySelector('.button-trigger');
+    var started = (window.performance && performance.now) ? performance.now() : Date.now();
+    if (btn) {
+        btn.innerText = 'Refreshing...';
+        btn.classList.add('refresh-pulse');
+    }
+
+    try {
+        await loadWirelessReport();
+    } catch (e) {
+        console.error('Wireless Report refresh failed', e);
+        document.querySelectorAll('.wr-updated-time').forEach(function(el) { el.textContent = 'Unable to read controller APIs. Verify the primary WebUI session and reload.'; });
+    } finally {
+        var ended = (window.performance && performance.now) ? performance.now() : Date.now();
+        var seconds = Math.max(0, (ended - started) / 1000);
+        if (btn) {
+            btn.classList.remove('refresh-pulse');
+            if (WR_CONFIG.runtimeTracking) {
+                var stats = wrLoadJson('wirelessReportRuntimeStats', { total: 0, count: 0, min: null, max: 0 });
+                stats.total += seconds;
+                stats.count += 1;
+                stats.min = stats.min === null ? seconds : Math.min(stats.min, seconds);
+                stats.max = Math.max(stats.max, seconds);
+                localStorage.setItem('wirelessReportRuntimeStats', JSON.stringify(stats));
+                var avg = stats.total / stats.count;
+                btn.innerHTML = 'Refresh <span>' + seconds.toFixed(2) + 's</span>';
+                btn.title = 'Browser API refresh • Avg ' + avg.toFixed(2) + 's • Low ' + stats.min.toFixed(2) + 's • High ' + stats.max.toFixed(2) + 's';
+            } else {
+                btn.innerText = 'Refresh';
+                btn.removeAttribute('title');
+            }
+        }
+        isRefreshing = false;
+    }
+}
 
 function initAutoRefresh(seconds) {
     clearInterval(refreshTimer);
-    if (seconds > 0) {
-        timeLeft = seconds;
-        refreshTimer = setInterval(function() { timeLeft--; if (timeLeft <= 0) { triggerRefresh(); clearInterval(refreshTimer); } document.getElementById('refresh-countdown').innerHTML = "&nbsp;" + timeLeft + "s"; }, 1000);
-    } else { document.getElementById('refresh-countdown').innerHTML = ""; }
+    timeLeft = Number(seconds) || 0;
+    var countdown = document.getElementById('refresh-countdown');
+    if (countdown) countdown.innerHTML = timeLeft > 0 ? '&nbsp;' + timeLeft + 's' : '';
+    if (timeLeft <= 0) return;
+
+    refreshTimer = setInterval(function() {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            timeLeft = Number(seconds) || 0;
+            triggerRefresh();
+        }
+        if (countdown) countdown.innerHTML = '&nbsp;' + timeLeft + 's';
+    }, 1000);
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-    const selectEl = document.getElementById('refresh-option');
+    var selectEl = document.getElementById('refresh-option');
     if (selectEl) {
         selectEl.addEventListener('change', function() {
             localStorage.setItem('wifiReportAutoRefresh', this.value);
-            initAutoRefresh(parseInt(this.value));
+            initAutoRefresh(parseInt(this.value, 10));
         });
     }
 });
@@ -2475,6 +2160,25 @@ function sortTable(n, tId, keepDir, forceDesc) {
     });
 }
 
+function setWideButtonState(active) {
+    var button = document.getElementById('btnWide');
+    if (!button) return;
+    button.textContent = active ? 'Exit Wide ⛶' : 'Wide View ⛶';
+    button.classList.toggle('active', !!active);
+}
+
+function toggleWideView(forceState) {
+    var active = document.body.classList.contains('wr-wide-mode');
+    var next = (typeof forceState === 'boolean') ? forceState : !active;
+    document.body.classList.toggle('wr-wide-mode', next);
+    setWideButtonState(next);
+
+    /* Starting Wide View at the top makes the transition predictable.  Leaving
+       it restores the ordinary ASUS page without navigating or reloading. */
+    var container = document.getElementById('wifiReportContainer');
+    if (next && container) container.scrollTop = 0;
+}
+
 function openPopout() {
     localStorage.setItem('wifiReportPopoutOpen', 'true');
     var body = document.getElementById('popoutBody'); body.innerHTML = "";
@@ -2502,7 +2206,7 @@ function openPopout() {
         else th.onclick = function() { sortTable(i, 'popNodeTable'); };
     });
     var mainWrapper = document.createElement('div');
-    Object.assign(mainWrapper.style, { display: "flex", flexDirection: "column", flex: "1", maxWidth: "49.5%" });
+    mainWrapper.className = 'popout-main-wrapper';
     Object.assign(mCol.style, { maxWidth: "100%", width: "100%" });
     mainWrapper.appendChild(mCol);
     var originalBar = document.querySelector('.rssi-quality-bar');
@@ -2521,6 +2225,18 @@ function closePopout() {
     document.getElementById('popoutModal').style.display = 'none';
     localStorage.setItem('wifiReportPopoutOpen', 'false');
 }
+
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    var modal = document.getElementById('popoutModal');
+    if (modal && modal.style.display === 'flex') {
+        closePopout();
+        return;
+    }
+    if (document.body.classList.contains('wr-wide-mode')) {
+        toggleWideView(false);
+    }
+});
 
 document.addEventListener('contextmenu', function(e) {
     var h = e.target.closest('th');
@@ -2610,6 +2326,7 @@ document.addEventListener('mouseout', function(e) {
                             <button id="btnMain" class="button-tables active" onclick="switchTab('split')" style="$ROUTER_ONLY">Main</button>
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')" style="$ROUTER_ONLY">All Devices</button>
                             <button class="button-tables" onclick="openPopout()" style="$ROUTER_ONLY">Side by Side ⇗</button>
+                            <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
                         </div>
                     </div>
                     <div class="grid-container">
@@ -2620,8 +2337,8 @@ document.addEventListener('mouseout', function(e) {
                                     $UPDATED_TIME
                                     <hr class="separator-line">
                                     <div class="temp_load_row">
-                                        <span>Temp: $MAIN_TEMP</span>
-                                        <span>Load: $MAIN_LOAD</span>
+                                        <span>CPU: $MAIN_TEMP</span>
+                                        <span>Memory: $MAIN_LOAD</span>
                                         <span>Devices: $MAIN_DEVICE_TOTAL</span>
                                     </div>
                                 </div>
@@ -2630,10 +2347,10 @@ document.addEventListener('mouseout', function(e) {
                                         <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
                                         <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
                                         <th onclick="sortTable(2, 'mainTable')">RSSI</th>
-                                        <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
+                                        <th onclick="sortTable(3, 'mainTable')">RX/TX PHY</th>
                                         <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
                                         <th onclick="sortTable(5, 'mainTable')">BAND</th>
-                                        <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
+                                        <th onclick="sortTable(6, 'mainTable')">CONNECTED</th>
                                     </tr></thead>
                                     <tbody>$MAIN_ROWS</tbody>
                                     <tfoot>
@@ -2655,8 +2372,8 @@ document.addEventListener('mouseout', function(e) {
                                     $UPDATED_TIME
                                     <hr class="separator-line">
                                     <div class="temp_load_row">
-                                        <span>Temp: $NODE_TEMPS</span>
-                                        <span>Load: $NODE_LOADS</span>
+                                        <span>CPU: $NODE_TEMPS</span>
+                                        <span>Memory: $NODE_LOADS</span>
                                         <span>Devices: $NODE_DEVICE_TOTAL $NTOTAL</span>
                                     </div>
                                 </div>
@@ -2665,17 +2382,16 @@ document.addEventListener('mouseout', function(e) {
                                         <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
                                         <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
                                         <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
-                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
+                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX PHY</th>
                                         <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
                                         <th onclick="sortTable(5, 'nodeTable')">BAND</th>
-                                        <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
+                                        <th onclick="sortTable(6, 'nodeTable')">CONNECTED</th>
                                     </tr></thead>
                                     <tbody>$NODE_ROWS</tbody>
                                     <tfoot>
                                         <tr>
                                             <td colspan="7">
-                                                <span>Uptime: $NODE_UPTIMES</span>
-                                                <span>Reboot: $NODE_BOOTTIMES</span>
+                                                $NODE_UPTIMES
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -2688,8 +2404,8 @@ document.addEventListener('mouseout', function(e) {
                                 $UPDATED_TIME
                                 <hr class="separator-line">
                                 <div class="temp_load_row" style="$TEMP_STYLE">
-                                    <span>Temp: $ALL_TEMP</span>
-                                    <span>Load: $ALL_LOAD</span>
+                                    <span>Main CPU: $ALL_TEMP</span>
+                                    <span>Main Memory: $ALL_LOAD</span>
                                     <span>$ALL_DEVICES</span>
                                 </div>
                             </div>
@@ -2698,17 +2414,16 @@ document.addEventListener('mouseout', function(e) {
                                     <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
                                     <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
                                     <th onclick="sortTable(2, 'allTable')">RSSI</th>
-                                    <th onclick="sortTable(3, 'allTable')">RX/TX</th>
+                                    <th onclick="sortTable(3, 'allTable')">RX/TX PHY</th>
                                     <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
                                     <th onclick="sortTable(5, 'allTable')">BAND</th>
-                                    <th onclick="sortTable(6, 'allTable')">UPTIME</th>
+                                    <th onclick="sortTable(6, 'allTable')">CONNECTED</th>
                                 </tr></thead>
                                 <tbody>$ALL_ROWS</tbody>
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" style="$UPTIME_STYLE">
-                                            <span>Uptime: $ALL_UPTIME</span>
-                                            <span>Reboot: $ALL_BOOTTIME</span>
+                                            $ALL_UPTIME
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -2733,14 +2448,22 @@ document.addEventListener('mouseout', function(e) {
     </div>
 </body>
 HTML
-rm -rf "$SEEN_MACS" "$HISTORY_CACHE" "$KNOWN_CACHE" "$ARP_CACHE" "$LEASES_CACHE" 2>/dev/null
-rm -rf "$YAZ_CACHE" "$CUSTOM_CLIENTS_CACHE" "$DEVICE_LIST_CACHE" "$NODE_DATA_DIR" 2>/dev/null
 }
 case "$1" in
     install)
         # Install/Uninstall options
         startup
         install_menu
+        ;;
+    install-apply)
+        # Internal second stage used after an update/reinstall.  Do not reopen
+        # the menu; finish persistence and WebUI injection immediately.
+        startup
+        # install-apply bypasses show_header(), so initialize the menu/install
+        # variables explicitly (including services-start/service-event paths).
+        menu_vars
+        REMOTE_VERSION="$SCRIPT_VERSION"
+        do_install --apply
         ;;
     inject|inject1|inject2|inject3)
         case "$1" in

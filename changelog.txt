@@ -1,7 +1,56 @@
+v2.2.9 - Fix primary-router STAINFO fallback and wireless Band coverage
+
+- Confirmed on GT-BE98 Pro that a broad `stainfo` query filtered by primary `node_mac` + `sta_active=1` returns only one/latest station row rather than the complete active-station set.
+- Treat the broad per-router/per-node `stainfo` query as a fast-path hint only.
+- Apply the proven per-client `node_mac + sta_mac + sta_active` fallback to primary-router clients as well as AiMesh-node clients.
+- Restores authoritative `sta_band`, `bw`, `conn_if`, RSSI, PHY rates, and connection duration for primary clients whose record was not the single row returned by the broad query.
+
+v2.2.8 - Use the GT-BE98 Pro's actual primary-health schema
+
+- Primary-router health now requests `cpu_usage();` and `memory_usage();` independently. These are the forms confirmed to return clean JSON on the GT-BE98 Pro; the `appobj` forms return malformed double-brace wrappers on this firmware.
+- CPU parsing now follows ASUS's actual nested schema: `cpu_usage.cpuN.total` and `cpu_usage.cpuN.usage`, with utilization calculated from deltas across cores.
+- Memory parsing now follows `memory_usage.total` and prefers `memory_usage.simple_used` for a human-facing utilization percentage, falling back to raw `used` only when needed.
+- Removed the v2.2.7 guessed flat-field/text parser path.
+
+v2.2.7 - Fix primary-router CPU/memory parsing
+
+- Primary-router cpu_usage/memory_usage telemetry is now read as raw appGet.cgi text instead of assuming the legacy ASUS appobj hooks return strict JSON.
+- Added a safe numeric-field parser for cpuN_total/cpuN_usage and mem_total/mem_free/mem_used; router output is never eval()'d.
+- Keeps the appobj request as the primary path and falls back to the older cpu_usage()/memory_usage() assignment-style hooks when needed.
+- CPU utilization still uses two counter samples; memory remains mem_used / mem_total.
+
+v2.2.6 - Restore original offline-node presentation behavior
+- AiMesh nodes explicitly reported offline by the controller are omitted from Wireless Report, matching the original v2.1.0 behavior where failed/unreachable node collection produced no displayed node card.
+- Stale live-client entries still pointing at an explicitly offline node are omitted too, preventing them from being misclassified as primary-router clients.
+- Removed Online/Offline/Status text from the node footer. The footer retains alias/model, IP, firmware, and labeled telemetry timestamp only.
+- Generic/unknown status enums are not used to hide nodes; if ASUS omits an explicit online/isOnline flag, the node remains visible.
+
+v2.2.5 - Health/status consistency and Side-by-Side fix
+- Fixed the v2.2.4 Side-by-Side regression where the primary-router card could collapse while its quality bar remained visible.
+- Primary-router health now matches AiMesh nodes: CPU utilization %, memory utilization %, and device count. CPU usage is derived from ASUS cpu_usage(appobj) counter samples; memory uses memory_usage(appobj).
+- Removed committed-memory output from node diagnostics.
+- Preserved the AiMesh online signal because no other explicit node-offline indicator exists in Wireless Report, but now renders ASUS online=1/0 as human-readable Online/Offline.
+- Node diagnostic timestamps are labeled Telemetry instead of appearing as an unexplained time.
+- Restored single-node summary suppression so one AiMesh node shows Devices: N instead of N -> N¹, and single-node health/name markers are not needlessly numbered.
+
+v2.2.4 - Wide/roomy WebUI layout
+- Added Wide View toggle that lets Wireless Report use the full browser viewport while staying on the authenticated ASUS WebUI page.
+- Expanded Side-by-Side from a 1450px maximum to nearly the full viewport.
+- Added roomier minimum widths for hostname, address, RSSI, PHY, SSID, band, and connected columns in Wide/Side-by-Side modes.
+- Escape closes Side-by-Side first, or exits Wide View when the modal is not open.
+
+v2.2.3 - Controller API JavaScript generation fix
+- Fixed generated WebUI JavaScript failing to parse at wrNormMac() (Invalid regular expression: missing /).
+- Avoids heredoc backslash collapse by normalizing escaped MAC strings with String.fromCharCode(92).
+- Restores initial() execution and controller-side API refreshes on the Wireless Report page.
+
 #=============================#
 # Wireless Report - Changelog #
 #=============================#
 
+v2.2.2-fixed install-apply persistence paths (services-start/service-event), added WebUI page allocation/copy validation, and stopped the installer from reporting success if persistence setup fails.
+v2.2.1-fixed reinstall/update WebUI injection so existing local installs continue into inject_menu() instead of reopening the installer menu.
+v2.2.0-controller-only WebUI data path. Removed AiMesh SSH authentication/key provisioning and remote node scans. Client telemetry now loads from /appGet.cgi + stainfo; node CPU/memory loads from sys_detect. Refresh is in-page and no longer uses restart_wireless_report. Node CPU temperature/load/system uptime are omitted because no controller-side source is available.
 v2.1.0-minor updates, refactoring, optimizations.
 v2.0.9-reverted node device counting mechanism.
 v2.0.8-added filelock to webpage injection, adjusted services-start/event.

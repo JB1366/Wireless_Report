@@ -10,16 +10,20 @@ $\color{blue}{\Large\text{THE MOTIVATION}}$<br>
 I created this script to solve a specific gap in the ASUS WebGUI: the lack of real-time AiMesh node data. The absence of RSSI parameters on nodes was the primary motivation for this addon. By consolidating all wireless devices into a single, unified table, this report allows you to monitor your entire network at a glance. Because ASUS firmware can be slow to roam devices to the optimal router or node, this report provides the visibility needed to manually tune and optimize client connectivity much faster and more accurately.
 \
 \
-$\color{blue}{\Large\text{NODE DATA INTEGRATION}}$<br>
-To display data for AiMesh nodes, the script now includes an automated Password-less SSH Key Setup. This securely configures each node to allow the script to retrieve remote connection details. While the setup is now built-in, you can still refer to the [SNB Forums Guide](https://www.snbforums.com/threads/asus-merlin-router-to-aimesh-nodes-ssh-key-setup-password-19-passwordless-16-or-use-curl-30.96817/#post-985905) for manual troubleshooting or deep-dive details. Works with both stock and Merlin nodes.
+$\color{blue}{\Large\text{CONTROLLER-ONLY DATA INTEGRATION}}$<br>
+Wireless Report v2.2 no longer logs in to AiMesh nodes and no longer uses SSH keys. The report page runs inside the authenticated primary-router WebUI and retrieves data with same-origin requests to ASUS controller endpoints.
+
+* `/appGet.cgi` supplies AiMesh inventory and normal client metadata.
+* `/get_diag_latest_content_data.cgi` supplies `stainfo` wireless-station telemetry plus `sys_detect` node CPU/memory telemetry.
+* No node password, encoded credentials, node WebUI cookie, `asus_token`, or direct browser request to a node IP is required.
+* Primary-router and AiMesh-node health headers now use the same metric pair: CPU utilization and memory utilization. The primary router obtains these through ASUS `cpu_usage()` / `memory_usage()` app hooks using their nested per-core/memory JSON schema, while nodes use controller `sys_detect` telemetry.
+* Node CPU temperature, Linux load averages, and node system uptime are intentionally not shown because no equivalent controller-side source is currently available.
+
+This architecture also means page refreshes happen directly in the browser; Wireless Report no longer restarts a router service or launches a remote node scan just to update the table.
 \
 \
 $\color{blue}{\Large\text{PRO-TIP: CUSTOMIZING HOSTNAMES}}$<br>
 To ensure your report shows clean Hostnames (e.g., "Living Room TV") rather than default device names, it is highly recommended to assign manual Hostnames for your frequent clients. You can do this in the LAN > DHCP Server tab, or within Network > Guest Network Pro > Advanced Settings for your specific guest networks.
-\
-\
-$\color{blue}{\Large\text{RECOMMENDATION}}$<br>
-Since your main router is running Merlin, consider using YazDHCP (available via amtm option j7). It provides a much more intuitive interface for managing assignments, supports easy import/export, and—most importantly—combines both Main and GNP assignments into a single, unified view. While not required for this script to function, it significantly improves the readability of your report.<br>
 \
 \
 $\color{blue}{\Large\text{INSTALL}}$<br>
@@ -41,12 +45,11 @@ Note that both methods only initiate the install screen, the installation is NOT
 $\color{blue}{\text{Step 2:}}$ Select option $\color{blue}{\text{(1)}}$ from the menu to begin.<br>
 You only need to perform this full step during the initial setup and subsequent updates. The script will automatically perform the following:
 
-* $\color{green}{\text{Storage Check:}}$ Verifies the presence of a USB drive or JFFS for persistent storage.
-* $\color{green}{\text{Node Auth/SSH Keygen:}}$ Authenticates nodes, creates SSH Key if needed.
+* $\color{green}{\text{Controller API Setup:}}$ Builds the WebUI page that reads AiMesh/client telemetry through the primary router session.
 * $\color{green}{\text{File Processing:}}$ Deploys and configures the core Wireless Report system files.
 * $\color{green}{\text{Asus Menu Tab:}}$ Injects Wireless Report Tab into Wireless Menu.
 * $\color{green}{\text{Confirmation:}}$ Displays a completion message once the script is successfully integrated.
-* $\color{green}{\text{How-to/Tip:}}$ Displays how/where to view Report, router-only TIP.
+* $\color{green}{\text{How-to/Tip:}}$ Displays how/where to view the report and confirms that AiMesh nodes are auto-discovered.
 
 $\color{blue}{\text{Note:}}$ At this stage, Wireless Report is active and ready to view in your WebGUI. However, it is highly recommended to explore the Optional Configuration items in the menu before exiting.<br>
 \
@@ -69,37 +72,13 @@ $\color{green}{\text{Option (5):}}$ Edit Device Colors: Customize individual dev
 \
 \
 $\color{green}{\text{Option (6):}}$ Set Options
- * $\color{blue}{\text{Toggle Runtime Tracking:}}$ Measures and displays the total duration of script scans across your router and nodes. Toggling this setting will also reset the execution counter.
- * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
- * $\color{blue}{\text{Configure Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
- * $\color{blue}{\text{Toggle RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
+ * $\color{blue}{\text{Toggle Browser Refresh Runtime:}}$ Shows the elapsed API-refresh time on the Refresh button and keeps average/min/max values in browser local storage.
+ * $\color{blue}{\text{Configure Connection Alert Pulse:}}$ Sets the threshold (Default: 15 mins, Max: 1440 mins) used to highlight recently associated/reconnected wireless clients.<br>
  * $\color{blue}{\text{Set Theme:}}$ Switch between Original, Darkmode, and Asus WebUI theme styles.<br>
- * $\color{blue}{\text{Toggle IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. <br>
-   * $\color{green}{\text{Mode 1:}}$ 192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only) (Default)
-   * $\color{green}{\text{Disabled:}}$ 192.168.50.003 --> 192.168.50.3 (Standard IP Display)
-   * $\color{green}{\text{Mode 2:}}$ 192.168.50.3 --> 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
- * $\color{blue}{\text{Toggle Node Hostname Display:}}$ Gives you full control over how mesh node identifiers look, allowing for an incredibly clean, unified text layout or distinct color-coded node tracking.<br>
-   * $\color{green}{\text{Numbered Hostnames (Default):}}$ Hostnames remain a uniform, clean white while their tracking superscripts (sup) are color-coded to match their respective nodes.
-   * $\color{green}{\text{Colored Hostnames:}}$ The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.
+ * $\color{blue}{\text{Toggle IP Padding:}}$ Aligns IP columns using the existing three display modes.<br>
+ * $\color{blue}{\text{Toggle Node Hostname Display:}}$ Switches between numbered white hostnames and node-colored hostnames.<br>
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
-\
-\
-$\color{green}{\text{Option (7):}}$ Node Authentication: Streamlines node management by allowing on-the-fly syncing of new or disconnected AiMesh nodes.<br>
-
-![Instructions5](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions5.png)<br>
-\
-\
-$\color{green}{\text{Option (8):}}$ Configure SSH Options:<br>
-* $\color{blue}{\text{Generate RSA Keys + Provision AiMesh Nodes:}}$ Generates new RSA key pairs and configures authentication between your primary router and all connected AiMesh nodes. This is the primary setup step for enabling secure, passwordless SSH communication across your mesh network.
-* $\color{blue}{\text{Remove RSA Keys:}}$ Purges existing RSA key pairs from the primary router's storage, memory, and NVRAM configuration. Use this option to completely reset your secure SSH environment or clear out old credentials before a clean reinstall.
-* $\color{blue}{\text{Provision Main Router-Only:}}$ Standalone Dashboard: A consolidated view for single-router setups. Select this if you do not have AiMesh nodes and want to display all connected devices grouped on a single screen.
-* $\color{blue}{\text{View Authorized Keys:}}$ Displays the contents of the authorized_keys file. This allows you to verify which public keys are currently permitted to access your router via SSH.
-* $\color{blue}{\text{View Known Hosts:}}$ Shows the list of hosts that your router has connected to and verified. This is useful for troubleshooting SSH "Host Key" verification errors when connecting between nodes.
-* $\color{blue}{\text{View SSH Error Log:}}$ Displays the recent logs generated by the SSH daemon (dropbear). Use this to diagnose connection failures, authentication timeouts, or configuration errors.
-* $\color{blue}{\text{Manage Node Authentication:}}$ Provides a status check and management interface for node-to-node authentication. This confirms if your nodes are correctly trusted and identifies any authentication gaps in your mesh topology.
-
-![Instructions10](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions10.png)<br>
 \
 \
 $\color{blue}{\Large\text{VIEWING THE REPORT}}$<br>
@@ -108,48 +87,15 @@ To access your data, navigate to Advanced Settings > Wireless in the ASUS WebGUI
 \
 $\color{blue}{\Large\text{KEY FEATURES + NAVIGATION}}$
 
-* $\color{green}{\text{Temp-Load:}}$ View real-time router temperature and system load. The dashboard uses dynamic, intuitive color cues to highlight performance status:
+* $\color{green}{\text{CPU-Memory Health:}}$ The primary router and AiMesh nodes use matching health headers: CPU utilization %, memory utilization %, and wireless device count. The primary router derives CPU utilization from ASUS CPU counter samples and memory utilization from the primary WebUI API; AiMesh nodes use controller-reported `sys_detect` CPU/memory telemetry.
 
-<ul style="list-style-type: none; margin-top: 10px; margin-bottom: 10px;">
-    <li>
-      <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; text-align: left;">
-        <thead>
-          <tr style="background-color: #161b22;">
-            <td><strong>Metric</strong></td>
-            <th>$\color{blue}{\text{Cool Blue (Optimal)}}$</th>
-            <th>$\color{orange}{\text{Warm Orange (Elevated)}}$</th>
-            <th>$\color{red}{\text{Hot Red (Action Required)}}$</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Temp (°C)</strong></td>
-            <td>$\color{blue}{\text{Under 75°C}}$</td>
-            <td>$\color{orange}{\text{75°C to 90°C}}$</td>
-            <td>$\color{red}{\text{Over 90°C}}$</td>
-          </tr>
-          <tr>
-            <td><strong>Temp (°F)</strong></td>
-            <td>$\color{blue}{\text{Under 167°F}}$</td>
-            <td>$\color{orange}{\text{167°F to 194°F}}$</td>
-            <td>$\color{red}{\text{Over 194°F}}$</td>
-          </tr>
-          <tr>
-            <td><strong>CPU Load</strong></td>
-            <td>$\color{blue}{\text{Under 1.5}}$</td>
-            <td>$\color{orange}{\text{1.5 to 4.0}}$</td>
-            <td>$\color{red}{\text{Over 4.0}}$</td>
-          </tr>
-        </tbody>
-      </table>
-    </li>
-  </ul>
+* $\color{green}{\text{AiMesh Node Health:}}$ Node headers show controller-reported CPU utilization and memory utilization. Nodes explicitly reported offline by the AiMesh inventory are omitted from the report, matching the original v2.1.0 presentation behavior. The footer retains model/IP/firmware plus a labeled telemetry timestamp; committed memory and online/status text are not displayed. Node CPU temperature, Linux load averages, and node system uptime are not requested from the node because v2.2 is deliberately controller-only.
 
-* $\color{green}{\text{Auto-Refresh:}}$ The table automatically refreshes every time you navigate to the tab. To ensure data integrity, please allow at least 30 seconds between manual refreshes.
-* $\color{green}{\text{Unified Dashboard:}}$ View all connected clients across your entire mesh system in one place. The table includes Hostnames, IP/MAC Addresses, RSSI, RX/TX Rates, SSID/Interface, Band, and Client Uptime.
+* $\color{green}{\text{Auto-Refresh:}}$ The table refreshes in place through the primary-router WebUI APIs. Manual and scheduled refreshes no longer restart Wireless Report or wait for SSH scans.
+* $\color{green}{\text{Unified Dashboard:}}$ View all connected clients across your entire mesh system in one place. The table includes Hostnames, IP/MAC Addresses, RSSI, RX/TX PHY/link rates, SSID/Interface, Band, and wireless connection duration. The PHY values are link rates, not live application throughput.
 * $\color{green}{\text{Interactive Sorting:}}$ Click any column header (except IP and SSID) to sort data alphabetically or numerically.
 * $\color{green}{\text{Device Summary:}}$ The header displays the Grand Total of connected devices, followed by a color-coded breakdown of exactly how many clients are on each specific Router or Node.
-* $\color{green}{\text{Visual RSSI Cues:}}$ Connection quality is auto-graded and color-coded. Enable RSSI History Tooltips in the Set Options Menu to reveal a history of the last 5-20 user selected readings.
+* $\color{green}{\text{Visual RSSI Cues:}}$ Connection quality is auto-graded and color-coded. The browser retains the previous RSSI sample locally so trend arrows survive in-page refreshes.
 
 \
 \
@@ -193,11 +139,11 @@ Wireless Report is designed to be more than just a static table. Use these inter
     * $\color{blue}{\text{Side-by-Side (Pop-out):}}$ Launches a separate window for easier comparison between the Router and Nodes.
   * $\color{green}{\text{Visual Notifications:}}$<br>
     * $\color{blue}{\text{New Device Pulse:}}$ The entire row will pulse when a new device is first detected on the network.<br>
-    * $\color{blue}{\text{Uptime Alert:}}$ Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).
+    * $\color{blue}{\text{Connection Alert:}}$ Spot recent roaming or reconnections using the station association duration reported by ASUS `stainfo`. The threshold is user-definable (default: 15 minutes).
   * $\color{green}{\text{Custom Refresh Control:}}$ Use the built-in dropdown menu to adjust the Auto-Refresh Interval to suit your monitoring needs.
   * $\color{green}{\text{Node-Hostname|All Devices Sorting:}}$ Right-click the node|All Devices hostnames header to toggle numerical sorting (e.g., sorting nodes 1-3 vs. 3-1) (sorting All-Devices 1-3(router) vs. (router) 3-1.
   * $\color{green}{\text{Column Sorting:}}$ Remembers column sort-state of all tables, between all refreshes.
-  * $\color{green}{\text{Refresh Button Runtime:}}$ Hover your mouse over the "Refresh Button" to instantly check Average runtimes + Highest/Lowest runtimes.
+  * $\color{green}{\text{Refresh Button Runtime:}}$ When enabled, the button shows the current browser/API refresh time; hover it to see average, high, and low values kept in browser local storage.
 
 \
 \
