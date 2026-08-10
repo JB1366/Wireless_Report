@@ -1,3 +1,10 @@
+v2.2.11 - Fix semantic version comparison across installer/update paths
+
+- Replace dot-stripping integer comparisons with a component-by-component dotted numeric version comparator.
+- Correctly order releases with multi-digit components, e.g. `2.2.10 < 2.3.0` and `2.9.9 < 2.10.0`.
+- Treat omitted trailing components as zero, so `2.3` and `2.3.0` compare equal.
+- Use the same comparator for menu/update-state detection and the local/dev-build downgrade protection so both paths make identical version decisions.
+
 v2.2.10 - Restore functional date/time formatting after Temp/Load removal
 
 - Rename menu option 3 from Edit Temp/Date to Edit Date/Time Format; temperature units are no longer presented because v2.2 uses CPU/Memory utilization instead of temperature/load.

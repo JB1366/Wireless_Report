@@ -26,7 +26,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="2.2.10"
+SCRIPT_VERSION="2.2.11"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
@@ -102,14 +102,44 @@ install_menu() {
 	done
 }
 
+version_compare() {
+    # Compare dotted numeric versions component-by-component.
+    # Prints: -1 when $1 < $2, 0 when equal, 1 when $1 > $2.
+    # Missing components are treated as zero (2.3 == 2.3.0).
+    awk -v left="$1" -v right="$2" '
+        function num(part) { return (part ~ /^[0-9]+$/) ? part + 0 : 0 }
+        BEGIN {
+            lc = split(left, L, "."); rc = split(right, R, ".")
+            max = (lc > rc) ? lc : rc
+            for (i = 1; i <= max; i++) {
+                lv = (i <= lc) ? num(L[i]) : 0
+                rv = (i <= rc) ? num(R[i]) : 0
+                if (lv < rv) { print -1; exit }
+                if (lv > rv) { print 1; exit }
+            }
+            print 0
+        }'
+}
+
 check_version() {
-    local mode="$1"; DEV=""; freeze() { return 0; }
-    if [ ! -f "$REPORT_SCRIPT" ]; then STATE="NOT_INSTALLED"; freeze() { freeze2; return 1; }
-    elif [ -z "$REMOTE_VERSION" ]; then STATE="OFFLINE"
-    elif [ "$(echo "$SCRIPT_VERSION" | tr -d '.')" -gt "$(echo "$REMOTE_VERSION" | tr -d '.')" ]; then  STATE="UP_TO_DATE"; DEV="-DEV"
-    elif [ "$SCRIPT_VERSION" != "$REMOTE_VERSION" ]; then STATE="OUTDATED"
-    elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then STATE="HASH_DIFF"
-    else STATE="UP_TO_DATE"; fi
+    local mode="$1" version_cmp=""; DEV=""; freeze() { return 0; }
+    if [ ! -f "$REPORT_SCRIPT" ]; then
+        STATE="NOT_INSTALLED"; freeze() { freeze2; return 1; }
+    elif [ -z "$REMOTE_VERSION" ]; then
+        STATE="OFFLINE"
+    else
+        version_cmp=$(version_compare "$SCRIPT_VERSION" "$REMOTE_VERSION")
+        case "$version_cmp" in -1|0|1) ;; *) version_cmp=0 ;; esac
+        if [ "$version_cmp" -gt 0 ]; then
+            STATE="UP_TO_DATE"; DEV="-DEV"
+        elif [ "$version_cmp" -lt 0 ]; then
+            STATE="OUTDATED"
+        elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+            STATE="HASH_DIFF"
+        else
+            STATE="UP_TO_DATE"
+        fi
+    fi
     case "$mode" in
         header_box)
             case "$STATE" in
@@ -251,14 +281,17 @@ do_install() {
 
 do_update() {
     TEMP_SCRIPT="/tmp/wirelessreport.sh"
-    local CURRENT_PATH TARGET_PATH local_ver remote_ver
-    local_ver=$(echo "$SCRIPT_VERSION" | tr -d '.')
-    remote_ver=$(echo "$REMOTE_VERSION" | tr -d '.')
+    local CURRENT_PATH TARGET_PATH version_cmp
+    version_cmp=0
+    if [ -n "$REMOTE_VERSION" ]; then
+        version_cmp=$(version_compare "$SCRIPT_VERSION" "$REMOTE_VERSION")
+        case "$version_cmp" in -1|0|1) ;; *) version_cmp=0 ;; esac
+    fi
 
     # Never let a local/dev build be silently replaced by an older public build.
-    # This also makes packaged test builds installable before the matching release
-    # has been published to the upstream repository.
-    if [ -n "$remote_ver" ] && [ "$local_ver" -gt "$remote_ver" ] 2>/dev/null; then
+    # Use the same component-aware comparison as check_version so versions such
+    # as 2.2.10 and 2.3.0 are ordered correctly.
+    if [ -n "$REMOTE_VERSION" ] && [ "$version_cmp" -gt 0 ]; then
         CURRENT_PATH=$(readlink -f "$0" 2>/dev/null); [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
         TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null); [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
         if [ "$CURRENT_PATH" != "$TARGET_PATH" ]; then
