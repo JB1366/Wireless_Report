@@ -3399,9 +3399,6 @@ async function loadWirelessReport() {
         'nvram_get(productid);' +
         'nvram_get(lan_hwaddr);' +
         'nvram_get(ap_wifi_rl);' +
-        'nvram_get(firmver);' +
-        'nvram_get(buildno);' +
-        'nvram_get(extendno);' +
         'uptime();'
     );
 
@@ -3600,18 +3597,39 @@ async function loadWirelessReport() {
     // --- BUILD MAIN ROUTER DIAGNOSTIC DETAILS ---
     var mainNameText = mainNameEl ? mainNameEl.textContent.trim() : (base.productid || 'Main Router');
     var mainIp = String(wrFirst(base, ['lan_ipaddr', 'lan_ip', 'ip']) || window.location.hostname || '');
-    if (!window._cachedMainFw) {
-        var firmver = String(base.firmver || '').trim();
-        var buildno = String(base.buildno || '').trim();
-        var extendno = String(base.extendno || '').trim();
+    if (typeof window._cachedMainFw === 'undefined' || !window._cachedMainFw) {
 
-        if (firmver && buildno) {
-            var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
-            if (extendno && extendno !== '0') detectedFw += '_' + extendno;
-            window._cachedMainFw = detectedFw.split('-')[0];
+        // Moved 'webs_state_info' to the end so it checks precise version/build keys first
+        var rawFw = wrFirst(base, ['firmware', 'fwver', 'firmwarever', 'buildno', 'extendno', 'version', 'webs_state_info'])
+                    || window.firmware || window.firmver || window.webs_state_info || '';
+        var detectedFw = (rawFw && typeof rawFw === 'object') ? (rawFw.textContent || '') : String(rawFw || '');
+        if (!detectedFw && typeof firmver !== 'undefined' && typeof buildno !== 'undefined') {
+            detectedFw = firmver + '_' + buildno;
+            if (typeof extendno !== 'undefined' && extendno) detectedFw += '_' + extendno;
+        }
+        if (detectedFw) {
+            detectedFw = detectedFw.split('-')[0];
+            window._cachedMainFw = detectedFw;
         }
     }
     var mainFw = window._cachedMainFw || '';
+
+    // Force consistent formatting: 3006.102.8_2 (dots for the first two separators, underscore for the last)
+    if (mainFw) {
+        mainFw = mainFw.replace(/^[\._]+/, '').replace(/[\._]+$/, '');
+        if (/^300[46]/.test(mainFw)) {
+            var parts = mainFw.split(/[\._]/);
+            if (parts.length >= 4) {
+                // e.g. parts = ['3006', '102', '8', '2'] -> 3006.102.8_2
+                mainFw = parts[0] + '.' + parts[1] + '.' + parts[2] + '_' + parts.slice(3).join('_');
+            } else if (parts.length === 3) {
+                // e.g. parts = ['3006', '102', '8'] -> 3006.102.8
+                mainFw = parts[0] + '.' + parts[1] + '.' + parts[2];
+            } else if (parts.length === 2) {
+                mainFw = parts[0] + '.' + parts[1];
+            }
+        }
+    }
     var mainDiag = "<span class='main-color'>" + wrEscape(mainNameText) + "</span>";
     if (mainIp) mainDiag += " <span style='color:white;'>•</span> <span style='color:white;'>" + wrEscape(mainIp) + "</span>";
     if (mainFw) mainDiag += " <span style='color:white;'>•</span> <span class='main-color'>FW</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>";
