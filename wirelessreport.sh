@@ -3398,6 +3398,9 @@ async function loadWirelessReport() {
         'nvram_get(productid);' +
         'nvram_get(lan_hwaddr);' +
         'nvram_get(ap_wifi_rl);' +
+        'nvram_get(firmver);' +
+        'nvram_get(buildno);' +
+        'nvram_get(extendno);' +
         'uptime();'
     );
 
@@ -3597,17 +3600,15 @@ async function loadWirelessReport() {
     var mainNameText = mainNameEl ? mainNameEl.textContent.trim() : (base.productid || 'Main Router');
     var mainIp = String(wrFirst(base, ['lan_ipaddr', 'lan_ip', 'ip']) || window.location.hostname || '');
 
-    if (typeof window._cachedMainFw === 'undefined' || !window._cachedMainFw) {
-        var rawFw = wrFirst(base, ['firmver', 'buildno', 'extendno', 'version'])
-            || window.firmware || window.firmver || '';
-        var detectedFw = (rawFw && typeof rawFw === 'object') ? (rawFw.textContent || '') : String(rawFw || '');
-        if (!detectedFw && typeof firmver !== 'undefined' && typeof buildno !== 'undefined') {
-            detectedFw = firmver + '_' + buildno;
-            if (typeof extendno !== 'undefined' && extendno) detectedFw += '_' + extendno;
-        }
-        if (detectedFw) {
-            detectedFw = detectedFw.split('-')[0];
-            window._cachedMainFw = detectedFw;
+    if (!window._cachedMainFw) {
+        var firmver = String(base.firmver || '').trim();
+        var buildno = String(base.buildno || '').trim();
+        var extendno = String(base.extendno || '').trim();
+
+        if (firmver && buildno) {
+            var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
+            if (extendno && extendno !== '0') detectedFw += '_' + extendno;
+            window._cachedMainFw = detectedFw.split('-')[0];
         }
     }
     var mainFw = window._cachedMainFw || '';
