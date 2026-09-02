@@ -109,7 +109,7 @@ install_menu() {
 
 check_version() {
     local mode="$1" version_cmp=""; froze() { return 0; }
-    DEV=""; if [ "$BRANCH" = "1" ]; then DEV="D"; elif [ "$BRANCH" = "2" ]; then DEV="E"; fi
+    DEV=""; case "$BRANCH" in 1) DEV="D" ;; 2) DEV="E" ;; esac
     if [ ! -f "$REPORT_SCRIPT" ]; then STATE="NOT_INSTALLED"; froze() { freeze 2; return 1; }
     elif [ -z "$REMOTE_VERSION" ]; then STATE="OFFLINE"
     else
@@ -168,8 +168,8 @@ version_compare() {
 
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-    DEV=""; if [ "$BRANCH" = "1" ]; then DEV="D"; elif [ "$BRANCH" = "2" ]; then DEV="E"; fi
-	trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
+    DEV=""; case "$BRANCH" in 1) DEV="D" ;; 2) DEV="E" ;; esac
+    trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
     UL='\033[4m'; WH='\e[1;37m'; YL='\033[0;33m'; NC='\033[0m'
     BL='\033[38;5;39m'; GR='\033[0;32m'; RD='\033[0;31m'
     JB_1366="${NC}Copyright (c) 2026 JB_1366 - All Rights Reserved"
@@ -181,13 +181,9 @@ menu_vars() {
     : "${NODE_COLORS:=#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
 	STATUS=" ${BL}STATUS:${NC}"; CURRENT="${BL}CURRENT:${NC} v$SCRIPT_VERSION$DEV"
     SS_FILE="/jffs/scripts/services-start"
-    REPORT_UNIT="${REPORT_UNIT:-USA}"
-    DATE_ISO="${GR}$(date +"%Y-%m-%d %H:%M:%S")${NC}"
-    DATE_INTL="${GR}$(date +"%-d-%b %-H:%M:%S")${NC}"
-    DATE_USA="${GR}$(date +"%b-%-d %-H:%M:%S")${NC}"
-    if [ "$REPORT_UNIT" = "ISO" ]; then DU="${GR}ISO${NC}"; CT="$DATE_ISO"
-    elif [ "$REPORT_UNIT" = "INTL" ]; then DU="${GR}INTL${NC}"; CT="$DATE_INTL"
-    else DU="${GR}USA${NC}"; CT="$DATE_USA"; fi
+    REPORT_UNIT="${REPORT_UNIT:-USA}"; DATE_ISO="${GR}$(date +"%Y-%m-%d %H:%M:%S")${NC}"
+    DATE_INTL="${GR}$(date +"%-d-%b %-H:%M:%S")${NC}"; DATE_USA="${GR}$(date +"%b-%-d %-H:%M:%S")${NC}"
+    case "$REPORT_UNIT" in ISO) DU="${GR}ISO${NC}"; CT="$DATE_ISO" ;; INTL) DU="${GR}INTL${NC}"; CT="$DATE_INTL" ;; *) DU="${GR}USA${NC}"; CT="$DATE_USA" ;; esac
     RTIME=${RTIME:-1}; if [ "$RTIME" = "0" ]; then RT_STAT="$OFF"; else RT_STAT="$ON"; fi
     BACKHAUL=${BACKHAUL:-0}; if [ "$BACKHAUL" = "0" ]; then WB_STAT="$OFF"; else WB_STAT="$ON"; fi
     PULSE_MINS=${PULSE_MINS:-15}; if [ "$PULSE_MINS" = "0" ]; then UP_STAT="$OFF"; else UP_STAT="${GR}${PULSE_MINS} Mins${NC}"; fi
@@ -203,12 +199,8 @@ menu_vars() {
 	if [ "$CUR_DATE" = "1" ]; then TS="$ON"; else TS="$OFF"; fi
     THEME=${THEME:-ORIGINAL}; TM_STAT="${GR}$THEME${NC}"
 	IPPAD=${IPPAD:-1}
-	if [ "$IPPAD" = "2" ]; then PD_STAT="${GR}Last 2 Octets${NC}"
-	elif [ "$IPPAD" = "1" ]; then PD_STAT="${BL}Last Octet${NC}"
-	else PD_STAT="${RD}Disabled${NC}"; fi
-	HOST_COLOR=${HOST_COLOR:-0}
-	if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${BL}Colored${NC}"
-	else HN_STAT="${GR}Numbered${NC}"; fi
+	case "$IPPAD" in 2) PD_STAT="${GR}Last 2 Octets${NC}" ;; 1) PD_STAT="${BL}Last Octet${NC}" ;; *) PD_STAT="${RD}Disabled${NC}" ;; esac
+	HOST_COLOR=${HOST_COLOR:-0}; if [ "$HOST_COLOR" = "1" ]; then HN_STAT="${BL}Colored${NC}"; else HN_STAT="${GR}Numbered${NC}"; fi
     if [ "$BRANCH" = "2" ]; then BRANCH_NAME="EFT-Development"; fi
     BH="[${GR}$BRANCH_NAME${NC}]"
 }
@@ -1087,7 +1079,6 @@ for node in $MESH_NODES; do
 done
 
 ROUTER=$(nvram get productid); MAIN_NAME="${MAIN_NICK:-${ROUTER:-Main Router}}"
-
 MAIN_NAME="<span id='wr-main-name' class='router-style'>${MAIN_NAME}</span>"
 MAIN_CPU="<span id='wr-main-cpu' class='stat-cool'>--</span>"
 MAIN_MEMORY="<span id='wr-main-memory' class='stat-cool'>--</span>"
