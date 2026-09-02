@@ -73,6 +73,7 @@ $\color{green}{\text{Option (6):}}$ Set Theme: Switch between Original, Darkmode
 \
 $\color{green}{\text{Option (7):}}$ Set Options
  * $\color{blue}{\text{Toggle Runtime Tracking:}}$ Measures and displays the total duration of script scans across your router and nodes. Toggling this setting will also reset the execution counter.
+ * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
  * $\color{blue}{\text{Configure Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
  * $\color{blue}{\text{Toggle IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. <br>
    * $\color{green}{\text{Mode 1:}}$ 192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only) (Default)
