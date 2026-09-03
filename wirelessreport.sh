@@ -1191,7 +1191,7 @@ cat <<HTML >> "$WEB_PAGE"
     .router-style { color: $MAIN_COLOR; font-size: 20px; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
     .temp-load-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 11px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; text-align: center; justify-content: center; }
     .temp-load-row > span:not(:last-child) { margin-right: 1px; }
-	.uptime-row { text-align: center; justify-content: center; font-size: 14px; }
+	.uptime-row { text-align: center; justify-content: center; font-size: 16px; }
     .stat-cool { color: #0096ff !important; font-weight: bold; }
     .stat-warm { color: #ffa500 !important; font-weight: bold; }
 	.stat-hot { color: #ff453a !important; font-weight: bold; }
