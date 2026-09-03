@@ -816,21 +816,17 @@ set_options() {
                     pause; break ;;
                 4)
                     if grep -q "IPPAD=" "$CONFIG"; then
-                        if [ "$IPPAD" = "1" ]; then
-                            echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
-                            NEW_PAD="0"; pause
-                        elif [ "$IPPAD" = "0" ]; then
-                            echo -e "\n${GR}[+] Mode 2:${NC} 192.168.50.3 --> ${GR}192.168.050.003${NC} (Last 2 Octets)"
-                            NEW_PAD="2"; pause
-                        else
-                            echo -e "\n${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"
-                            NEW_PAD="1"; pause
-                        fi
+                        case "$IPPAD" in
+                            1) echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"; NEW_PAD="0" ;;
+                            0) echo -e "\n${GR}[+] Mode 2:${NC} 192.168.50.3 --> ${GR}192.168.050.003${NC} (Last 2 Octets)";  NEW_PAD="2" ;;
+                            *) echo -e "\n${GR}[+] Mode 1:${NC} 192.168.50.3 --> ${GR}192.168.50.003${NC} (Last Octet Only)"; NEW_PAD="1" ;;
+                        esac
+                        pause
                         sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                     else
-                        echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"
+                        echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"; NEW_PAD="0"
                         echo 'IPPAD="0"' >> "$CONFIG"
-                        NEW_PAD="0"; pause
+                        pause
                     fi
                     break ;;
                 5)
