@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.2.4"
+SCRIPT_VERSION="3.2.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -753,23 +753,15 @@ set_theme() {
         while true; do
             selection
             case "$choice" in
-                1)
-                    if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ORIGINAL\"/" "$CONFIG"
-                    else echo 'THEME="ORIGINAL"' >> "$CONFIG"; fi
-                    break ;;
-                2)
-                    if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"DARKMODE\"/" "$CONFIG"
-                    else echo 'THEME="DARKMODE"' >> "$CONFIG"; fi
-                    break ;;
-                3)
-                    if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"ASUS_WEBUI\"/" "$CONFIG"
-                    else  echo 'THEME="ASUS_WEBUI"' >> "$CONFIG"; fi
-                    break ;;
-                e|E)
-                    return 0 ;;
-                *)
-                    freeze 2; continue ;;
+                1) TM="ORIGINAL" ;;
+                2) TM="DARKMODE" ;;
+                3) TM="ASUS_WEBUI" ;;
+                e|E) return 0 ;;
+                *) freeze 2; continue ;;
             esac
+            if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
+            else echo "THEME=\"$TM\"" >> "$CONFIG"; fi
+            break
         done
         run_report
     done
