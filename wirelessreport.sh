@@ -1202,7 +1202,6 @@ cat <<HTML >> "$WEB_PAGE"
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
     sup { font-size: 0.6em; margin-left: 2px; }
     .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
-    .button-refresh:hover select, .button-refresh:hover .button-trigger { color: #0096ff !important; }
     .button-refresh, .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
     .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
     .button-refresh:before, .button-refresh .button-trigger:before, .button-refresh select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
