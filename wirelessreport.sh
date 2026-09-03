@@ -864,12 +864,13 @@ set_branch() {
         while true; do
             selection
             case "$choice" in
-                1) BRANCH="0"; break ;;
-                2) BRANCH="1"; break ;;
-                3) BRANCH="2"; break ;;
+                1) BRANCH="0" ;;
+                2) BRANCH="1" ;;
+                3) BRANCH="2" ;;
                 e|E) return 0 ;;
-                *) freeze 2 ;;
+                *) freeze 2; continue ;;
             esac
+            break
         done
         if grep -q "^BRANCH=" "$CONFIG"; then sed -i "s/^BRANCH=.*/BRANCH=\"$BRANCH\"/" "$CONFIG"
         else echo "BRANCH=\"$BRANCH\"" >> "$CONFIG"; fi
