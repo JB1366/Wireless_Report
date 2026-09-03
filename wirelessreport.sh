@@ -81,7 +81,8 @@ install_menu() {
 		echo -e "  $N6  Set Theme ($TM_STAT)                            "
         echo -e "  $N7  Set Options                                     "
         echo -e "  $N8  Configure RSSI History ($RH_STAT)               "
-		echo -e "  $LE  Exit                                            "
+		echo -e "                                                       "
+        echo -e "  $LE  Exit                                            "
 		echo -e "                                                       "
 		echo -e "${BL}=================================================="
 		while true; do
@@ -790,14 +791,12 @@ set_options() {
                     if grep -q "RTIME=" "$CONFIG"; then
                         if [ "$RTIME" = "1" ]; then sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
                         else sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"; fi
-                    else echo 'RTIME="0"' >> "$CONFIG"; fi
-                    break ;;
+                    else echo 'RTIME="0"' >> "$CONFIG"; fi ;;
                 2)
                     if grep -q "BACKHAUL=" "$CONFIG"; then
                         if [ "$BACKHAUL" = "0" ]; then sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
                         else sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"; fi
-                    else echo 'BACKHAUL="1"' >> "$CONFIG"; fi
-                    break ;;
+                    else echo 'BACKHAUL="1"' >> "$CONFIG"; fi ;;
                 3)
                     while true; do
                         echo -e "\n (${GR}0${NC}) disable (${GR}15${NC}) def (${GR}1440${NC}) max "
@@ -813,7 +812,7 @@ set_options() {
                         fi
                         freeze 3
                     done
-                    pause; break ;;
+                    pause ;;
                 4)
                     if grep -q "IPPAD=" "$CONFIG"; then
                         case "$IPPAD" in
@@ -827,24 +826,20 @@ set_options() {
                         echo -e "\n${RD}[-] Disabled:${NC} 192.168.050.003 --> ${RD}192.168.50.3${NC}"; NEW_PAD="0"
                         echo 'IPPAD="0"' >> "$CONFIG"
                         pause
-                    fi
-                    break ;;
+                    fi ;;
                 5)
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
                         if [ "$HOST_COLOR" = "1" ]; then NEW_HC="0"; else NEW_HC="1"; fi
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
-                    else
-                        echo 'HOST_COLOR="1"' >> "$CONFIG"
-                    fi
-                    break ;;
+                    else echo 'HOST_COLOR="1"' >> "$CONFIG"; fi ;;
                 dev)
-                    set_branch
-                    return 0 ;;
+                    set_branch; return 0 ;;
                 e|E)
                     return 0 ;;
                 *)
                     freeze 2; continue ;;
             esac
+            break
         done
         run_report
     done
