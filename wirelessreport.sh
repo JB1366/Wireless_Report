@@ -868,8 +868,15 @@ set_branch() {
                 1) BRANCH="0" ;;
                 2) BRANCH="1" ;;
                 3) BRANCH="2" ;;
-                i|I) if grep -q "INJECT=" "$CONFIG"; then sed -i 's/INJECT=.*/INJECT="2"/' "$CONFIG"
-                     else echo 'INJECT="2"' >> "$CONFIG"; fi; freeze 2; continue ;;
+                i|I)
+                    if grep -q 'INJECT="2"' "$CONFIG"; then
+                        echo -e "\n${YL}[+] INJECT=\"2\" already exists in CONFIG${NC}"
+                    else
+                        if grep -q "INJECT=" "$CONFIG"; then sed -i 's/INJECT=.*/INJECT="2"/' "$CONFIG"
+                        else echo 'INJECT="2"' >> "$CONFIG"; fi
+                        echo -e "\n${GR}[+] Adding INJECT=\"2\" to CONFIG${NC}"
+                    fi
+                    pause; continue 2 ;;
                 e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
