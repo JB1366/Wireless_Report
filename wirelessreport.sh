@@ -1252,7 +1252,7 @@ cat <<HTML >> "$WEB_PAGE"
     #popoutModal table.report_table thead th { font-size: 12px !important; font-weight: bold !important; white-space: nowrap; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
     #popoutModal .report-column .section-header .temp-load-row { margin-top: -2px !important; margin-bottom: -2px !important; display: block !important; }
     #popoutModal .report-column .section-header .temp-load-row span { font-size: 14px !important; font-weight: bold !important; }
-    #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 12px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; white-space: nowrap !important; }
+    #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 14px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; white-space: nowrap !important; }
     #popoutModal .rssi-container { position: relative !important; }
     #popoutModal .rssi-tooltip { position: absolute !important; bottom: 100% !important; left: 50% !important; top: auto !important; right: auto !important; transform: translateX(-50%) !important; margin-bottom: 6px !important; z-index: 999999 !important; }
     #popoutModal, #popoutModal * { cursor: pointer !important; -webkit-tap-highlight-color: transparent !important; }
