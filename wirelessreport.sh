@@ -497,7 +497,7 @@ set_nicknames() {
                         done
                     fi
                     echo -e "\n${GR}[+] Default hardware models restored.${NC}"
-                    pause; break ;;
+                    pause ;;
                 2)
                     echo -e "\n${BL}[*] Updating nicknames with Locations...${NC}\n"
                     OLD_NAME="${MAIN_NICK:-$MAIN_ROUTER}"
@@ -529,7 +529,7 @@ set_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
                     echo -e "\n${GR}[+] Nicknames updated to Locations...${NC}"
-                    pause; break ;;
+                    pause ;;
                 3)
                     echo -e "\n${BL}[*] Manual Entry Mode${NC}\n"
                     OLD_MAIN="${MAIN_NICK:-$MAIN_ROUTER}"
@@ -555,12 +555,13 @@ set_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
                     echo -e "\n${GR}[+] Manual nicknames saved (max 25 chars).${NC}"
-                    pause; break ;;
+                    pause ;;
                 e|E)
                     return ;;
                 *)
                     freeze 2; continue ;;
             esac
+            break
         done
         run_report
     done
