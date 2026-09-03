@@ -1202,6 +1202,7 @@ cat <<HTML >> "$WEB_PAGE"
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
     sup { font-size: 0.6em; margin-left: 2px; }
     .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
+
     .button-refresh:hover select, .button-refresh:hover .button-trigger { color: #0096ff !important; }
     .button-refresh, .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
     .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
@@ -1211,14 +1212,18 @@ cat <<HTML >> "$WEB_PAGE"
     .button-refresh .button-trigger:before, .button-refresh select:before { content: var(--highlow-text, "High: 0s   Low: 0s"); left: -80px; top: 185%; background: $RT_TOOLTIP; }
     .button-refresh:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
     .button-refresh .button-trigger:after, .button-refresh select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
-    .button-refresh:hover:before, .button-refresh:hover .button-trigger:before { opacity: 1; visibility: visible; }
-    .button-refresh:hover:after, .button-refresh:hover .button-trigger:after { opacity: 1; visibility: visible; }
-    .button-refresh:hover:before { bottom: 190%; }
-    .button-refresh:hover .button-trigger:before { top: 190%; }
+
+    /* Only trigger tooltips when hovering the button-trigger, completely omitting select:hover */
+    .button-refresh:has(.button-trigger:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
+    .button-refresh:has(.button-trigger:hover):after { opacity: 1; visibility: visible; }
+    .button-refresh:has(.button-trigger:hover) .button-trigger:before { opacity: 1; visibility: visible; top: 190%; }
+    .button-refresh:has(.button-trigger:hover) .button-trigger:after { opacity: 1; visibility: visible; }
+
     .button-refresh .button-trigger:not([style*="--highlow-text"]):before,
     .button-refresh .button-trigger:not([style*="--highlow-text"]):after { display: none !important; }
     .button-refresh:not([style*="--avg-text"]):before,
     .button-refresh:not([style*="--avg-text"]):after { display: block !important; visibility: hidden !important; opacity: 0 !important; content: "" !important; }
+
     body.wr-wide-mode { overflow: hidden !important; }
     body.wr-wide-mode #wifiReportContainer { position: fixed !important; inset: 0 !important; z-index: 9000 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; margin: 0 !important; padding: 4px 18px 24px 18px !important; box-sizing: border-box !important; overflow: auto !important; background: rgba(0,0,0,0.98); }
     body.wr-wide-mode #wifiReportContainer .grid-container,
