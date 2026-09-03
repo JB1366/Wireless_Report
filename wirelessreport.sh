@@ -1157,6 +1157,7 @@ cat <<HTML >> "$WEB_PAGE"
     .button-auto-refresh:hover, .button-auto-refresh.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); color: #0096ff; position: relative; z-index: 5 }
     .button-auto-refresh.active { background: rgba(0,150,255,0.15); }
     .button-tables.button-trigger { color: #0096ff; border: none; border-top-right-radius: 0; border-bottom-right-radius: 0; height: 100%; line-height: inherit; padding: 0 5px; }
+    .button-trigger.runtime-off:not(.refresh-pulse) { color: white !important; }
     .button-tables.button-trigger span { color: white !important; }
     .button-tables { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
     .button-tables:hover, .button-tables.active { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
@@ -1202,6 +1203,7 @@ cat <<HTML >> "$WEB_PAGE"
     .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
     sup { font-size: 0.6em; margin-left: 2px; }
     .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
+    .button-refresh:hover select, .button-refresh:hover .button-trigger { color: #0096ff !important; }
     .button-refresh, .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
     .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
     .button-refresh:before, .button-refresh .button-trigger:before, .button-refresh select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
@@ -3966,6 +3968,7 @@ async function triggerRefresh() {
                 btn.classList.remove('refresh-pulse');
                 btn.innerText = 'Refresh';
                 btn.style.removeProperty('--highlow-text');
+                btn.classList.add('runtime-off');
             }
         }
         isRefreshing = false;
