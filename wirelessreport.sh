@@ -869,7 +869,7 @@ set_branch() {
                 2) BRANCH="1" ;;
                 3) BRANCH="2" ;;
                 i|I) if grep -q "INJECT=" "$CONFIG"; then sed -i 's/INJECT=.*/INJECT="2"/' "$CONFIG"
-                        else echo 'INJECT="2"' >> "$CONFIG"; fi; freeze 2; continue ;;
+                     else echo 'INJECT="2"' >> "$CONFIG"; fi; freeze 2; continue ;;
                 e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
