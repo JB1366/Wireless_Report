@@ -142,7 +142,7 @@ check_version() {
             esac ;;
         *)
             case "$STATE" in
-                OFFLINE)       echo -e "$STATUS [Offline]         ${RD}Could not reach GitHub$NC" ;;
+                OFFLINE)       echo -e "$STATUS [Offline]          $RD Could not reach GitHub$NC" ;;
                 NOT_INSTALLED) echo -e "$STATUS [Not Installed]$BL Latest Available:$NC v$REMOTE_VERSION"; N1="$BL(1)" ;;
                 OUTDATED)      echo -e "$STATUS [v$REMOTE_VERSION Available]     $CURRENT" ;;
                 HASH_DIFF)     echo -e "$STATUS [Hash Update Available]$CURRENT" ;;
@@ -306,11 +306,7 @@ wr_sha256() {
 
 check_github() {
     BRANCH="${BRANCH:-0}"
-    case "$BRANCH" in
-        1) GIT="JB1366"; BRANCH_NAME="Development" ;;
-        2) GIT="ExtremeFiretop"; BRANCH_NAME="Development" ;;
-        *) GIT="JB1366"; BRANCH_NAME="main" ;;
-    esac
+    case "$BRANCH" in 1) GIT="JB1366"; BRANCH_NAME="Development" ;; 2) GIT="ExtremeFiretop"; BRANCH_NAME="Development" ;; *) GIT="JB1366"; BRANCH_NAME="main" ;; esac
     GITHUB="https://raw.githubusercontent.com/$GIT/Wireless_Report/$BRANCH_NAME/wirelessreport.sh"
     REMOTE_TMP="/tmp/wr_remote.tmp"; LOCAL_HASH=""; REMOTE_HASH=""
     if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
@@ -640,10 +636,10 @@ set_colors() {
                 "$idx" "$display_color" "$node_display_name" "$formatted_ip"
             idx=$((idx + 1))
         done
-        echo -e "                                                     "
-        echo -e "  $LR Restore Default Colors                         "
-        echo -e "  $LC Cancel and Discard Changes                     "
-        echo -e "  $LE Exit and Save Changes                          "
+        echo -e "                                                      "
+        echo -e "  $LR Restore Default Colors                          "
+        echo -e "  $LC Cancel and Discard Changes                      "
+        echo -e "  $LE Exit and Save Changes                           "
         echo -e "\n$BL==============================================$NC"
         while true; do
             printf "\n$NC Select a Device number to change color $BL(0-$total_nodes): $NC"; read -r node_choice
@@ -817,14 +813,14 @@ set_options() {
                 4)
                     if grep -q "IPPAD=" "$CONFIG"; then
                         case "$IPPAD" in
-                            1) echo -e "\n$RD[-] Disabled:$NC 192.168.050.003 --> ${RD}192.168.50.3$NC"; NEW_PAD="0" ;;
-                            0) echo -e "\n$GR[+] Mode 2:$NC 192.168.50.3 --> ${GR}192.168.050.003$NC (Last 2 Octets)";  NEW_PAD="2" ;;
-                            *) echo -e "\n$GR[+] Mode 1:$NC 192.168.50.3 --> ${GR}192.168.50.003$NC (Last Octet Only)"; NEW_PAD="1" ;;
+                            1) echo -e "\n$RD[-] Disabled:$NC 192.168.050.003 -->$RD 192.168.50.3$NC"; NEW_PAD="0" ;;
+                            0) echo -e "\n$GR[+] Mode 2:$NC 192.168.50.3 -->$GR 192.168.050.003$NC (Last 2 Octets)";  NEW_PAD="2" ;;
+                            *) echo -e "\n$GR[+] Mode 1:$NC 192.168.50.3 -->$GR 192.168.50.003$NC (Last Octet Only)"; NEW_PAD="1" ;;
                         esac
                         pause
                         sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
                     else
-                        echo -e "\n$RD[-] Disabled:$NC 192.168.050.003 --> ${RD}192.168.50.3$NC"; NEW_PAD="0"
+                        echo -e "\n$RD[-] Disabled:$NC 192.168.050.003 -->$RD 192.168.50.3$NC"; NEW_PAD="0"
                         echo 'IPPAD="0"' >> "$CONFIG"
                         pause
                     fi ;;
@@ -1006,7 +1002,7 @@ get_theme() {
 }
 
 hasta() {
-echo -e "\n\n\n$BL" #===========================================================================================================
+echo -e "\n\n\n$BL" #=============================================================================================================
 echo -e "                                                                                                                        "
 echo -e "                                                                                                                        "
 echo -e "             ██╗  ██╗ █████╗ ███████╗████████╗ █████╗      ██╗      █████╗      ██╗   ██╗██╗███████╗████████╗ █████╗    "
@@ -1017,7 +1013,7 @@ echo -e "    ██║      ██║  ██║██║  ██║████
 echo -e "    ██║      ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝     ╚══════╝╚═╝  ╚═╝       ╚═══╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   "
 echo -e "    ╚═╝                                                                                                                 "
 echo -e "                                                                                                                        "
-echo -e "$NC\n\n\n" #===========================================================================================================
+echo -e "$NC\n\n\n" #=============================================================================================================
 }
 
 selection() { printf "\n$NC Selection: "; read -r choice; }
@@ -1073,6 +1069,7 @@ for node in $MESH_NODES; do
 done
 
 ROUTER=$(nvram get productid); MAIN_NAME="${MAIN_NICK:-${ROUTER:-Main Router}}"
+
 MAIN_NAME="<span id='wr-main-name' class='router-style'>${MAIN_NAME}</span>"
 MAIN_CPU="<span id='wr-main-cpu' class='stat-cool'>--</span>"
 MAIN_MEMORY="<span id='wr-main-memory' class='stat-cool'>--</span>"
