@@ -4585,7 +4585,7 @@ document.addEventListener('mouseout', function(e) {
                             <div id="mainCol" class="report-column">
                                 <div class="section-header">
                                     <span id='wr-main-name' class='router-style pulse-active'>Loading Main Router Devices...</span><br>
-                                    Updated: <span class="wr-updated-time">--- ---</span>
+                                    Updated: <span class="wr-updated-time">--</span>
                                     <hr class="separator-line">
                                     <div class="cpu-mem-row">
                                         CPU: <span id='wr-main-cpu' class='stat-cool'>--</span>
@@ -4623,7 +4623,7 @@ document.addEventListener('mouseout', function(e) {
                             <div id="nodeCol" class="report-column">
                                 <div class="section-header">
                                     <span id='wr-node-names' class='router-style pulse-active'>Loading AiMesh Node Devices...</span><br>
-                                    Updated: <span class="wr-updated-time">--- ---</span>
+                                    Updated: <span class="wr-updated-time">--</span>
                                     <hr class="separator-line">
                                     <div class="cpu-mem-row">
                                         CPU: <span id='wr-node-cpu' class='stat-cool'>--</span>
@@ -4655,7 +4655,7 @@ document.addEventListener('mouseout', function(e) {
                         <div id="allCol" class="report-column">
                             <div class="section-header">
                                 <span id='wr-all-names' class='router-style pulse-active'>Loading All Devices...</span><br>
-                                Updated: <span class="wr-updated-time">--- ---</span>
+                                Updated: <span class="wr-updated-time">--</span>
                                 <hr class="separator-line">
                                 <div class="cpu-mem-row">
                                     CPU: <span id='wr-all-cpu' class='stat-cool'>--</span>
