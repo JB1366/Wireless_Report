@@ -4274,21 +4274,6 @@ function sortTable(n, tId, keepDir, forceDesc) {
     } else if (window.event && window.event.type === 'click') {
         localStorage.removeItem('savedSortNodeMode_' + tId);
     }
-    var headers = table.querySelectorAll('th');
-    headers.forEach(function(h, idx) {
-        var txt = h.innerText.toUpperCase();
-        if (idx === 1) {
-            h.innerHTML = table.classList.contains('show-ip') ? "IP ADDRESS ⇵" : "MAC ADDRESS ⇵";
-        } else if (txt.includes("RSSI")) {
-            h.innerHTML = "RSSI<span class='sup-header'>ᵈᴮᵐ</span>";
-        } else if (txt.includes("RX/TX")) {
-            h.innerHTML = "RX/TX<span class='sup-header'>ᵐᵇᵖˢ</span>";
-        } else if (txt.includes("BAND")) {
-            h.innerHTML = "BAND<span class='sup-header'>ᵐʰᶻ</span>";
-        } else if (idx === 4) {
-            h.innerHTML = table.classList.contains('show-iface') ? "IFACE ⇵" : "SSID ⇵";
-        }
-    });
 
     rows.sort(function(a, b) {
         var valA, valB;
