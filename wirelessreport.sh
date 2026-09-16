@@ -4274,6 +4274,21 @@ function sortTable(n, tId, keepDir, forceDesc) {
     } else if (window.event && window.event.type === 'click') {
         localStorage.removeItem('savedSortNodeMode_' + tId);
     }
+    var headers = table.querySelectorAll('th');
+    headers.forEach(function(h, idx) {
+        var txt = h.innerText.toUpperCase();
+        if (idx === 1) {
+            h.innerHTML = table.classList.contains('show-ip') ? "IP ADDRESS ⇵" : "MAC ADDRESS ⇵";
+        } else if (txt.includes("RSSI")) {
+            h.innerHTML = "RSSI<span class='sup-header'>ᵈᴮᵐ</span>";
+        } else if (txt.includes("RX/TX")) {
+            h.innerHTML = "RX/TX<span class='sup-header'>ᵐᵇᵖˢ</span>";
+        } else if (txt.includes("BAND")) {
+            h.innerHTML = "BAND<span class='sup-header'>ᵐʰᶻ</span>";
+        } else if (idx === 4) {
+            h.innerHTML = table.classList.contains('show-iface') ? "IFACE ⇵" : "SSID ⇵";
+        }
+    });
 
     rows.sort(function(a, b) {
         var valA, valB;
@@ -4581,11 +4596,11 @@ document.addEventListener('mouseout', function(e) {
                                 <table id="mainTable" class="report_table show-ip">
                                     <thead><tr>
                                         <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
-                                        <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS ⇵</th>
-                                        <th onclick="sortTable(2, 'mainTable')">RSSI<span class='sup-header'>ᵈᴮᵐ</span></th>
-                                        <th onclick="sortTable(3, 'mainTable')">RX/TX<span class='sup-header'>ᵐᵇᵖˢ</span></th>
-                                        <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID ⇵</th>
-                                        <th onclick="sortTable(5, 'mainTable')">BAND<span class='sup-header'>ᵐʰᶻ</span></th>
+                                        <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                        <th onclick="sortTable(2, 'mainTable')">RSSI</th>
+                                        <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
+                                        <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                        <th onclick="sortTable(5, 'mainTable')">BAND</th>
                                         <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody></tbody>
@@ -4619,11 +4634,11 @@ document.addEventListener('mouseout', function(e) {
                                 <table id="nodeTable" class="report_table show-ip">
                                     <thead><tr>
                                         <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
-                                        <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS ⇵</th>
-                                        <th onclick="sortTable(2, 'nodeTable')">RSSI<span class='sup-header'>ᵈᴮᵐ</span></th>
-                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX<span class='sup-header'>ᵐᵇᵖˢ</span></th>
-                                        <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID ⇵</th>
-                                        <th onclick="sortTable(5, 'nodeTable')">BAND<span class='sup-header'>ᵐʰᶻ</span></th>
+                                        <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                        <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
+                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
+                                        <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                        <th onclick="sortTable(5, 'nodeTable')">BAND</th>
                                         <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
                                     </tr></thead>
                                     <tbody></tbody>
@@ -4651,11 +4666,11 @@ document.addEventListener('mouseout', function(e) {
                             <table id="allTable" class="report_table show-ip">
                                 <thead><tr>
                                     <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
-                                    <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS ⇵</th>
-                                    <th onclick="sortTable(2, 'allTable')">RSSI<span class='sup-header'>ᵈᴮᵐ</span></th>
-                                    <th onclick="sortTable(3, 'allTable')">RX/TX<span class='sup-header'>ᵐᵇᵖˢ</span></th>
-                                    <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID ⇵</th>
-                                    <th onclick="sortTable(5, 'allTable')">BAND<span class='sup-header'>ᵐʰᶻ</span></th>
+                                    <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                    <th onclick="sortTable(2, 'allTable')">RSSI</th>
+                                    <th onclick="sortTable(3, 'allTable')">RX/TX</th>
+                                    <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                    <th onclick="sortTable(5, 'allTable')">BAND</th>
                                     <th onclick="sortTable(6, 'allTable')">UPTIME</th>
                                 </tr></thead>
                                 <tbody></tbody>
