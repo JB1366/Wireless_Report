@@ -1437,7 +1437,6 @@ function update_time() {
     document.querySelectorAll('.wr-updated-time').forEach(function(el) {
         el.textContent = formattedTime;
     });
-
     window._lastFormattedTime = formattedTime;
 
     // Handle boot time calculation dynamically using the uptime span value
@@ -3493,6 +3492,7 @@ function wrApplyRssiCounts(items) {
         var q = wrQuality(rssi);
         if (q.key) counts[q.key]++;
     });
+
     Object.keys(counts).forEach(function(key) {
         document.querySelectorAll('.wr-rssi-' + key).forEach(function(el) {
             el.textContent = counts[key];
@@ -3685,6 +3685,7 @@ async function loadWirelessReport() {
         console.warn('Primary memory query failed', e);
         return null;
     });
+
     var yazfiCandidatesPromise = WR_YAZFI_ELIGIBLE === true
         ? wrGetYazFiCandidates() : null;
 
@@ -3898,6 +3899,7 @@ async function loadWirelessReport() {
     items.forEach(function(item) {
         renderedRows.set(item, wrRenderRow(item, history, known, firstHistoryLoad));
     });
+
     var mainRows = mainItems.map(function(item) { return renderedRows.get(item); }).join('');
     var nodeRows = nodeItems.map(function(item) { return renderedRows.get(item); }).join('');
     var allRows = items.map(function(item) { return renderedRows.get(item); }).join('');
@@ -3942,7 +3944,6 @@ async function loadWirelessReport() {
     if (mainNameEl && (!mainNameEl.textContent.trim() || mainNameEl.textContent.includes('Loading'))) {
         var displayName = (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.mainNick) ? WR_CONFIG.mainNick : (base.productid || 'Main Router');
         mainNameEl.textContent = displayName;
-
         mainNameEl.classList.remove('pulse-active');
     }
 
@@ -4030,17 +4031,19 @@ async function loadWirelessReport() {
         "<span class='" + wrMetricClass(mainHealth.cpuUsage) + "'>" + (mainHealth.cpuUsage !== null ? mainHealth.cpuUsage + "%" : "--") + "</span>"
     ].concat(cpuHtml);
     wrSetHtml('wr-all-cpu', allCpuCombined.join(bullet));
+
     var allMemCombined = [
         "<span class='" + wrMetricClass(mainHealth.memoryUsage) + "'>" + (mainHealth.memoryUsage !== null ? mainHealth.memoryUsage + "%" : "--") + "</span>"
     ].concat(memHtml);
     wrSetHtml('wr-all-memory', allMemCombined.join(bullet));
+
     var mainColoredCount = "<span class='main-color'>" + mainItems.length + "</span>";
     var allDeviceParts = [mainColoredCount].concat(nodeCountParts);
     wrSetHtml('wr-all-count', nodes.length > 1 && nodeCountParts.length ? items.length + " <span class='right-arrow'>—›</span> " + allDeviceParts.join(bullet) : items.length);
+
     var allNames = ["<span style='color:" + WR_CONFIG.mainColor + ";'>" + wrEscape(document.getElementById('wr-main-name').textContent) + "</span>"];
     allNames = allNames.concat(nodeNamesHtml);
     wrSetHtml('wr-all-names', allNames.join(bullet));
-
     var allNamesEl = document.getElementById('wr-all-names');
     if (allNamesEl) {
         allNamesEl.classList.remove('pulse-active');
@@ -4188,7 +4191,6 @@ document.addEventListener("DOMContentLoaded", function() {
         var stats = wrLoadJson('wirelessReportRuntimeStats', { total: 0, count: 0, min: null, max: 0 });
         if (stats.count > 0) {
             var avg = stats.total / stats.count;
-
             var wrapper = document.querySelector('.button-refresh');
             var btn = document.querySelector('.button-trigger');
             if (wrapper) wrapper.style.setProperty('--avg-text', '"Avg: ' + avg.toFixed(2) + 's over ' + stats.count + ' scans"');
@@ -4338,6 +4340,7 @@ function sortTable(n, tId, keepDir, forceDesc) {
             if (sel === '.mac-val') {
                 return dir === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
             }
+
         } else if (n === 3) {
             // Custom RX/TX parsing for column 3: extracts both numbers (e.g., "52 / 65" -> RX: 52, TX: 65)
             var parseRxTx = function(cell) {
@@ -4362,10 +4365,12 @@ function sortTable(n, tId, keepDir, forceDesc) {
                 return dir === "asc" ? valA.tx - valB.tx : valB.tx - valA.tx;
             }
             return dir === "asc" ? valA.rx - valB.rx : valB.rx - valA.rx;
+
         } else if (n === 4) {
             var sel = table.classList.contains('show-iface') ? '.iface-val' : '.ssid-val';
             valA = cellA.querySelector(sel).innerText.trim().toLowerCase();
             valB = cellB.querySelector(sel).innerText.trim().toLowerCase();
+
         } else if (n === 5) {
             // Custom Band & Width parsing for column 5
             var parseBand = function(cell) {
@@ -4388,6 +4393,7 @@ function sortTable(n, tId, keepDir, forceDesc) {
             var scoreA = parseBand(cellA);
             var scoreB = parseBand(cellB);
             return dir === "asc" ? scoreA - scoreB : scoreB - scoreA;
+
         } else if (n === 6) {
             var spanA = cellA.querySelector('span[data-sort]');
             valA = spanA ? parseInt(spanA.getAttribute('data-sort'), 10) : 0;
@@ -4510,6 +4516,7 @@ document.addEventListener('contextmenu', function(e) {
         if (!container) return;
         const tooltip = container.querySelector('.rssi-tooltip');
         if (!tooltip) return;
+
         switch (e.type) {
             case 'mouseover':
                 tooltip.style.visibility = 'visible';
@@ -4548,9 +4555,7 @@ document.addEventListener('contextmenu', function(e) {
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
                         <div class="top-buttons">
                             <div class="button-refresh">
-                                <button class="button-trigger button-tables" onclick="triggerRefresh()">
-                                Refresh
-                                </button>
+                                <button class="button-trigger button-tables" onclick="triggerRefresh()">Refresh</button>
                                 <div class="button-auto-refresh">
                                     <span>Auto:</span>
                                     <select id="refresh-option">
