@@ -4504,37 +4504,27 @@ document.addEventListener('contextmenu', function(e) {
     }
 });
 
-document.addEventListener('mouseover', function(e) {
-    const container = e.target.closest('.rssi-container');
-    if (container) {
+['mouseover', 'mousemove', 'mouseout'].forEach(eventType => {
+    document.addEventListener(eventType, function(e) {
+        const container = e.target.closest('.rssi-container');
+        if (!container) return;
         const tooltip = container.querySelector('.rssi-tooltip');
-        if (tooltip) {
-            tooltip.style.visibility = 'visible';
-            tooltip.style.opacity = '1';
+        if (!tooltip) return;
+        switch (e.type) {
+            case 'mouseover':
+                tooltip.style.visibility = 'visible';
+                tooltip.style.opacity = '1';
+                break;
+            case 'mousemove':
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY - tooltip.offsetHeight - 15) + 'px';
+                break;
+            case 'mouseout':
+                tooltip.style.visibility = 'hidden';
+                tooltip.style.opacity = '0';
+                break;
         }
-    }
-});
-
-document.addEventListener('mousemove', function(e) {
-    const container = e.target.closest('.rssi-container');
-    if (container) {
-        const tooltip = container.querySelector('.rssi-tooltip');
-        if (tooltip) {
-            tooltip.style.left = (e.clientX + 15) + 'px';
-            tooltip.style.top = (e.clientY - tooltip.offsetHeight - 15) + 'px';
-        }
-    }
-});
-
-document.addEventListener('mouseout', function(e) {
-    const container = e.target.closest('.rssi-container');
-    if (container) {
-        const tooltip = container.querySelector('.rssi-tooltip');
-        if (tooltip) {
-            tooltip.style.visibility = 'hidden';
-            tooltip.style.opacity = '0';
-        }
-    }
+    });
 });
 </script>
 </head>
