@@ -4608,8 +4608,8 @@ document.addEventListener('mouseout', function(e) {
                                     <tfoot>
                                         <tr>
                                             <td colspan="7" class="uptime-footer-row">
-                                                <span>Uptime: <span id='wr-main-uptime' class='main-color'>--</span></span>
-                                                <span>Reboot: <span id='wr-main-reboot' class='main-color'>--</span></span>
+                                                Uptime: <span id='wr-main-uptime' class='main-color'>--</span>
+                                                Reboot: <span id='wr-main-reboot' class='main-color'>--</span>
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -4646,7 +4646,7 @@ document.addEventListener('mouseout', function(e) {
                                     <tfoot>
                                         <tr>
                                             <td colspan="7" class="uptime-footer-row">
-                                                <span><span id='wr-node-footer'>Controller telemetry pending...</span></span>
+                                                <span id='wr-node-footer'>Controller telemetry pending...</span>
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -4678,7 +4678,7 @@ document.addEventListener('mouseout', function(e) {
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" class="uptime-footer-row">
-                                            <span><span id='wr-all-footer'>Controller telemetry pending...</span></span>
+                                            <span id='wr-all-footer'>Controller telemetry pending...</span>
                                         </td>
                                     </tr>
                                 </tfoot>
