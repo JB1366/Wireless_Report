@@ -4594,7 +4594,7 @@ document.addEventListener('mouseout', function(e) {
                                         Devices: <span id='wr-main-count' class='main-color'>--</span>
                                     </div>
                                 </div>
-                                <table id="mainTable" class="report_table show-ip">
+                                <table id="mainTable" class="report_table">
                                     <thead><tr>
                                         <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
                                         <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
@@ -4632,7 +4632,7 @@ document.addEventListener('mouseout', function(e) {
                                         Devices: <span id='wr-node-count' class='stat-cool'>--</span>
                                     </div>
                                 </div>
-                                <table id="nodeTable" class="report_table show-ip">
+                                <table id="nodeTable" class="report_table">
                                     <thead><tr>
                                         <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
                                         <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
@@ -4664,7 +4664,7 @@ document.addEventListener('mouseout', function(e) {
                                     Devices: <span id='wr-all-count' class='stat-cool'>--</span>
                                 </div>
                             </div>
-                            <table id="allTable" class="report_table show-ip">
+                            <table id="allTable" class="report_table">
                                 <thead><tr>
                                     <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
                                     <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
