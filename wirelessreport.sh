@@ -819,7 +819,7 @@ set_options() {
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
                     else echo 'HOST_COLOR="1"' >> "$CONFIG"; fi ;;
                 dev)
-                    set_branch ;;
+                    set_branch; return 0 ;;
                 inject)
                     if grep -q 'INJECT="2"' "$CONFIG"; then
                         echo -e "\n$YL[!] INJECT=\"2\" already exists in CONFIG.$NC"
@@ -889,7 +889,7 @@ set_branch() {
         echo -e "  $N2 Development (JB1366)                           "
         echo -e "  $N3 Development (ExtremeFiretop)                   "
         echo -e "                                                     "
-        echo -e "  $LE Exit back to Set Options Menu                  "
+        echo -e "  $LE Exit back to main menu                         "
         echo -e "                                                     "
         echo -e "$BL=================================================="
         while true; do
@@ -898,7 +898,7 @@ set_branch() {
                 1) BRANCH="0" ;;
                 2) BRANCH="1" ;;
                 3) BRANCH="2" ;;
-                e|E) return 0 ;;
+                e|E) return ;;
                 *) freeze 2; continue ;;
             esac
             break
