@@ -620,11 +620,12 @@ set_colors() {
                 "$idx" "$display_color" "$node_display_name" "$formatted_ip"
             idx=$((idx + 1))
         done
-        echo -e "                                                      "
-        echo -e "  $LR Restore Default Colors                          "
-        echo -e "  $LC Cancel and Discard Changes                      "
-        echo -e "  $LE Exit and Save Changes                           "
-        echo -e "\n$BL==============================================$NC"
+        echo -e "                                                        "
+        echo -e "  $LR Restore Default Colors                            "
+        echo -e "  $LC Cancel and Discard Changes                        "
+        echo -e "  $LE Exit and Save Changes                             "
+        echo -e "                                                        "
+        echo -e "$BL==================================================$NC"
         while true; do
             printf "\n$NC Select a Device number to change color $BL(0-$total_nodes): $NC"; read -r node_choice
             case "$node_choice" in
@@ -851,9 +852,9 @@ set_ippad() {
         echo -e "$NC IP Column Padding       Current: ($PD_STAT)      "
         echo -e "$BL=================================================="
         echo -e "                                                     "
-        echo -e "  $N1 192.168.50.3     $RD(Disabled)                 "
-        echo -e "  $N2 192.168.50.003   $BL(Last Octet)               "
-        echo -e "  $N3 192.168.050.003  $GR(Last 2 Octets)            "
+        echo -e "  $N1 192.168.50.3     (${RD}Disabled$NC)            "
+        echo -e "  $N2 192.168.50.003   (${BL}Last Octet$NC)          "
+        echo -e "  $N3 192.168.050.003  (${GR}Last 2 Octets$NC)       "
         echo -e "                                                     "
         echo -e "  $LE Exit back to Set Options Menu                  "
         echo -e "                                                     "
