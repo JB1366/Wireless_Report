@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.2.7-minor updates.
 v3.2.6-Add optional YazFi client discovery support
       -minor shell side updates.
 v3.2.5-minor updates.
