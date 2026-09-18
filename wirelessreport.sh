@@ -81,7 +81,7 @@ install_menu() {
         echo -e "  $N5  Set Device Colors                             "
 		echo -e "  $N6  Set Theme ($TM_STAT)                          "
         echo -e "  $N7  Set Options                                   "
-        echo -e "  $N8  Config RSSI Tooltip History ($RH_STAT)        "
+        echo -e "  $N8  Config RSSI Tooltip History ($CH)             "
 		echo -e "                                                     "
         echo -e "  $LE  Exit                                          "
 		echo -e "                                                     "
@@ -117,6 +117,7 @@ check_version() {
     else
         version_cmp=$(version_compare "$SCRIPT_VERSION" "$REMOTE_VERSION")
         case "$version_cmp" in -1|0|1) ;; *) version_cmp=0 ;; esac
+
         if [ "$version_cmp" -gt 0 ]; then STATE="UP_TO_DATE"
         elif [ "$version_cmp" -lt 0 ]; then STATE="OUTDATED"
         elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then STATE="HASH_DIFF"
@@ -194,35 +195,24 @@ menu_vars() {
     STATUS="$BL STATUS:$NC"; CURRENT="$BL CURRENT:$NC v$SCRIPT_VERSION$DEV"
     SS_FILE="/jffs/scripts/services-start"
 
-    REPORT_UNIT="${REPORT_UNIT:-USA}"
     DATE_ISO="$GR$(date +"%Y-%m-%d %H:%M:%S")$NC"
     DATE_INTL="$GR$(date +"%-d-%b %-H:%M:%S")$NC"
     DATE_USA="$GR$(date +"%b-%-d %-H:%M:%S")$NC"
 
+    REPORT_UNIT="${REPORT_UNIT:-USA}"
     case "$REPORT_UNIT" in
         ISO)  DU="${GR}ISO$NC";  CT="$DATE_ISO" ;;
         INTL) DU="${GR}INTL$NC"; CT="$DATE_INTL" ;;
         *)    DU="${GR}USA$NC";  CT="$DATE_USA" ;;
     esac
 
+    THEME=${THEME:-ORIGINAL}; TM_STAT="$GR$THEME$NC"
+
     RTIME=${RTIME:-1}; RTIME_LOG=${RTIME_LOG:-0}; case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
 
     BACKHAUL=${BACKHAUL:-0}; case "$BACKHAUL" in 0) WB_STAT="$OFF" ;; *) WB_STAT="$ON" ;; esac
 
     PULSE_MINS=${PULSE_MINS:-15}; case "$PULSE_MINS" in 0) UP_STAT="$OFF" ;; *) UP_STAT="$GR${PULSE_MINS} Mins$NC" ;; esac
-
-    RS_HIST=${RS_HIST:-0}; case "$RS_HIST" in 0|1) ;; *) RS_HIST=0 ;; esac
-    RS_HIST_ENTRIES=${RS_HIST_ENTRIES:-5}; case "$RS_HIST_ENTRIES" in ""|*[!0-9]*) RS_HIST_ENTRIES=5 ;; esac
-    if [ "$RS_HIST_ENTRIES" -lt 5 ] || [ "$RS_HIST_ENTRIES" -gt 20 ]; then RS_HIST_ENTRIES=5; fi
-    RS_HIST_DATE=${RS_HIST_DATE:-0}; case "$RS_HIST_DATE" in 0|1) ;; *) RS_HIST_DATE=0 ;; esac
-    CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}
-	CUR_ENTRIES=${CUR_ENTRIES:-$RS_HIST_ENTRIES}
-	CUR_DATE=${CUR_DATE:-$RS_HIST_DATE}; CE="$GR$CUR_ENTRIES$NC"
-    case "$RS_HIST" in 1) RH_STAT="$ON" ;; *) RH_STAT="$OFF" ;; esac
-    case "$CUR_RS_HIST" in 1) CH="$ON" ;; *) CH="$OFF" ;; esac
-    case "$CUR_DATE" in 1) TS="$ON" ;; *) TS="$OFF" ;; esac
-
-    THEME=${THEME:-ORIGINAL}; TM_STAT="$GR$THEME$NC"
 
     IPPAD=${IPPAD:-1}
     case "$IPPAD" in
@@ -232,6 +222,15 @@ menu_vars() {
     esac
 
     HOST_COLOR=${HOST_COLOR:-0}; case "$HOST_COLOR" in 1) HN_STAT="${BL}Colored${NC}" ;; *) HN_STAT="${GR}Numbered${NC}" ;; esac
+
+    RS_HIST=${RS_HIST:-0}; case "$RS_HIST" in 0|1) ;; *) RS_HIST=0 ;; esac
+    RS_HIST_ENTRIES=${RS_HIST_ENTRIES:-5}; case "$RS_HIST_ENTRIES" in ""|*[!0-9]*) RS_HIST_ENTRIES=5 ;; esac
+    if [ "$RS_HIST_ENTRIES" -lt 5 ] || [ "$RS_HIST_ENTRIES" -gt 20 ]; then RS_HIST_ENTRIES=5; fi
+    RS_HIST_DATE=${RS_HIST_DATE:-0}; case "$RS_HIST_DATE" in 0|1) ;; *) RS_HIST_DATE=0 ;; esac
+
+    CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}; case "$CUR_RS_HIST" in 1) CH="$ON" ;; *) CH="$OFF" ;; esac
+	CUR_ENTRIES=${CUR_ENTRIES:-$RS_HIST_ENTRIES};  CE="$GR$CUR_ENTRIES$NC"
+	CUR_DATE=${CUR_DATE:-$RS_HIST_DATE}; case "$CUR_DATE" in 1) TS="$ON" ;; *) TS="$OFF" ;; esac
 
     BN="[$GR$BRANCH_NAME$NC]"
 }
@@ -295,8 +294,13 @@ do_update() {
         return 0
     else
         rm -f "$TEMP_SCRIPT"
-        if [ ! -f "$0" ]; then echo -e "$RD[!] Download failed. Aborting installation.$NC"; return 1; fi
-        local CURRENT_PATH; local TARGET_PATH
+
+        if [ ! -f "$0" ]; then
+            echo -e "$RD[!] Download failed. Aborting installation.$NC"
+            return 1
+        fi
+
+        local CURRENT_PATH TARGET_PATH
 
         CURRENT_PATH=$(readlink -f "$0" 2>/dev/null)
         [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
@@ -319,7 +323,10 @@ do_update() {
 ScriptUpdateFromAMTM() {
     doScriptUpdateFromAMTM=true
 
-    if [ "$doScriptUpdateFromAMTM" != "true" ]; then printf "Automatic updates via AMTM are currently disabled."; return 1; fi
+    if [ "$doScriptUpdateFromAMTM" != "true" ]; then
+        printf "Automatic updates via AMTM are currently disabled."
+        return 1
+    fi
 
     if [ "$1" = "check" ]; then return 0; fi
 
@@ -366,11 +373,20 @@ check_github() {
 
         if [ -z "$LOCAL_HASH" ] || [ -z "$REMOTE_HASH" ]; then
             if [ -f "$REPORT_SCRIPT" ]; then
-                if cmp -s "$REPORT_SCRIPT" "$REMOTE_TMP"; then LOCAL_HASH="same"; REMOTE_HASH="same"
-                else LOCAL_HASH="local"; REMOTE_HASH="remote"; fi
+                if cmp -s "$REPORT_SCRIPT" "$REMOTE_TMP"; then
+                    LOCAL_HASH="same"
+                    REMOTE_HASH="same"
+                else
+                    LOCAL_HASH="local"
+                    REMOTE_HASH="remote"
+                fi
             fi
         fi
-    else REMOTE_VERSION=""; REMOTE_HASH=""; fi
+    else
+        REMOTE_VERSION=""
+        REMOTE_HASH=""
+    fi
+
     rm -f "$REMOTE_TMP"
 }
 
@@ -390,21 +406,41 @@ inject_menu() {
 	source /usr/sbin/helper.sh
 	TAB_LABEL="Wireless Report"
 
-    if [ -f "$CONFIG" ]; then sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"; else touch "$CONFIG"; fi
-    if ! nvram get rc_support | grep -q am_addons; then echo -e "\n$RD[!] ERROR: This firmware does not support addons!$NC"; exit 5; fi
-    if [ ! -f "$WEB_PAGE" ]; then echo "<html><body>$TAB_LABEL Loading...</body></html>" > "$WEB_PAGE"; fi
+    if [ -f "$CONFIG" ]; then
+        sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
+    else
+        touch "$CONFIG"
+    fi
 
-    LOCKFILE=/tmp/addonwebui.lock; FD=386; eval exec "$FD>$LOCKFILE"; flock -x "$FD"
+    if ! nvram get rc_support | grep -q am_addons; then
+        echo -e "\n$RD[!] ERROR: This firmware does not support addons!$NC"
+        exit 5
+    fi
+
+    if [ ! -f "$WEB_PAGE" ]; then
+        echo "<html><body>$TAB_LABEL Loading...</body></html>" > "$WEB_PAGE"
+    fi
+
+    LOCKFILE=/tmp/addonwebui.lock
+    FD=386; eval exec "$FD>$LOCKFILE"
+    flock -x "$FD"
 
     am_get_webui_page "$WEB_PAGE"
 
-    if [ "$am_webui_page" = "none" ]; then echo -e "\n$RD[!] ERROR: Unable to install $TAB_LABEL.$NC"; flock -u "$FD"; exit 5; fi
+    if [ "$am_webui_page" = "none" ]; then
+        echo -e "\n$RD[!] ERROR: Unable to install $TAB_LABEL.$NC"
+        flock -u "$FD"
+        exit 5
+    fi
 
     cp "$WEB_PAGE" "/www/user/$am_webui_page" 2>/dev/null
 
     echo "INSTALLED_PAGE=$am_webui_page" >> "$CONFIG"
 
-    if [ ! -f "$TEMP_MENU" ]; then cp "$SYSTEM_MENU" /tmp/; mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"; fi
+    if [ ! -f "$TEMP_MENU" ]; then
+        cp "$SYSTEM_MENU" /tmp/
+        mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
+    fi
 
     sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
 	sed -i '/tabName:[[:space:]]*"Wireless Report"/d' "$TEMP_MENU" 2>/dev/null
@@ -430,7 +466,8 @@ inject_menu() {
 	umount "/www/user/$am_webui_page" 2>/dev/null
 	mount -o bind "$WEB_PAGE" "/www/user/$am_webui_page"
 
-    flock -u "$FD"; restart_httpd
+    flock -u "$FD"
+    restart_httpd
 
     case "$NOLOADSCRIPT" in 1) exit 0 ;; *) "$REPORT_SCRIPT" >/dev/null 2>&1 & ;; esac
 }
@@ -521,7 +558,8 @@ set_nicknames() {
 		echo -e "                                                     "
         echo -e "$BL=================================================="
 
-        MAIN_ROUTER=$(nvram get productid); MAIN_IP=$(nvram get lan_ipaddr)
+        MAIN_ROUTER=$(nvram get productid)
+        MAIN_IP=$(nvram get lan_ipaddr)
         MAIN_CLR=$(hex_to_ansi "$MAIN_COLOR")
 
         echo -e "\n  ${MAIN_CLR}Main $MAIN_IP -> ${MAIN_NICK:-$MAIN_ROUTER}$NC"
@@ -680,7 +718,8 @@ get_node_nick() {
 }
 
 set_colors() {
-    local main_name=$(nvram get productid); local main_ip=$(nvram get lan_ipaddr)
+    local main_name=$(nvram get productid)
+    local main_ip=$(nvram get lan_ipaddr)
     local m_color_hex="" current_colors=""
 
     if [ -f "$CONFIG" ]; then
@@ -695,6 +734,7 @@ set_colors() {
     for node in $MESH_NODES; do total_nodes=$((total_nodes + 1)); done
 
     local working_colors="" i=1
+
     while [ $i -le $total_nodes ]; do
         local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
         working_colors="${working_colors:+$working_colors }$c_color"
@@ -760,12 +800,10 @@ set_colors() {
                 c|C) return 0 ;;
                 e|E) break 2 ;;
             esac
-
             case "$node_choice" in ""|*[!0-9]*) freeze 2; continue ;; esac
-
             if [ "$node_choice" -gt "$total_nodes" ]; then freeze 2; continue; fi
-            local target_name="" target_hex=""
 
+            local target_name="" target_hex=""
             if [ "$node_choice" -eq 0 ]; then
                 target_name="${MAIN_NICK:-$main_name}"
                 target_hex="$m_color_hex"
@@ -794,8 +832,7 @@ set_colors() {
             echo -e "$MT (10) Mint-Green (#64ffda)   "
             echo -e "                                "
             while true; do
-                printf "$NC Choose option $BL(1-10): $NC"
-                read -r color_choice
+                printf "$NC Choose option $BL(1-10): $NC"; read -r color_choice
                 case "$color_choice" in
                     1)  selected_hex="#0096ff" ;;
                     2)  selected_hex="#30d158" ;;
@@ -840,7 +877,6 @@ set_colors() {
     update_config_var "NODE_COLORS" "$working_colors"
 
     echo -e "$BL\nDevice colors successfully saved to CONFIG.$NC"
-
     run_report
     pause
 }
@@ -868,8 +904,12 @@ set_theme() {
                 e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
-            if grep -q "^THEME=" "$CONFIG"; then sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
-            else echo "THEME=\"$TM\"" >> "$CONFIG"; fi
+
+            if grep -q "^THEME=" "$CONFIG"; then
+                sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
+            else
+                echo "THEME=\"$TM\"" >> "$CONFIG"
+            fi
             break
         done
         run_report
@@ -901,8 +941,11 @@ set_options() {
                             1)
                                 sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
 
-                                if grep -q "RTIME_LOG=" "$CONFIG"; then sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
-                                else echo 'RTIME_LOG="0"' >> "$CONFIG"; fi
+                                if grep -q "RTIME_LOG=" "$CONFIG"; then
+                                    sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
+                                else
+                                    echo 'RTIME_LOG="0"' >> "$CONFIG"
+                                fi
 
                                 menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)" ;;
                             *)
@@ -911,27 +954,37 @@ set_options() {
                                     case "$choice" in y|Y) RTIME_LOG="1"; break ;; n|N) RTIME_LOG="0"; break ;; *) freeze 2 ;; esac
                                 done
 
-                                if grep -q "RTIME_LOG=" "$CONFIG"; then sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$RTIME_LOG\"/" "$CONFIG"
-                                else echo "RTIME_LOG=\"$RTIME_LOG\"" >> "$CONFIG"; fi
+                                if grep -q "RTIME_LOG=" "$CONFIG"; then
+                                    sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$RTIME_LOG\"/" "$CONFIG"
+                                else
+                                    echo "RTIME_LOG=\"$RTIME_LOG\"" >> "$CONFIG"
+                                fi
 
                                 sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"; menu_vars
-
                                 echo -e "$NC Runtime Tracking: ($RT_STAT) Stats RESET." ;;
                         esac
                     else
                         echo 'RTIME="0"' >> "$CONFIG"
 
-                        if grep -q "RTIME_LOG=" "$CONFIG"; then sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
-                        else echo 'RTIME_LOG="0"' >> "$CONFIG"; fi
+                        if grep -q "RTIME_LOG=" "$CONFIG"; then
+                            sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
+                        else
+                            echo 'RTIME_LOG="0"' >> "$CONFIG"
+                        fi
 
                         menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                     fi
                     pause ;;
                 2)
                     if grep -q "BACKHAUL=" "$CONFIG"; then
-                        if [ "$BACKHAUL" = "0" ]; then sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
-                        else sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"; fi
-                    else echo 'BACKHAUL="1"' >> "$CONFIG"; fi ;;
+                        if [ "$BACKHAUL" = "0" ]; then
+                            sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
+                        else
+                            sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"
+                        fi
+                    else
+                        echo 'BACKHAUL="1"' >> "$CONFIG"
+                    fi ;;
                 3)
                     while true; do
                         echo -e "\n (${GR}0$NC) disable (${GR}15$NC) def (${GR}1440$NC) max "
@@ -939,9 +992,14 @@ set_options() {
                         case "$user_mins" in ""|*[!0-9]*) freeze 3; continue ;; esac
 
                         if [ "$user_mins" -le 1440 ]; then
-                            if grep -q "PULSE_MINS=" "$CONFIG"; then sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$user_mins\"/" "$CONFIG"
-                            else echo "PULSE_MINS=\"$user_mins\"" >> "$CONFIG"; fi; break 2
-                        fi; freeze 3
+                            if grep -q "PULSE_MINS=" "$CONFIG"; then
+                                sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$user_mins\"/" "$CONFIG"
+                            else
+                                echo "PULSE_MINS=\"$user_mins\"" >> "$CONFIG"
+                            fi
+                            break 2
+                        fi
+                        freeze 3
                     done
                     pause ;;
                 4)
@@ -950,15 +1008,21 @@ set_options() {
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
                         case "$HOST_COLOR" in 1) NEW_HC="0" ;; *) NEW_HC="1" ;; esac
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
-                    else echo 'HOST_COLOR="1"' >> "$CONFIG"; fi ;;
+                    else
+                        echo 'HOST_COLOR="1"' >> "$CONFIG"
+                    fi ;;
                 dev)
-                    set_branch; return 0 ;;
+                    set_branch
+                    return 0 ;;
                 inject)
                     if grep -q 'INJECT="2"' "$CONFIG"; then
                         echo -e "\n$YL[!] INJECT=\"2\" already exists in CONFIG.$NC"
                     else
-                        if grep -q "INJECT=" "$CONFIG"; then sed -i 's/INJECT=.*/INJECT="2"/' "$CONFIG"
-                        else echo 'INJECT="2"' >> "$CONFIG"; fi
+                        if grep -q "INJECT=" "$CONFIG"; then
+                            sed -i 's/INJECT=.*/INJECT="2"/' "$CONFIG"
+                        else
+                            echo 'INJECT="2"' >> "$CONFIG"
+                        fi
                         echo -e "\n$GR[+] Adding INJECT=\"2\" to CONFIG.$NC"
                     fi
 
@@ -969,7 +1033,8 @@ set_options() {
                         chmod +x "$SS_FILE"
                     fi
 
-                    pause; continue 2 ;;
+                    pause
+                    continue 2 ;;
                 e|E)
                     return 0 ;;
                 *)
@@ -1006,8 +1071,12 @@ set_ippad() {
             esac
             break
         done
-        if grep -q "IPPAD=" "$CONFIG"; then sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
-        else echo 'IPPAD="'"$NEW_PAD"'"' >> "$CONFIG"; fi
+
+        if grep -q "IPPAD=" "$CONFIG"; then
+            sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
+        else
+            echo 'IPPAD="'"$NEW_PAD"'"' >> "$CONFIG"
+        fi
     done
 }
 
@@ -1039,15 +1108,25 @@ set_branch() {
             break
         done
 
-        if grep -q "^BRANCH=" "$CONFIG"; then sed -i "s/^BRANCH=.*/BRANCH=\"$BRANCH\"/" "$CONFIG"
-        else echo "BRANCH=\"$BRANCH\"" >> "$CONFIG"; fi
+        if grep -q "^BRANCH=" "$CONFIG"; then
+            sed -i "s/^BRANCH=.*/BRANCH=\"$BRANCH\"/" "$CONFIG"
+        else
+            echo "BRANCH=\"$BRANCH\"" >> "$CONFIG"
+        fi
 
-        check_github; case "$BRANCH" in 2) BRANCH_NAME="EFT-Development" ;; esac; BN="[$GR$BRANCH_NAME$NC]"
+        check_github
+
+        case "$BRANCH" in 2) BRANCH_NAME="EFT-Development" ;; esac
+        BN="[$GR$BRANCH_NAME$NC]"
 
         printf "$NC\nPress $BL[Enter]$NC to switch to $BN branch & restart script..."; read -r restart
 
-        if do_update; then exec "$REPORT_SCRIPT" install "$@"
-        else echo -e "$RD[!]Error: Branch update failed!$NC" >&2; exit 1; fi
+        if do_update; then
+            exec "$REPORT_SCRIPT" install "$@"
+        else
+            echo -e "$RD[!]Error: Branch update failed!$NC" >&2
+            exit 1
+        fi
     done
 }
 
@@ -1076,8 +1155,11 @@ set_rssi() {
                         printf "\n$NC Enter new depth (${BL}5-20$NC) [Current: $CE]: "; read -r new_depth
                         case "$new_depth" in *[!0-9]*|"") freeze 2; continue ;; esac
 
-                        if [ "$new_depth" -ge 5 ] && [ "$new_depth" -le 20 ]; then CUR_ENTRIES="$new_depth"; break 2
-                        else freeze 2; continue; fi
+                        if [ "$new_depth" -ge 5 ] && [ "$new_depth" -le 20 ]; then
+                            CUR_ENTRIES="$new_depth"; break 2
+                        else
+                            freeze 2; continue
+                        fi
                     done ;;
                 3)
                     case "$CUR_DATE" in 1) CUR_DATE="0" ;; *) CUR_DATE="1" ;; esac ;;
@@ -1091,8 +1173,12 @@ set_rssi() {
 
                     for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
                         eval "val=\$${var}"
-                        if grep -q "^$var=" "$CONFIG"; then sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
-                        else echo "$var=\"$val\"" >> "$CONFIG"; fi
+
+                        if grep -q "^$var=" "$CONFIG"; then
+                            sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
+                        else
+                            echo "$var=\"$val\"" >> "$CONFIG"
+                        fi
                     done
 
                     echo -e "\n$GR[+] RSSI history configuration saved.$NC"
