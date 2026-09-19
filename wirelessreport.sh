@@ -289,6 +289,11 @@ do_install() {
     echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
     chmod +x "$SS_FILE"; SCRIPT_VERSION="$REMOTE_VERSION"
 
+    if ! grep -F "sh /jffs/addons/wireless_report/wirelessreport.sh" /jffs/configs/profile.add >/dev/null 2>/dev/null; then
+        echo "alias wr=\"sh /jffs/addons/wireless_report/wirelessreport.sh install\" # added by Wireless Report" >> /jffs/configs/profile.add
+        echo -e "$GR[+] Adding alias 'wr' to /jffs/configs/profile.add$NC\n"
+    fi
+
     sys_log "(v$SCRIPT_VERSION) successfully installed."
 
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
@@ -512,6 +517,11 @@ do_uninstall() {
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
     remove_service_event_hook
 	rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
+
+    if [ -f /jffs/configs/profile.add ]; then
+        sed -i '/# added by Wireless Report/d' /jffs/configs/profile.add
+        echo -e "$GR[*] Removing shell alias...\n"
+    fi
 
     sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     restart_httpd
