@@ -110,18 +110,27 @@ install_menu() {
 }
 
 check_version() {
-    local mode="$1" version_cmp=""; froze() { return 0; }
+    local mode="$1" version_cmp=""
+    froze() { return 0; }
 
-    if [ ! -f "$REPORT_SCRIPT" ]; then STATE="NOT_INSTALLED"; froze() { freeze 2; return 1; }
-    elif [ -z "$REMOTE_VERSION" ]; then STATE="OFFLINE"
+    if [ ! -f "$REPORT_SCRIPT" ]; then
+        STATE="NOT_INSTALLED"
+        froze() { freeze 2; return 1; }
+    elif [ -z "$REMOTE_VERSION" ]; then
+        STATE="OFFLINE"
     else
         version_cmp=$(version_compare "$SCRIPT_VERSION" "$REMOTE_VERSION")
         case "$version_cmp" in -1|0|1) ;; *) version_cmp=0 ;; esac
 
-        if [ "$version_cmp" -gt 0 ]; then STATE="UP_TO_DATE"
-        elif [ "$version_cmp" -lt 0 ]; then STATE="OUTDATED"
-        elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then STATE="HASH_DIFF"
-        else STATE="UP_TO_DATE"; fi
+        if [ "$version_cmp" -gt 0 ]; then
+            STATE="UP_TO_DATE"
+        elif [ "$version_cmp" -lt 0 ]; then
+            STATE="OUTDATED"
+        elif [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+            STATE="HASH_DIFF"
+        else
+            STATE="UP_TO_DATE"
+        fi
     fi
 
     case "$mode" in
@@ -135,7 +144,8 @@ check_version() {
                                VERSION_HASH="$DEV [Hash]"; HEADER_TITLE="header-title2" ;;
                 UP_TO_DATE|*)  HOVER_TEXT="Current v$SCRIPT_VERSION$DEV"
                                VERSION_HASH="$DEV"; HEADER_TITLE="header-title" ;;
-            esac ;;
+            esac
+            ;;
         do_install)
             case "$STATE" in
                 OFFLINE)       echo -e "\n$RD[!] Github Offline.$NC\n"
@@ -146,7 +156,8 @@ check_version() {
                                UP="update Hash?" ;;
                 UP_TO_DATE|*)  echo -e "\n$GR[i] You are already on the latest version (${NC}v$SCRIPT_VERSION$DEV$GR).$NC\n"
                                UP="reinstall/overwrite anyway?" ;;
-            esac ;;
+            esac
+            ;;
         *)
             case "$STATE" in
                 OFFLINE)       echo -e "$STATUS [Offline]           $RD GitHub Unreachable$NC" ;;
@@ -154,7 +165,8 @@ check_version() {
                 OUTDATED)      echo -e "$STATUS [v$REMOTE_VERSION Available]     $CURRENT" ;;
                 HASH_DIFF)     echo -e "$STATUS [Hash Update Available]$CURRENT" ;;
                 UP_TO_DATE|*)  echo -e "$STATUS [Up to date]           $CURRENT" ;;
-            esac ;;
+            esac
+            ;;
     esac
 }
 
@@ -247,7 +259,8 @@ do_install() {
         while true; do
             check_version do_install
             printf "Do you want to $UP (y/n): "; read -r update
-            case "$update" in y|Y) break ;; n|N) return ;; *) freeze 4 ;; esac; done
+            case "$update" in y|Y) break ;; n|N) return ;; *) freeze 4 ;; esac
+        done
     fi
 
     echo -e "\n$GR[+] Downloading latest version (${NC}v$REMOTE_VERSION$GR)$NC"
@@ -404,7 +417,8 @@ mesh_init() {
 
 inject_menu() {
 	source /usr/sbin/helper.sh
-	TAB_LABEL="Wireless Report"
+
+    TAB_LABEL="Wireless Report"
 
     if [ -f "$CONFIG" ]; then
         sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
@@ -476,7 +490,8 @@ do_uninstall() {
     echo -e "\n$RD[!] WARNING: Removing Wireless Report...$NC\n"
     while true; do
         printf "Are you sure? (y/n): "; read -r confirm
-        case "$confirm" in y|Y) break ;; n|N) return ;; *) freeze ;; esac; done
+        case "$confirm" in y|Y) break ;; n|N) return ;; *) freeze ;; esac
+    done
 
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 
@@ -558,13 +573,16 @@ set_nicknames() {
 		echo -e "                                                     "
         echo -e "$BL=================================================="
 
+        local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node model ip clean_ip hex_clr node_clr
+        local old_name new_loc node_loc old_nick manual_main input_node
+
         MAIN_ROUTER=$(nvram get productid)
         MAIN_IP=$(nvram get lan_ipaddr)
         MAIN_CLR=$(hex_to_ansi "$MAIN_COLOR")
 
         echo -e "\n  ${MAIN_CLR}Main $MAIN_IP -> ${MAIN_NICK:-$MAIN_ROUTER}$NC"
 
-        get_node_color() { local idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
+        get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
 
         node_idx=1
         for node in $MESH_NODES; do
@@ -605,7 +623,8 @@ set_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
 
-                    printf "\n\n$GR[+] Default hardware models restored.$NC\n" ;;
+                    printf "\n\n$GR[+] Default hardware models restored.$NC\n"
+                    ;;
                 2)
                     echo -e "\n$BL[*] Updating nicknames with Locations...$NC"
 
@@ -642,7 +661,8 @@ set_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
 
-                    printf "\n\n$GR[+] Nicknames updated to Locations...$NC\n" ;;
+                    printf "\n\n$GR[+] Nicknames updated to Locations...$NC\n"
+                    ;;
                 3)
                     echo -e "\n$BL[*] Manual Entry Mode$NC"
 
@@ -673,7 +693,8 @@ set_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
 
-                    printf "\n$GR[+] Manual nicknames saved (max 25 chars).$NC\n" ;;
+                    printf "\n$GR[+] Manual nicknames saved (max 25 chars).$NC\n"
+                    ;;
                 e|E)
                     return ;;
                 *)
@@ -947,7 +968,8 @@ set_options() {
                                     echo 'RTIME_LOG="0"' >> "$CONFIG"
                                 fi
 
-                                menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)" ;;
+                                menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
+                                ;;
                             *)
                                 while true; do
                                     printf "\n Write stats to Syslog? (y/n): "; read -r choice
@@ -961,7 +983,8 @@ set_options() {
                                 fi
 
                                 sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"; menu_vars
-                                echo -e "$NC Runtime Tracking: ($RT_STAT) Stats RESET." ;;
+                                echo -e "$NC Runtime Tracking: ($RT_STAT) Stats RESET."
+                                ;;
                         esac
                     else
                         echo 'RTIME="0"' >> "$CONFIG"
@@ -974,7 +997,8 @@ set_options() {
 
                         menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                     fi
-                    pause ;;
+                    pause
+                    ;;
                 2)
                     if grep -q "BACKHAUL=" "$CONFIG"; then
                         if [ "$BACKHAUL" = "0" ]; then
@@ -984,7 +1008,8 @@ set_options() {
                         fi
                     else
                         echo 'BACKHAUL="1"' >> "$CONFIG"
-                    fi ;;
+                    fi
+                    ;;
                 3)
                     while true; do
                         echo -e "\n (${GR}0$NC) disable (${GR}15$NC) def (${GR}1440$NC) max "
@@ -1001,7 +1026,8 @@ set_options() {
                         fi
                         freeze 3
                     done
-                    pause ;;
+                    pause
+                    ;;
                 4)
                     set_ippad ;;
                 5)
@@ -1010,10 +1036,12 @@ set_options() {
                         sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
                     else
                         echo 'HOST_COLOR="1"' >> "$CONFIG"
-                    fi ;;
+                    fi
+                    ;;
                 dev)
                     set_branch
-                    return 0 ;;
+                    return 0
+                    ;;
                 inject)
                     if grep -q 'INJECT="2"' "$CONFIG"; then
                         echo -e "\n$YL[!] INJECT=\"2\" already exists in CONFIG.$NC"
@@ -1034,7 +1062,8 @@ set_options() {
                     fi
 
                     pause
-                    continue 2 ;;
+                    continue 2
+                    ;;
                 e|E)
                     return 0 ;;
                 *)
@@ -1149,7 +1178,8 @@ set_rssi() {
             selection
             case "$choice" in
                 1)
-                    case "$CUR_RS_HIST" in 1) CUR_RS_HIST="0" ;; *) CUR_RS_HIST="1" ;; esac ;;
+                    case "$CUR_RS_HIST" in 1) CUR_RS_HIST="0" ;; *) CUR_RS_HIST="1" ;; esac
+                    ;;
                 2)
                     while true; do
                         printf "\n$NC Enter new depth (${BL}5-20$NC) [Current: $CE]: "; read -r new_depth
@@ -1160,12 +1190,15 @@ set_rssi() {
                         else
                             freeze 2; continue
                         fi
-                    done ;;
+                    done
+                    ;;
                 3)
-                    case "$CUR_DATE" in 1) CUR_DATE="0" ;; *) CUR_DATE="1" ;; esac ;;
+                    case "$CUR_DATE" in 1) CUR_DATE="0" ;; *) CUR_DATE="1" ;; esac
+                    ;;
                 c|C)
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                    return 0 ;;
+                    return 0
+                    ;;
                 e|E)
                     RS_HIST="$CUR_RS_HIST"
                     RS_HIST_ENTRIES="$CUR_ENTRIES"
@@ -1185,7 +1218,8 @@ set_rssi() {
 
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
                     run_report
-                    pause; return 0 ;;
+                    pause; return 0
+                    ;;
                 *)
                     freeze 2; continue ;;
             esac
@@ -1212,7 +1246,8 @@ get_theme() {
             .rssi-tooltip { background: #1c232b; }
             .button-auto-refresh { background: #3A4042; }
             .button-tables { background: #3A4042; }
-            .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */" ;;
+            .button-tables.active, .button-tables.active:hover { color: white !important; } /* EXTRA */"
+            ;;
         "DARKMODE")
             RT_TOOLTIP="#000000"
             THEME_CSS=".top-header { background: transparent !important; }
@@ -1227,7 +1262,8 @@ get_theme() {
             #refresh-option:focus { background: #000; }
             .rssi-tooltip { background: #000; }
             .button-auto-refresh { background: transparent !important; }
-            .button-tables { background: transparent !important; }" ;;
+            .button-tables { background: transparent !important; }"
+            ;;
         "ORIGINAL"|*)
             RT_TOOLTIP="#000000"
             THEME_CSS=".top-header { background: transparent !important; }
@@ -1242,7 +1278,8 @@ get_theme() {
             #refresh-option:focus { background: #000; }
             .rssi-tooltip { background: #000; }
             .button-auto-refresh { background: transparent !important; }
-            .button-tables { background: transparent !important; }" ;;
+            .button-tables { background: transparent !important; }"
+            ;;
     esac
     THEME_CSS=$(echo "$THEME_CSS" | sed 's/^        //')
 }
