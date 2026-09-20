@@ -249,11 +249,12 @@ menu_vars() {
 
 do_install() {
 	mkdir -p "$INSTALL_DIR" 2>/dev/null
-
     if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
 
     local is_update=0
-	if [ -f "$REPORT_SCRIPT" ]; then is_update=1; fi
+	if [ -f "$REPORT_SCRIPT" ]; then
+        is_update=1
+    fi
 
     if [ "$is_update" = "1" ]; then
         while true; do
@@ -287,15 +288,15 @@ do_install() {
     if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
     echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
-    chmod +x "$SS_FILE"; SCRIPT_VERSION="$REMOTE_VERSION"
+    chmod +x "$SS_FILE"
 
     if ! grep -F "sh /jffs/addons/wireless_report/wirelessreport.sh" /jffs/configs/profile.add >/dev/null 2>/dev/null; then
         echo "alias wr=\"sh /jffs/addons/wireless_report/wirelessreport.sh install\" # added by Wireless Report" >> /jffs/configs/profile.add
         echo -e "$GR[+] Adding alias 'wr' to /jffs/configs/profile.add$NC\n"
     fi
 
+    SCRIPT_VERSION="$REMOTE_VERSION"
     sys_log "(v$SCRIPT_VERSION) successfully installed."
-
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
     echo -e "$YL[i] To access Report, navigate to Advanced Settings > Wireless "
     echo -e "$YL    in the ASUS WebGUI and select the Wireless Report tab on the far right.$NC\n"
@@ -304,7 +305,6 @@ do_install() {
 
 do_update() {
     TEMP_SCRIPT="/tmp/wirelessreport.sh"
-
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" 2>/dev/null && [ -s "$TEMP_SCRIPT" ]; then
         mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
         chmod +x "$REPORT_SCRIPT" 2>/dev/null
@@ -312,17 +312,13 @@ do_update() {
         return 0
     else
         rm -f "$TEMP_SCRIPT"
-
         if [ ! -f "$0" ]; then
             echo -e "$RD[!] Download failed. Aborting installation.$NC"
             return 1
         fi
-
         local CURRENT_PATH TARGET_PATH
-
         CURRENT_PATH=$(readlink -f "$0" 2>/dev/null)
         [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
-
         TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null)
         [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
 
@@ -340,14 +336,11 @@ do_update() {
 
 ScriptUpdateFromAMTM() {
     doScriptUpdateFromAMTM=true
-
     if [ "$doScriptUpdateFromAMTM" != "true" ]; then
         printf "Automatic updates via AMTM are currently disabled."
         return 1
     fi
-
     if [ "$1" = "check" ]; then return 0; fi
-
     if check_github && do_update; then
         echo -e "  [+] Downloading latest version (v$REMOTE_VERSION)\n\n"
         echo -e "  [✓] Wireless Report successfully updated.\n"
@@ -360,7 +353,6 @@ ScriptUpdateFromAMTM() {
 wr_sha256() {
     local file="$1" hash=""
     [ -f "$file" ] || return 1
-
     if command -v sha256sum >/dev/null 2>&1; then
         hash=$(sha256sum "$file" 2>/dev/null | awk '{print $1}')
     elif command -v busybox >/dev/null 2>&1 && busybox sha256sum "$file" >/dev/null 2>&1; then
@@ -368,7 +360,6 @@ wr_sha256() {
     elif command -v openssl >/dev/null 2>&1; then
         hash=$(openssl dgst -sha256 "$file" 2>/dev/null | awk '{print $NF}')
     fi
-
     [ "${#hash}" -eq 64 ] || return 1
     printf '%s\n' "$hash"
 }
@@ -383,12 +374,10 @@ check_github() {
     GITHUB="https://raw.githubusercontent.com/$GIT/Wireless_Report/$BRANCH_NAME/wirelessreport.sh"
 
     REMOTE_TMP="/tmp/wr_remote.tmp"; LOCAL_HASH=""; REMOTE_HASH=""
-
     if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
         REMOTE_VERSION=$(grep "SCRIPT_VERSION=" "$REMOTE_TMP" | head -n 1 | cut -d'"' -f2 | tr -cd '0-9.')
         LOCAL_HASH=$(wr_sha256 "$REPORT_SCRIPT" 2>/dev/null)
         REMOTE_HASH=$(wr_sha256 "$REMOTE_TMP" 2>/dev/null)
-
         if [ -z "$LOCAL_HASH" ] || [ -z "$REMOTE_HASH" ]; then
             if [ -f "$REPORT_SCRIPT" ]; then
                 if cmp -s "$REPORT_SCRIPT" "$REMOTE_TMP"; then
@@ -404,7 +393,6 @@ check_github() {
         REMOTE_VERSION=""
         REMOTE_HASH=""
     fi
-
     rm -f "$REMOTE_TMP"
 }
 
@@ -422,7 +410,6 @@ mesh_init() {
 
 inject_menu() {
 	source /usr/sbin/helper.sh
-
     TAB_LABEL="Wireless Report"
 
     if [ -f "$CONFIG" ]; then
@@ -525,11 +512,9 @@ do_uninstall() {
 
     sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     restart_httpd
-
     unset RTIME RTIME_LOG CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES REPORT_UNIT
     unset THEME IPPAD PULSE_MINS DISPLAY_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
     nvram unset wirelessreport_gen >/dev/null 2>&1
-
     echo -e "$GR[+] Success: Wireless Report uninstalled.$NC\n"
 	pause
 }
@@ -605,14 +590,12 @@ set_nicknames() {
 
             node_idx=$((node_idx + 1))
         done
-
         echo -e "\n$BL=================================================="
         while true; do
             selection
             case "$choice" in
                 1)
                     echo -e "\n$BL[+] Resetting to hardware defaults...$NC"
-
                     OLD_NAME="${MAIN_NICK:-$MAIN_ROUTER}"
                     sed -i '/^MAIN_NICK=/d' "$CONFIG"
                     unset MAIN_NICK
@@ -632,12 +615,10 @@ set_nicknames() {
 
                         node_idx=$((node_idx + 1))
                     done
-
                     printf "\n\n$GR[+] Default hardware models restored.$NC\n"
                     ;;
                 2)
                     echo -e "\n$BL[*] Updating nicknames with Locations...$NC"
-
                     OLD_NAME="${MAIN_NICK:-$MAIN_ROUTER}"
                     NEW_LOC=$(nvram get cfg_alias)
                     sed -i '/^MAIN_NICK=/d' "$CONFIG"
@@ -670,12 +651,10 @@ set_nicknames() {
                         fi
                         node_idx=$((node_idx + 1))
                     done
-
                     printf "\n\n$GR[+] Nicknames updated to Locations...$NC\n"
                     ;;
                 3)
                     echo -e "\n$BL[*] Manual Entry Mode$NC"
-
                     OLD_MAIN="${MAIN_NICK:-$MAIN_ROUTER}"
 
                     printf "\n  ${MAIN_CLR}Main $MAIN_IP [$OLD_MAIN]:$NC "; read -r manual_main
@@ -702,7 +681,6 @@ set_nicknames() {
                         fi
                         node_idx=$((node_idx + 1))
                     done
-
                     printf "\n$GR[+] Manual nicknames saved (max 25 chars).$NC\n"
                     ;;
                 e|E)
@@ -760,12 +738,9 @@ set_colors() {
 
     [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
     [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
-
     local total_nodes=0
     for node in $MESH_NODES; do total_nodes=$((total_nodes + 1)); done
-
     local working_colors="" i=1
-
     while [ $i -le $total_nodes ]; do
         local c_color=$(echo "$current_colors" | awk -v col="$i" '{print $col}')
         working_colors="${working_colors:+$working_colors }$c_color"
@@ -777,7 +752,10 @@ set_colors() {
         echo -e "$BL=================================================="
         echo -e "$NC                Set Device Colors                 "
         echo -e "$BL=================================================="
-        echo -e "$NC\n Current Device Configuration:\n"
+        echo -e "                                                     "
+        echo -e "$NC  Current Device Configuration:                   "
+        echo -e "                                                     "
+        #=============================================================#
 
         local main_display_name="${MAIN_NICK:-$main_name}"
         local main_display_color=$(hex_to_ansi "$m_color_hex")
@@ -817,7 +795,6 @@ set_colors() {
                     local default_node_pool="#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda"
                     working_colors=""
                     local idx=1
-
                     while [ $idx -le $total_nodes ]; do
                         local next_color=$(echo "$default_node_pool" | awk -v col="$idx" '{print $col}')
                         next_color="${next_color:-#30d158}"
@@ -826,7 +803,6 @@ set_colors() {
                     done
 
                     echo -e "$BL\nColors restored to defaults.$NC"
-
                     pause; continue 2 ;;
                 c|C) return 0 ;;
                 e|E) break 2 ;;
@@ -879,7 +855,6 @@ set_colors() {
                 esac
                 break
             done
-
             if [ "$node_choice" -eq 0 ]; then
                 m_color_hex="$selected_hex"
             else
@@ -903,10 +878,8 @@ set_colors() {
             echo "${var_name}=\"${var_val}\"" >> "$CONFIG"
         fi
     }
-
     update_config_var "MAIN_COLOR" "$m_color_hex"
     update_config_var "NODE_COLORS" "$working_colors"
-
     echo -e "$BL\nDevice colors successfully saved to CONFIG.$NC"
     run_report
     pause
@@ -935,7 +908,6 @@ set_theme() {
                 e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
-
             if grep -q "^THEME=" "$CONFIG"; then
                 sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
             else
@@ -971,13 +943,11 @@ set_options() {
                         case "$RTIME" in
                             1)
                                 sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
-
                                 if grep -q "RTIME_LOG=" "$CONFIG"; then
                                     sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
                                 else
                                     echo 'RTIME_LOG="0"' >> "$CONFIG"
                                 fi
-
                                 menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                                 ;;
                             *)
@@ -985,26 +955,22 @@ set_options() {
                                     printf "\n Write stats to Syslog? (y/n): "; read -r choice
                                     case "$choice" in y|Y) RTIME_LOG="1"; break ;; n|N) RTIME_LOG="0"; break ;; *) freeze 2 ;; esac
                                 done
-
                                 if grep -q "RTIME_LOG=" "$CONFIG"; then
                                     sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$RTIME_LOG\"/" "$CONFIG"
                                 else
                                     echo "RTIME_LOG=\"$RTIME_LOG\"" >> "$CONFIG"
                                 fi
-
                                 sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"; menu_vars
                                 echo -e "$NC Runtime Tracking: ($RT_STAT) Stats RESET."
                                 ;;
                         esac
                     else
                         echo 'RTIME="0"' >> "$CONFIG"
-
                         if grep -q "RTIME_LOG=" "$CONFIG"; then
                             sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
                         else
                             echo 'RTIME_LOG="0"' >> "$CONFIG"
                         fi
-
                         menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                     fi
                     pause
@@ -1025,7 +991,6 @@ set_options() {
                         echo -e "\n (${GR}0$NC) disable (${GR}15$NC) def (${GR}1440$NC) max "
                         printf "$BL Enter alert interval in mins:$GR "; read -r user_mins
                         case "$user_mins" in ""|*[!0-9]*) freeze 3; continue ;; esac
-
                         if [ "$user_mins" -le 1440 ]; then
                             if grep -q "PULSE_MINS=" "$CONFIG"; then
                                 sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$user_mins\"/" "$CONFIG"
@@ -1063,14 +1028,12 @@ set_options() {
                         fi
                         echo -e "\n$GR[+] Adding INJECT=\"2\" to CONFIG.$NC"
                     fi
-
                     if ! grep -q "$REPORT_SCRIPT.*inject2" "$SS_FILE" 2>/dev/null; then
                         if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
                         sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
                         echo "$REPORT_SCRIPT inject2 & # Inject Wireless Report" >> "$SS_FILE"
                         chmod +x "$SS_FILE"
                     fi
-
                     pause
                     continue 2
                     ;;
@@ -1110,7 +1073,6 @@ set_ippad() {
             esac
             break
         done
-
         if grep -q "IPPAD=" "$CONFIG"; then
             sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
         else
@@ -1146,7 +1108,6 @@ set_branch() {
             esac
             break
         done
-
         if grep -q "^BRANCH=" "$CONFIG"; then
             sed -i "s/^BRANCH=.*/BRANCH=\"$BRANCH\"/" "$CONFIG"
         else
@@ -1154,10 +1115,8 @@ set_branch() {
         fi
 
         check_github
-
         case "$BRANCH" in 2) BRANCH_NAME="EFT-Development" ;; esac
         BN="[$GR$BRANCH_NAME$NC]"
-
         printf "$NC\nPress $BL[Enter]$NC to switch to $BN branch & restart script..."; read -r restart
 
         if do_update; then
@@ -1194,7 +1153,6 @@ set_rssi() {
                     while true; do
                         printf "\n$NC Enter new depth (${BL}5-20$NC) [Current: $CE]: "; read -r new_depth
                         case "$new_depth" in *[!0-9]*|"") freeze 2; continue ;; esac
-
                         if [ "$new_depth" -ge 5 ] && [ "$new_depth" -le 20 ]; then
                             CUR_ENTRIES="$new_depth"; break 2
                         else
@@ -1213,7 +1171,6 @@ set_rssi() {
                     RS_HIST="$CUR_RS_HIST"
                     RS_HIST_ENTRIES="$CUR_ENTRIES"
                     RS_HIST_DATE="$CUR_DATE"
-
                     for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
                         eval "val=\$${var}"
 
@@ -1223,9 +1180,7 @@ set_rssi() {
                             echo "$var=\"$val\"" >> "$CONFIG"
                         fi
                     done
-
                     echo -e "\n$GR[+] RSSI history configuration saved.$NC"
-
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
                     run_report
                     pause; return 0
