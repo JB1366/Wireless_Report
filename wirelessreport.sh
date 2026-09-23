@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.2.7"
+SCRIPT_VERSION="3.2.8"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -112,7 +112,6 @@ install_menu() {
 check_version() {
     local mode="$1" version_cmp=""
     froze() { return 0; }
-
     if [ ! -f "$REPORT_SCRIPT" ]; then
         STATE="NOT_INSTALLED"
         froze() { freeze 2; return 1; }
@@ -132,7 +131,6 @@ check_version() {
             STATE="UP_TO_DATE"
         fi
     fi
-
     case "$mode" in
         header_box)
             case "$STATE" in
@@ -217,13 +215,17 @@ menu_vars() {
         *)    DU="${GR}USA$NC";  CT="$DATE_USA" ;;
     esac
 
-    THEME=${THEME:-ORIGINAL}; TM_STAT="$GR$THEME$NC"
+    THEME=${THEME:-ORIGINAL}
+    TM_STAT="$GR$THEME$NC"
 
-    RTIME=${RTIME:-1}; RTIME_LOG=${RTIME_LOG:-0}; case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
+    RTIME=${RTIME:-1}
+    RTIME_LOG=${RTIME_LOG:-0}; case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
 
-    BACKHAUL=${BACKHAUL:-0}; case "$BACKHAUL" in 0) WB_STAT="$OFF" ;; *) WB_STAT="$ON" ;; esac
+    BACKHAUL=${BACKHAUL:-0}
+    case "$BACKHAUL" in 0) WB_STAT="$OFF" ;; *) WB_STAT="$ON" ;; esac
 
-    PULSE_MINS=${PULSE_MINS:-15}; case "$PULSE_MINS" in 0) UP_STAT="$OFF" ;; *) UP_STAT="$GR${PULSE_MINS} Mins$NC" ;; esac
+    PULSE_MINS=${PULSE_MINS:-15}
+    case "$PULSE_MINS" in 0) UP_STAT="$OFF" ;; *) UP_STAT="$GR${PULSE_MINS} Mins$NC" ;; esac
 
     IPPAD=${IPPAD:-1}
     case "$IPPAD" in
@@ -232,29 +234,39 @@ menu_vars() {
         *) PD_STAT="${RD}Disabled$NC" ;;
     esac
 
-    HOST_COLOR=${HOST_COLOR:-0}; case "$HOST_COLOR" in 1) HN_STAT="${BL}Colored${NC}" ;; *) HN_STAT="${GR}Numbered${NC}" ;; esac
+    HOST_COLOR=${HOST_COLOR:-0}
+    case "$HOST_COLOR" in 1) HN_STAT="${BL}Colored${NC}" ;; *) HN_STAT="${GR}Numbered${NC}" ;; esac
 
-    RS_HIST=${RS_HIST:-0}; case "$RS_HIST" in 0|1) ;; *) RS_HIST=0 ;; esac
-    RS_HIST_ENTRIES=${RS_HIST_ENTRIES:-5}; case "$RS_HIST_ENTRIES" in ""|*[!0-9]*) RS_HIST_ENTRIES=5 ;; esac
+    RS_HIST=${RS_HIST:-0}
+    case "$RS_HIST" in 0|1) ;; *) RS_HIST=0 ;; esac
+
+    RS_HIST_ENTRIES=${RS_HIST_ENTRIES:-5}
+    case "$RS_HIST_ENTRIES" in ""|*[!0-9]*) RS_HIST_ENTRIES=5 ;; esac
     if [ "$RS_HIST_ENTRIES" -lt 5 ] || [ "$RS_HIST_ENTRIES" -gt 20 ]; then RS_HIST_ENTRIES=5; fi
-    RS_HIST_DATE=${RS_HIST_DATE:-0}; case "$RS_HIST_DATE" in 0|1) ;; *) RS_HIST_DATE=0 ;; esac
 
-    CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}; case "$CUR_RS_HIST" in 1) CH="$ON" ;; *) CH="$OFF" ;; esac
-	CUR_ENTRIES=${CUR_ENTRIES:-$RS_HIST_ENTRIES};  CE="$GR$CUR_ENTRIES$NC"
-	CUR_DATE=${CUR_DATE:-$RS_HIST_DATE}; case "$CUR_DATE" in 1) TS="$ON" ;; *) TS="$OFF" ;; esac
+    RS_HIST_DATE=${RS_HIST_DATE:-0}
+    case "$RS_HIST_DATE" in 0|1) ;; *) RS_HIST_DATE=0 ;; esac
 
-    BN="[$GR$BRANCH_NAME$NC]"
+    CUR_RS_HIST=${CUR_RS_HIST:-$RS_HIST}
+    case "$CUR_RS_HIST" in 1) CH="$ON" ;; *) CH="$OFF" ;; esac
+
+    CUR_ENTRIES=${CUR_ENTRIES:-$RS_HIST_ENTRIES}
+    CE="$GR$CUR_ENTRIES$NC"
+
+    CUR_DATE=${CUR_DATE:-$RS_HIST_DATE}
+    case "$CUR_DATE" in 1) TS="$ON" ;; *) TS="$OFF" ;; esac
+
+    case "$BRANCH" in 2) BRANCH_NAME="EFT-Development" ;; esac
+    BN="$GR$BRANCH_NAME$NC"
 }
 
 do_install() {
 	mkdir -p "$INSTALL_DIR" 2>/dev/null
     if [ ! -f "$CONFIG" ]; then touch "$CONFIG"; fi
-
     local is_update=0
 	if [ -f "$REPORT_SCRIPT" ]; then
         is_update=1
     fi
-
     if [ "$is_update" = "1" ]; then
         while true; do
             check_version do_install
@@ -262,11 +274,8 @@ do_install() {
             case "$update" in y|Y) break ;; n|N) return ;; *) freeze 4 ;; esac
         done
     fi
-
     echo -e "\n$GR[+] Downloading latest version (${NC}v$REMOTE_VERSION$GR)$NC"
-
     do_update || return 1
-
     if [ "$is_update" = "1" ]; then
         echo -e "\n$BL[✓] Wireless Report successfully installed.$NC"
 		printf "\nPress $BL[Enter]$NC to apply changes & restart script..."; read -r discard
@@ -274,26 +283,20 @@ do_install() {
         exec "$REPORT_SCRIPT" install "$@"
 		echo -e "\n$RD[!] Error: Failed to restart script!$NC" >&2; exit 1
 	fi
-
     echo -e "$GR[+] Mounting Tab Wireless Report$NC\n"
-
     if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "\n$RD[!] ERROR: JFFS custom scripts not enabled.$NC"
         pause; return 1
     fi
-
     echo -e "\n$GR[+] Processing Wireless Report Files...$NC\n"
-
     if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
     echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
     chmod +x "$SS_FILE"
-
     if ! grep -F "sh /jffs/addons/wireless_report/wirelessreport.sh" /jffs/configs/profile.add >/dev/null 2>/dev/null; then
         echo "alias wr=\"sh /jffs/addons/wireless_report/wirelessreport.sh install\" # added by Wireless Report" >> /jffs/configs/profile.add
         echo -e "$GR[+] Adding alias 'wr' to /jffs/configs/profile.add$NC\n"
     fi
-
     SCRIPT_VERSION="$REMOTE_VERSION"
     sys_log "(v$SCRIPT_VERSION) successfully installed."
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
@@ -416,12 +419,10 @@ inject_menu() {
     else
         touch "$CONFIG"
     fi
-
     if ! nvram get rc_support | grep -q am_addons; then
         echo -e "\n$RD[!] ERROR: This firmware does not support addons!$NC"
         exit 5
     fi
-
     if [ ! -f "$WEB_PAGE" ]; then
         echo "<html><body>$TAB_LABEL Loading...</body></html>" > "$WEB_PAGE"
     fi
@@ -439,7 +440,6 @@ inject_menu() {
     fi
 
     cp "$WEB_PAGE" "/www/user/$am_webui_page" 2>/dev/null
-
     echo "INSTALLED_PAGE=$am_webui_page" >> "$CONFIG"
 
     if [ ! -f "$TEMP_MENU" ]; then
@@ -474,7 +474,7 @@ inject_menu() {
     flock -u "$FD"
     restart_httpd
 
-    case "$NOLOADSCRIPT" in 1) exit 0 ;; *) "$REPORT_SCRIPT" >/dev/null 2>&1 & ;; esac
+    "$REPORT_SCRIPT" >/dev/null 2>&1 &
 }
 
 do_uninstall() {
@@ -483,9 +483,7 @@ do_uninstall() {
         printf "Are you sure? (y/n): "; read -r confirm
         case "$confirm" in y|Y) break ;; n|N) return ;; *) freeze ;; esac
     done
-
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-
     if mount | grep -q "menuTree.js"; then
 		umount -l "$SYSTEM_MENU" >/dev/null 2>&1
 		sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
@@ -494,26 +492,19 @@ do_uninstall() {
 		sys_log "Unmounting Wireless Report Tab."
 		echo -e "\n$BL[*] Removing Wireless Report Tab and restoring defaults...$NC\n"
 	fi
-
     if [ -n "$INSTALLED_PAGE" ]; then
 		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 		rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
 	fi
-
-    sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE"
+    sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
+    sed -i '/# added by Wireless Report/d' /jffs/configs/profile.add 2>/dev/null
+    rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
     remove_service_event_hook
-	rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
-
-    if [ -f /jffs/configs/profile.add ]; then
-        sed -i '/# added by Wireless Report/d' /jffs/configs/profile.add
-        echo -e "$GR[*] Removing shell alias...\n"
-    fi
-
-    sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     restart_httpd
     unset RTIME RTIME_LOG CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES REPORT_UNIT
     unset THEME IPPAD PULSE_MINS DISPLAY_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
     nvram unset wirelessreport_gen >/dev/null 2>&1
+    sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     echo -e "$GR[+] Success: Wireless Report uninstalled.$NC\n"
 	pause
 }
@@ -566,9 +557,8 @@ set_nicknames() {
         echo -e "  $LE Exit back to main menu                         "
 		echo -e "                                                     "
         echo -e "$BL=================================================="
-
-        local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node model ip clean_ip hex_clr node_clr
-        local old_name new_loc node_loc old_nick manual_main input_node
+        local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node model ip clean_ip hex_clr
+        local node_clr old_name new_loc node_loc old_nick manual_main input_node
 
         MAIN_ROUTER=$(nvram get productid)
         MAIN_IP=$(nvram get lan_ipaddr)
@@ -577,7 +567,6 @@ set_nicknames() {
         echo -e "\n  ${MAIN_CLR}Main $MAIN_IP -> ${MAIN_NICK:-$MAIN_ROUTER}$NC"
 
         get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
-
         node_idx=1
         for node in $MESH_NODES; do
             MODEL="${node%%|*}"; IP="${node#*|}"; CLEAN_IP="${IP//./_}"
@@ -621,7 +610,6 @@ set_nicknames() {
                     OLD_NAME="${MAIN_NICK:-$MAIN_ROUTER}"
                     NEW_LOC=$(nvram get cfg_alias)
                     sed -i '/^MAIN_NICK=/d' "$CONFIG"
-
                     if [ -n "$NEW_LOC" ]; then
                         echo "MAIN_NICK=\"$NEW_LOC\"" >> "$CONFIG"
                         printf "\n    ${MAIN_CLR}$OLD_NAME -> $NEW_LOC$NC"; sleep 1
@@ -629,18 +617,14 @@ set_nicknames() {
                         unset MAIN_NICK
                         printf "\n    ${MAIN_CLR}$OLD_NAME -> $MAIN_ROUTER (Default)$NC"; sleep 1
                     fi
-
                     node_idx=1
                     for node in $MESH_NODES; do
                         MODEL="${node%%|*}"; IP="${node#*|}"; CLEAN_IP="${IP//./_}"
                         eval OLD_NICK=\$NODE_NICK_$CLEAN_IP
-
                         NODE_LOC=$(cat /jffs/.sys/cfg_mnt/re.info 2>/dev/null | sed 's/},/}\n/g' | grep "$IP" | sed -n 's/.*"alias":"\([^"]*\)".*/\1/p')
-
                         sed -i "/^NODE_NICK_$CLEAN_IP=/d" "$CONFIG"
                         HEX_CLR=$(echo "$NODE_COLORS" | awk -v i="$node_idx" '{print $i}')
                         NODE_CLR=$(hex_to_ansi "$HEX_CLR")
-
                         if [ -n "$NODE_LOC" ]; then
                             echo "NODE_NICK_$CLEAN_IP=\"$NODE_LOC\"" >> "$CONFIG"
                             printf "\n    ${NODE_CLR}${OLD_NICK:-$MODEL} -> $NODE_LOC$NC"; sleep 1
@@ -663,7 +647,6 @@ set_nicknames() {
                         sed -i '/^MAIN_NICK=/d' "$CONFIG"
                         echo "MAIN_NICK=\"$manual_main\"" >> "$CONFIG"
                     fi
-
                     node_idx=1
                     for node in $MESH_NODES; do
                         MODEL="${node%%|*}"; IP="${node#*|}"; CLEAN_IP="${IP//./_}"
@@ -687,7 +670,8 @@ set_nicknames() {
                 *)
                     freeze 2; continue ;;
             esac
-            pause; break
+            pause
+            break
         done
         run_report
     done
@@ -729,12 +713,10 @@ set_colors() {
     local main_name=$(nvram get productid)
     local main_ip=$(nvram get lan_ipaddr)
     local m_color_hex="" current_colors=""
-
     if [ -f "$CONFIG" ]; then
         m_color_hex=$(grep "^MAIN_COLOR=" "$CONFIG" | cut -d'"' -f2)
         current_colors=$(grep "^NODE_COLORS=" "$CONFIG" | cut -d'"' -f2)
     fi
-
     [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
     [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
     local total_nodes=0
@@ -745,7 +727,6 @@ set_colors() {
         working_colors="${working_colors:+$working_colors }$c_color"
         i=$((i + 1))
     done
-
     while true; do
         show_header
         echo -e "$BL=================================================="
@@ -755,7 +736,6 @@ set_colors() {
         echo -e "$NC  Current Device Configuration:                   "
         echo -e "                                                     "
         #=============================================================#
-
         local main_display_name="${MAIN_NICK:-$main_name}"
         local main_display_color=$(hex_to_ansi "$m_color_hex")
         local formatted_main_ip=$(printf "(%s)" "$main_ip")
@@ -778,7 +758,6 @@ set_colors() {
 
             idx=$((idx + 1))
         done
-
         #=============================================================#
         echo -e "                                                     "
         echo -e "  $LR Restore Default Colors                         "
@@ -800,7 +779,6 @@ set_colors() {
                         working_colors="${working_colors:+$working_colors }$next_color"
                         idx=$((idx + 1))
                     done
-
                     echo -e "$BL\nColors restored to defaults.$NC"
                     pause; continue 2 ;;
                 c|C) return 0 ;;
@@ -820,10 +798,8 @@ set_colors() {
                 target_name="${target_name:-$(printf '%s\n' "$target_node" | cut -d'|' -f1)}"
                 target_hex=$(echo "$working_colors" | awk -v col="$node_choice" '{print $col}')
             fi
-
             local selected_hex=""
             local target_prompt_color=$(hex_to_ansi "$target_hex")
-
             echo -e "\n$NC Select a new color for ${target_prompt_color}[${target_name}]:$NC"
             echo -e "                                "
             echo -e "$NB  (1) Neon-Blue (#0096ff)    "
@@ -868,7 +844,6 @@ set_colors() {
             break
         done
     done
-
     update_config_var() {
         local var_name="$1" var_val="$2"
         if grep -q "^${var_name}=" "$CONFIG" 2>/dev/null; then
@@ -1013,9 +988,7 @@ set_options() {
                     fi
                     ;;
                 dev)
-                    set_branch
-                    return 0
-                    ;;
+                    set_branch ;;
                 inject)
                     if grep -q 'INJECT="2"' "$CONFIG"; then
                         echo -e "\n$YL[!] INJECT=\"2\" already exists in CONFIG.$NC"
@@ -1027,12 +1000,11 @@ set_options() {
                         fi
                         echo -e "\n$GR[+] Adding INJECT=\"2\" to CONFIG.$NC"
                     fi
-                    if ! grep -q "$REPORT_SCRIPT.*inject2" "$SS_FILE" 2>/dev/null; then
-                        if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
-                        sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
-                        echo "$REPORT_SCRIPT inject2 & # Inject Wireless Report" >> "$SS_FILE"
-                        chmod +x "$SS_FILE"
-                    fi
+                    if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
+                    sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
+                    echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
+                    chmod +x "$SS_FILE"
+                    inject_menu
                     pause
                     continue 2
                     ;;
@@ -1086,14 +1058,14 @@ set_branch() {
         echo -e "$BL=================================================="
         echo -e "$NC                Set Github Branch                 "
         echo -e "$BL=================================================="
-        echo -e "$NC  Branch: $BN               v$SCRIPT_VERSION$DEV  "
+        echo -e "$NC  Branch: [$BN]               v$SCRIPT_VERSION$DEV"
         echo -e "$BL=================================================="
         echo -e "                                                     "
         echo -e "  $N1 main (JB1366)                                  "
         echo -e "  $N2 Development (JB1366)                           "
         echo -e "  $N3 Development (ExtremeFiretop)                   "
         echo -e "                                                     "
-        echo -e "  $LE Exit back to main menu                         "
+        echo -e "  $LE Exit back to Set Options Menu                  "
         echo -e "                                                     "
         echo -e "$BL=================================================="
         while true; do
@@ -1102,7 +1074,7 @@ set_branch() {
                 1) BRANCH="0" ;;
                 2) BRANCH="1" ;;
                 3) BRANCH="2" ;;
-                e|E) return ;;
+                e|E) break 2 ;;
                 *) freeze 2; continue ;;
             esac
             break
@@ -1112,12 +1084,10 @@ set_branch() {
         else
             echo "BRANCH=\"$BRANCH\"" >> "$CONFIG"
         fi
-
         check_github
         case "$BRANCH" in 2) BRANCH_NAME="EFT-Development" ;; esac
-        BN="[$GR$BRANCH_NAME$NC]"
-        printf "$NC\nPress $BL[Enter]$NC to switch to $BN branch & restart script..."; read -r restart
-
+        BN="$GR$BRANCH_NAME$NC"
+        printf "$NC\nPress $BL[Enter]$NC to switch to [$BN] branch & restart script..."; read -r restart
         if do_update; then
             exec "$REPORT_SCRIPT" install "$@"
         else
@@ -1172,7 +1142,6 @@ set_rssi() {
                     RS_HIST_DATE="$CUR_DATE"
                     for var in RS_HIST RS_HIST_ENTRIES RS_HIST_DATE; do
                         eval "val=\$${var}"
-
                         if grep -q "^$var=" "$CONFIG"; then
                             sed -i "s|^$var=.*|$var=\"$val\"|" "$CONFIG"
                         else
@@ -1182,7 +1151,8 @@ set_rssi() {
                     echo -e "\n$GR[+] RSSI history configuration saved.$NC"
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
                     run_report
-                    pause; return 0
+                    pause
+                    return 0
                     ;;
                 *)
                     freeze 2; continue ;;
@@ -4943,13 +4913,7 @@ case "$1" in
     install)
         install_menu
         ;;
-    inject|inject1|inject2|inject3)
-        case "$1" in
-            inject)  ;;
-            inject1) NOLOADSCRIPT="1" ;;
-            inject2) INJECT="2" ;;
-            inject3) NOLOADSCRIPT="1"; INJECT="2" ;;
-        esac
+    inject|inject2)
         inject_menu
         ;;
     amtmupdate)
