@@ -1287,7 +1287,6 @@ handle_service_event() {
                 case "$value" in ""|*[!0-9]*) return 0 ;; esac
                 [ "${#value}" -le 9 ] || return 0
             done
-
             local current avg low high
             current=$(printf '%d.%02d' "$((current_cs / 100))" "$((current_cs % 100))")
             avg=$(printf '%d.%02d' "$((avg_cs / 100))" "$((avg_cs % 100))")
