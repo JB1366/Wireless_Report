@@ -207,12 +207,18 @@ menu_vars() {
     DATE_ISO="$GR$(date +"%Y-%m-%d %H:%M:%S")$NC"
     DATE_INTL="$GR$(date +"%-d-%b %-H:%M:%S")$NC"
     DATE_USA="$GR$(date +"%b-%-d %-H:%M:%S")$NC"
+    DATE_ISO1="$BL$(date +"%Y-%m-%d %I:%M:%S %p")$NC"
+    DATE_INTL1="$BL$(date +"%d-%b %I:%M:%S %p")$NC"
+    DATE_USA1="$BL$(date +"%b-%d %I:%M:%S %p")$NC"
 
     REPORT_UNIT="${REPORT_UNIT:-USA}"
     case "$REPORT_UNIT" in
         ISO)  DU="${GR}ISO$NC";  CT="$DATE_ISO" ;;
         INTL) DU="${GR}INTL$NC"; CT="$DATE_INTL" ;;
-        *)    DU="${GR}USA$NC";  CT="$DATE_USA" ;;
+        USA)  DU="${GR}USA$NC";  CT="$DATE_USA" ;;
+        ISO1) DU="${BL}ISO$NC";  CT="$DATE_ISO1" ;;
+        INTL1)DU="${BL}INTL$NC"; CT="$DATE_INTL1" ;;
+        USA1) DU="${BL}USA$NC";  CT="$DATE_USA1" ;;
     esac
 
     THEME=${THEME:-ORIGINAL}
@@ -521,6 +527,10 @@ set_date_time() {
         echo -e "  $N1  USA                   ($DATE_USA)             "
         echo -e "  $N2  INTL                  ($DATE_INTL)            "
         echo -e "  $N3  ISO                 ($DATE_ISO)               "
+        echo -e "   |                          |            |         "
+        echo -e "  $N4  USA                 ($DATE_USA1)              "
+        echo -e "  $N5  INTL                ($DATE_INTL1)             "
+        echo -e "  $N6  ISO               ($DATE_ISO1)                "
         echo -e "                                                     "
         echo -e "  $LE  Exit back to main menu                        "
         echo -e "                                                     "
@@ -531,6 +541,9 @@ set_date_time() {
                 1) NEW_UNIT="USA" ;;
                 2) NEW_UNIT="INTL" ;;
                 3) NEW_UNIT="ISO" ;;
+                4) NEW_UNIT="USA1" ;;
+                5) NEW_UNIT="INTL1" ;;
+                6) NEW_UNIT="ISO1" ;;
                 e|E) return ;;
                 *) freeze 2; continue ;;
             esac
@@ -1616,20 +1629,34 @@ function formatDateTimeStamp(d, includeSeconds) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const month = months[d.getMonth()];
     const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, '0');
+
+    const unit = (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.reportUnit) ? WR_CONFIG.reportUnit : 'USA';
+    const is12Hour = unit.endsWith('1');
+
+    let hours = d.getHours();
+    let ampm = '';
+
+    if (is12Hour) {
+        ampm = hours >= 12 ? ' PM' : ' AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+    }
+
+    const hoursStr = String(hours).padStart(is12Hour ? 1 : 2, '0'); // Single digit for 12-hour to match shell %-I if needed, or keep 2 for consistency
     const minutes = String(d.getMinutes()).padStart(2, '0');
     const seconds = String(d.getSeconds()).padStart(2, '0');
 
-    let timeStr = hours + ':' + minutes;
+    let timeStr = hoursStr + ':' + minutes;
     if (includeSeconds) {
         timeStr += ':' + seconds;
     }
+    timeStr += ampm;
 
-    if (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.reportUnit === 'ISO') {
+    if (unit.startsWith('ISO')) {
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(day).padStart(2, '0');
         return year + '-' + mm + '-' + dd + ' ' + timeStr;
-    } else if (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.reportUnit === 'INTL') {
+    } else if (unit.startsWith('INTL')) {
         return day + '-' + month + ' ' + timeStr;
     } else {
         return month + '-' + day + ' ' + timeStr;
