@@ -134,13 +134,13 @@ check_version() {
     case "$mode" in
         header_box)
             case "$STATE" in
-                OFFLINE)       HOVER_TEXT="Current v$SCRIPT_VERSION$DEV <br> Github Offline or Unreachable"
+                OFFLINE)       HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Github Offline or Unreachable"
                                VERSION_HASH="$DEV [Offline]"; HEADER_TITLE="header-title" ;;
-                OUTDATED)      HOVER_TEXT="Current v$SCRIPT_VERSION$DEV <br> New Version v$REMOTE_VERSION available"
+                OUTDATED)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> New Version v$REMOTE_VERSION available"
                                VERSION_HASH="$DEV [$REMOTE_VERSION]"; HEADER_TITLE="header-title2" ;;
-                HASH_DIFF)     HOVER_TEXT="Current v$SCRIPT_VERSION$DEV <br> Hash Update available"
+                HASH_DIFF)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Hash Update available"
                                VERSION_HASH="$DEV [Hash]"; HEADER_TITLE="header-title2" ;;
-                UP_TO_DATE|*)  HOVER_TEXT="Current v$SCRIPT_VERSION$DEV"
+                UP_TO_DATE|*)  HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV"
                                VERSION_HASH="$DEV"; HEADER_TITLE="header-title" ;;
             esac
             ;;
@@ -158,11 +158,11 @@ check_version() {
             ;;
         *)
             case "$STATE" in
-                OFFLINE)       echo -e "$STATUS [Offline]           $RD GitHub Unreachable$NC" ;;
-                NOT_INSTALLED) echo -e "$STATUS [Not Installed]$BL Latest Available:$NC v$REMOTE_VERSION"; N1="$BL(1)" ;;
-                OUTDATED)      echo -e "$STATUS [v$REMOTE_VERSION Available]     $CURRENT" ;;
-                HASH_DIFF)     echo -e "$STATUS [Hash Update Available]$CURRENT" ;;
-                UP_TO_DATE|*)  echo -e "$STATUS [Up to date]           $CURRENT" ;;
+                OFFLINE)       echo -e "$STATUS $RD[Offline]          [GitHub Unreachable]$NC" ;;
+                NOT_INSTALLED) echo -e "$STATUS $GR[Not Installed]$NC Latest Available:$GR v$REMOTE_VERSION$NC"; N1="$BL(1)" ;;
+                OUTDATED)      echo -e "$STATUS $GR[v$REMOTE_VERSION Available]$NC     $CURRENT" ;;
+                HASH_DIFF)     echo -e "$STATUS $GR[Hash Update Available]$NC $CURRENT" ;;
+                UP_TO_DATE|*)  echo -e "$STATUS $GR[Up to date]$NC           $CURRENT" ;;
             esac
             ;;
     esac
@@ -200,8 +200,9 @@ menu_vars() {
     : "${MAIN_COLOR:=#0096ff}"
     : "${NODE_COLORS:=#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
 
-    ON="${GR}ON$NC"; OFF="${RD}OFF$NC"; echo -e "$BL"
-    STATUS="$BL STATUS:$NC"; CURRENT="$BL CURRENT:$NC v$SCRIPT_VERSION$DEV"
+    ON="${GR}ON"; OFF="${RD}OFF$NC"; echo -e "$BL"
+    STATUS="$NC STATUS:"
+    CURRENT="CURRENT:$GR v$SCRIPT_VERSION$DEV$NC"
     SS_FILE="/jffs/scripts/services-start"
 
     DATE_ISO="$GR$(date +"%Y-%m-%d %H:%M:%S")$NC"
@@ -1072,7 +1073,7 @@ set_branch() {
         echo -e "$BL=================================================="
         echo -e "$NC                Set Github Branch                 "
         echo -e "$BL=================================================="
-        echo -e "$NC  Branch: [$BN]               v$SCRIPT_VERSION$DEV"
+        echo -e "$NC  Branch: [$BN]      $CURRENT                     "
         echo -e "$BL=================================================="
         echo -e "                                                     "
         echo -e "  $N1 main (JB1366)                                  "
