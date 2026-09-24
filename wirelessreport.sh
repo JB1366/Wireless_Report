@@ -195,12 +195,12 @@ menu_vars() {
     JB1366="$GR${UL}https://github.com/JB1366/Wireless_Report$NC"
 
     for i in 0 1 2 3 4 5 6 7 8; do eval "N${i}=\"\$BL(${i})\$NC\""; done
-	for i in E C R; do eval "L${i}=\"\$BL(${i})\$NC\""; done
+	for i in E S R; do eval "L${i}=\"\$BL(${i})\$NC\""; done
 
     : "${MAIN_COLOR:=#0096ff}"
     : "${NODE_COLORS:=#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
 
-    ON="${GR}ON"; OFF="${RD}OFF$NC"; echo -e "$BL"
+    ON="${GR}ON$NC"; OFF="${RD}OFF$NC"; echo -e "$BL"
     STATUS="$NC STATUS:"
     CURRENT="CURRENT:$GR v$SCRIPT_VERSION$DEV$NC"
     SS_FILE="/jffs/scripts/services-start"
@@ -775,8 +775,8 @@ set_colors() {
         #=============================================================#
         echo -e "                                                     "
         echo -e "  $LR Restore Default Colors                         "
-        echo -e "  $LC Cancel and Discard Changes                     "
-        echo -e "  $LE Exit and Save Changes                          "
+        echo -e "  $LS Save Changes & Exit                            "
+        echo -e "  $LE Exit back to main menu                         "
         echo -e "                                                     "
         echo -e "$BL=================================================="
         while true; do
@@ -795,8 +795,8 @@ set_colors() {
                     done
                     echo -e "$BL\nColors restored to defaults.$NC"
                     pause; continue 2 ;;
-                c|C) return 0 ;;
-                e|E) break 2 ;;
+                s|S) break 2 ;;
+                e|E) return 0 ;;
             esac
             case "$node_choice" in ""|*[!0-9]*) freeze 2; continue ;; esac
             if [ "$node_choice" -gt "$total_nodes" ]; then freeze 2; continue; fi
@@ -1123,8 +1123,8 @@ set_rssi() {
         echo -e "  $N2 Set History Depth:   [$CE] entries             "
         echo -e "  $N3 Toggle Timestamps:   [$TS]                     "
         echo -e "                                                     "
-        echo -e "  $LC Cancel and Discard Changes                     "
-        echo -e "  $LE Exit and Save Changes                          "
+        echo -e "  $LS Save Changes & Exit                            "
+        echo -e "  $LE Exit back to main menu                         "
         echo -e "                                                     "
         echo -e "$BL=================================================="
         while true; do
@@ -1147,11 +1147,7 @@ set_rssi() {
                 3)
                     case "$CUR_DATE" in 1) CUR_DATE="0" ;; *) CUR_DATE="1" ;; esac
                     ;;
-                c|C)
-                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
-                    return 0
-                    ;;
-                e|E)
+                s|S)
                     RS_HIST="$CUR_RS_HIST"
                     RS_HIST_ENTRIES="$CUR_ENTRIES"
                     RS_HIST_DATE="$CUR_DATE"
@@ -1167,6 +1163,10 @@ set_rssi() {
                     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
                     run_report
                     pause
+                    return 0
+                    ;;
+                e|E)
+                    unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
                     return 0
                     ;;
                 *)
