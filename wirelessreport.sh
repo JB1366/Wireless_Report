@@ -1376,158 +1376,1228 @@ cat <<HTML >> "$WEB_PAGE"
 <script src="/help.js"></script>
 <script src="/validator.js"></script>
 <style>
-	#wifiReportContainer { color: #f2f2f7; font-size: 12px; font-family: Arial, sans-serif; width: 97% !important; margin: 0 !important; padding: 0 !important; position: relative; cursor: pointer !important; -webkit-tap-highlight-color: transparent !important; }
-    .grid-container { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 100%; }
-    .top-header { width: 100%; padding: 1px; border-radius: 8px; margin-bottom: 2px; text-align: center; }
-    .header-title { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
-    .header-title2 { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; animation: pulse-twice 1.2s ease-in-out 2; }
-    @keyframes pulse-twice { 0%, 100% { color: #0096ff; text-shadow: 0 0 0px transparent; } 50% { color: #66c2ff; text-shadow: 0 0 8px #0096ff; } }
-    .top-buttons { display: flex; justify-content: center; gap: 7px; width: 100%; margin: 0 0 12px 0; }
+    #wifiReportContainer {
+        color: #f2f2f7;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        width: 97% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: relative;
+        cursor: pointer !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
 
-    .top-buttons > * { height: 28px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; }
+    .grid-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+        width: 100%;
+    }
 
-	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
-	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
-	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
-	.header-box { visibility: hidden; width: max-content; min-width: 120px; background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #0096ff; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
-	.header-tooltip { position: relative; display: inline-block; }
-	.header-tooltip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
-    .section-header { color: #ffffff; font-size: 13px; letter-spacing: 0.5px; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
-    .report-column { width: 100%; border-radius: 8px; border: 1px solid #475a68; overflow: hidden; display: flex; flex-direction: column; }
-	.rssi-quality-bar { display: flex; justify-content: center; gap: 12px; align-items: center; width: 100%; margin: -5px auto -5px auto; padding: 0; background: transparent; border: none; height: auto; }
-	.rssi-quality-box { display: inline-block; height: 28px; line-height: 26px; text-align: center; padding: 0 12px; border-radius: 4px; background: rgba(0,0,0,0.4); border: 1px solid #475a68; font-weight: bold; box-sizing: border-box; transition: all 0.2s ease; }
-    .rssi_bars { font-family: monospace; font-weight: 900; width: 40px; display: inline-block; text-align: right; margin-right: 5px; }
-    .rssi-font { color:#000; padding:1px 5px; border-radius:3px; margin-left:4px; }
-    .rssi-excl { color: #30d158; --hover-color: #30d158; --glow-color: rgba(48,209,88,0.4); }
-    .rssi-good { color: #64d2ff; --hover-color: #64d2ff; --glow-color: rgba(100,210,255,0.4); }
-    .rssi-fair { color: #ffd60a; --hover-color: #ffd60a; --glow-color: rgba(255,214,10,0.4); }
-    .rssi-poor { color: #ff453a; --hover-color: #ff453a; --glow-color: rgba(255,69,58,0.4); }
-    .rssi-container { position: relative; vertical-align: middle; }
-	.rssi-tooltip { visibility: hidden; position: fixed; z-index: 99999; color: #fff; padding: 10px; border-radius: 8px; border: 1px solid #0096ff; opacity: 0; transition: opacity .3s; font: 1.1em monospace; white-space: pre; width: max-content; pointer-events: none; text-align: left !important; }
-	.rssi-container:hover .rssi-tooltip { visibility: visible; opacity: 1; }
-    .button-refresh { display: inline-flex; align-items: center; height: 28px; line-height: 26px; text-align: center; padding: 0 5px; border-radius: 4px; border: 1px solid #475a68; font-weight: bold; transition: all 0.2s ease; }
-    .button-refresh:hover { border-color: #0096ff; box-shadow: 0 0 10px rgba(0,150,255,0.4); }
-    .right-arrow { color: #ffffff; font-size: 0.9em; margin: 0 4px; animation: right-arrow-glow 3s infinite ease-in-out; }
-	@keyframes right-arrow-glow { 0%, 100% { color: rgba(255,255,255,0.2); } 50% { color: #ffffff; text-shadow: 0 0 8px rgba(255,255,255,0.8); } }
-    .refresh-pulse { animation: refresh-pulse-blue 1.5s infinite ease-in-out !important; pointer-events: none; }
-    @keyframes refresh-pulse-blue { 0%, 100% { color: #0044cc; text-shadow: 0 0 2px #0044cc; } 50% { color: #0096ff; text-shadow: 0 0 10px #0096ff; } }
-	.pulse-blue { color: #00e5ff !important; font-weight: bold; animation: pulse-blue-glow 2s infinite; }
-	@keyframes pulse-blue-glow { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    .new-device-row { background-color: rgba(0, 229, 255, 0.1) !important; animation: pulse-blue-glow 2s infinite; }
-    .button-auto-refresh { display: inline-flex; align-items: center; padding: 0 5px; height: 28px; border: 0; margin-left: -4px; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: #0096ff; font-size: 12px; font-weight: bold; cursor: pointer !important; }
-    .button-auto-refresh > span { color: #0096ff; font-weight: bold; pointer-events: none; user-select: none; }
-    .button-auto-refresh:hover, .button-auto-refresh.active { border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); color: #0096ff; position: relative; z-index: 5 }
-    .button-auto-refresh.active { background: rgba(0,150,255,0.15); }
-    .button-tables.button-trigger { color: #0096ff; border: none; border-top-right-radius: 0; border-bottom-right-radius: 0; height: 100%; line-height: inherit; padding: 0 5px; }
-    .button-trigger.runtime-off:not(.refresh-pulse) { color: white !important; }
-    .button-tables.button-trigger span { color: white !important; }
-    .button-tables { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
-    .button-tables:hover, .button-tables.active { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
-    .button-tables.active { background: rgba(0,150,255,0.15); }
+    .top-header {
+        width: 100%;
+        padding: 1px;
+        border-radius: 8px;
+        margin-bottom: 2px;
+        text-align: center;
+    }
 
-    .btn-tooltip { position: relative; }
-    .btn-tooltip:before { content: attr(data-tooltip); position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; top:150%; left: 150%; transform: translateX(-75%); }
-    .btn-tooltip:hover:before { opacity: 1; visibility: visible; top: 150%; }
-    #refresh-option { color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit; }
+    .header-title {
+        display: inline-block;
+        text-align: center;
+        color: #0096ff;
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+        position: static;
+    }
 
-    #refresh-option option { font-weight: bold; }
-    #refresh-option:focus { outline: none; border: none; }
-    #refresh-countdown { color: #0096ff; font-weight: bold; }
+    .header-title2 {
+        display: inline-block;
+        text-align: center;
+        color: #0096ff;
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+        position: static;
+        animation: pulse-twice 1.2s ease-in-out 2;
+    }
+
+    @keyframes pulse-twice {
+        0%, 100% {
+            color: #0096ff;
+            text-shadow: 0 0 0px transparent;
+        }
+        50% {
+            color: #66c2ff;
+            text-shadow: 0 0 8px #0096ff;
+        }
+    }
+
+    .top-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        margin: 0 0 12px 0;
+    }
+
+    .total-count {
+        text-align: center;
+        color: #f2f2f7;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+    }
+
+    .count-highlight {
+        background: #0096ff;
+        color: #000;
+        padding: 1px 6px;
+        border-radius: 3px;
+        margin-left: 4px;
+        font-weight: 900;
+    }
+
+    .header-wrap {
+        text-align: center;
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    .header-box {
+        visibility: hidden;
+        width: max-content;
+        min-width: 120px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        text-align: center;
+        border: 1px solid #0096ff;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 999;
+        bottom: 135%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 0.85rem;
+        font-weight: bold;
+        box-shadow: 0 4px 12px #000;
+        pointer-events: none;
+        line-height: 1.4;
+    }
+
+    .header-tooltip {
+        position: relative;
+        display: inline-block;
+    }
+
+    .header-tooltip:hover .header-box {
+        visibility: visible;
+        opacity: 1;
+        bottom: 145%;
+    }
+
+    .section-header {
+        color: #ffffff;
+        font-size: 13px;
+        letter-spacing: 0.5px;
+        font-weight: bold;
+        padding: 12px;
+        text-align: center;
+        border-bottom: 1px solid #475a68;
+    }
+
+    .report-column {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #475a68;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rssi-quality-bar {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        align-items: center;
+        width: 100%;
+        margin: -5px auto -5px auto;
+        padding: 0;
+        background: transparent;
+        border: none;
+        height: auto;
+    }
+
+    .rssi-quality-box {
+        display: inline-block;
+        height: 28px;
+        line-height: 26px;
+        text-align: center;
+        padding: 0 12px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid #475a68;
+        font-weight: bold;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+    }
+
+    .rssi_bars {
+        font-family: monospace;
+        font-weight: 900;
+        width: 40px;
+        display: inline-block;
+        text-align: right;
+        margin-right: 5px;
+    }
+
+    .rssi-font {
+        color: #000;
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-left: 4px;
+    }
+
+    .rssi-excl {
+        color: #30d158;
+        --hover-color: #30d158;
+        --glow-color: rgba(48, 209, 88, 0.4);
+    }
+
+    .rssi-good {
+        color: #64d2ff;
+        --hover-color: #64d2ff;
+        --glow-color: rgba(100, 210, 255, 0.4);
+    }
+
+    .rssi-fair {
+        color: #ffd60a;
+        --hover-color: #ffd60a;
+        --glow-color: rgba(255, 214, 10, 0.4);
+    }
+
+    .rssi-poor {
+        color: #ff453a;
+        --hover-color: #ff453a;
+        --glow-color: rgba(255, 69, 58, 0.4);
+    }
+
+    .rssi-container {
+        position: relative;
+        vertical-align: middle;
+    }
+
+    .rssi-tooltip {
+        visibility: hidden;
+        position: fixed;
+        z-index: 99999;
+        color: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #0096ff;
+        opacity: 0;
+        transition: opacity .3s;
+        font: 1.1em monospace;
+        white-space: pre;
+        width: max-content;
+        pointer-events: none;
+        text-align: left !important;
+    }
+
+    .rssi-container:hover .rssi-tooltip {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .button-refresh {
+        display: inline-flex;
+        align-items: center;
+        height: 28px;
+        line-height: 26px;
+        text-align: center;
+        padding: 0 5px;
+        border-radius: 4px;
+        border: 1px solid #475a68;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+
+    .button-refresh:hover {
+        border-color: #0096ff;
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.4);
+    }
+
+    .right-arrow {
+        color: #ffffff;
+        font-size: 0.9em;
+        margin: 0 4px;
+        animation: right-arrow-glow 3s infinite ease-in-out;
+    }
+
+    @keyframes right-arrow-glow {
+        0%, 100% {
+            color: rgba(255, 255, 255, 0.2);
+        }
+        50% {
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+    }
+
+    .refresh-pulse {
+        animation: refresh-pulse-blue 1.5s infinite ease-in-out !important;
+        pointer-events: none;
+    }
+
+    @keyframes refresh-pulse-blue {
+        0%, 100% {
+            color: #0044cc;
+            text-shadow: 0 0 2px #0044cc;
+        }
+        50% {
+            color: #0096ff;
+            text-shadow: 0 0 10px #0096ff;
+        }
+    }
+
+    .pulse-blue {
+        color: #00e5ff !important;
+        font-weight: bold;
+        animation: pulse-blue-glow 2s infinite;
+    }
+
+    @keyframes pulse-blue-glow {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .new-device-row {
+        background-color: rgba(0, 229, 255, 0.1) !important;
+        animation: pulse-blue-glow 2s infinite;
+    }
+
+    .button-auto-refresh {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 5px;
+        height: 28px;
+        border: 0;
+        margin-left: -4px;
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+        color: #0096ff;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer !important;
+    }
+
+    .button-auto-refresh > span {
+        color: #0096ff;
+        font-weight: bold;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .button-auto-refresh:hover,
+    .button-auto-refresh.active {
+        border-color: #0096ff;
+        box-shadow: 0 0 25px rgba(0, 150, 255, 0.6);
+        color: #0096ff;
+        position: relative;
+        z-index: 5;
+    }
+
+    .button-auto-refresh.active {
+        background: rgba(0, 150, 255, 0.15);
+    }
+
+    .button-tables.button-trigger {
+        color: #0096ff;
+        border: none;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        height: 100%;
+        line-height: inherit;
+        padding: 0 5px;
+    }
+
+    .button-trigger.runtime-off:not(.refresh-pulse) {
+        color: white !important;
+    }
+
+    .button-tables.button-trigger span {
+        color: white !important;
+    }
+
+    .button-tables {
+        border: 1px solid #475a68;
+        color: white;
+        padding: 0 12px;
+        font-size: 12px;
+        border-radius: 4px;
+        font-weight: bold;
+        height: 28px;
+        cursor: pointer !important;
+        line-height: 26px;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .button-tables:hover,
+    .button-tables.active {
+        color: #0096ff;
+        border-color: #0096ff;
+        box-shadow: 0 0 25px rgba(0, 150, 255, 0.6);
+        position: relative;
+        z-index: 5;
+    }
+
+    .button-tables.active {
+        background: rgba(0, 150, 255, 0.15);
+    }
+
+
+
+    .btn-tooltip {
+        position: relative;
+    }
+
+    .btn-tooltip:before {
+        content: attr(data-tooltip);
+        position: absolute;
+        height: 28px;
+        line-height: 28px;
+        padding: 0 15px;
+        background: $RT_TOOLTIP;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        border: 1.5px solid #0096ff;
+        border-radius: 20px;
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 100;
+        pointer-events: none;
+        top: 150%;
+        left: 150%;
+        transform: translateX(-75%);
+    }
+
+    .btn-tooltip:hover:before {
+        opacity: 1;
+        visibility: visible;
+        top: 150%;
+    }
+
+
+
+    #refresh-option {
+        color: #ffffff;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+    }
+
+    #refresh-option option {
+        font-weight: bold;
+    }
+
+    #refresh-option:focus {
+        outline: none;
+        border: none;
+    }
+
+    #refresh-countdown {
+        color: #0096ff;
+        font-weight: bold;
+    }
+
     ${THEME_CSS}
-	.report_table tbody tr:hover td { background-color: rgba(0, 123, 255, 0.15) !important; }
-	table.report_table { width: 100%; border-collapse: collapse; }
-	table.report_table .mac-val {}
-	table.report_table .ip-val {}
-	table.report_table.show-ip .mac-val { display: none !important; }
-	table.report_table.show-ip .ip-val { display: inline !important; }
-	table.report_table.show-mac .mac-val { display: inline !important; }
-	table.report_table.show-mac .ip-val { display: none !important; }
-	table.report_table.show-iface .ssid-val { display: none !important; }
-	table.report_table.show-iface .iface-val { display: inline !important; color: #64d2ff; }
-    table.report_table td { padding: 6px; border-bottom: 1px solid #3d454b; vertical-align: middle; text-align: center; }
-    table.report_table tfoot td { border-top: 1px solid #475a68; padding: 12px 10px !important; font-weight: bold; color: #fff; }
-    table.report_table thead th { position: sticky; top: 0; z-index: 10; color: #fff; padding: 8px; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
-    table.report_table th:hover { color: #000; text-shadow: 0 0 10px rgba(0,229,255,0.8); }
-    table.report_table td:nth-child(7) { font-weight: normal; }
-	.mac-val, .ssid-val { display: inline; }
-    .ip-val, .iface-val { display: none; }
-    tfoot td { text-align: center; }
-    tfoot td > span:not(:last-child) { margin-right: 6px; }
-	#splitView { display: flex; flex-direction: column; gap: 15px; width: 100%; }
-    #allCol { display: none; width: 100% ; align-self: flex-start; }
-    .router-style { color: $MAIN_COLOR; font-size: 20px; font-weight: bold; display: inline-block; margin-bottom: 4px; }
-    @keyframes routerPulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-    .router-style.pulse-active { animation: routerPulse 1.5s infinite ease-in-out; }
-    .cpu-mem-row { display: block; font-size: 14px; color: #f2f2f7; margin-top: 11px; font-weight: bold; white-space: nowrap; width: 100%; overflow: visible !important; text-align: center; justify-content: center; }
-    .cpu-mem-row > span:not(:last-child) { margin-right: 1px; }
-	.uptime-footer-row { text-align: center; justify-content: center; font-size: 14px; }
-    .stat-cool { color: #0096ff !important; font-weight: bold; }
-    .stat-warm { color: #ffa500 !important; font-weight: bold; }
-	.stat-hot { color: #ff453a !important; font-weight: bold; }
-    .main-color { color: $MAIN_COLOR !important; font-weight: bold; }
-    .band-24g { color: #0096ff !important; font-weight: bold; }
-	.band-5g { color: #30d158 !important; font-weight: bold; }
-	.band-6g { color: #bf40bf !important; font-weight: bold; }
-    .hidden-node-number { position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none; }
-    .separator-line { margin: 8px -12px; width: calc(100% + 24px); display: block; }
-    sup { font-size: 0.6em; margin-left: 2px; }
-    .sup-header { font-size:14px; font-weight:bold; margin-left:2px; }
-    .button-refresh:hover select, .button-refresh:hover .button-trigger { color: #0096ff !important; }
-    .button-refresh, .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
-    .button-refresh select, .button-refresh .button-trigger { position: relative; display: inline-block; }
-    .button-refresh:before, .button-refresh .button-trigger:before, .button-refresh select:before { position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; }
-    .button-refresh:after, .button-refresh .button-trigger:after, .button-refresh select:after { content: ""; position: absolute; width: 4px; height: 4px; background: #0096ff; border-radius: 50%; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 101; pointer-events: none; }
-    .button-refresh:before { content: var(--avg-text, "Avg: calculating..."); left: -80px; bottom: 185%; background: $RT_TOOLTIP; }
-    .button-refresh .button-trigger:before, .button-refresh select:before { content: var(--highlow-text, "High: 0s   Low: 0s"); left: -80px; top: 185%; background: $RT_TOOLTIP; }
-    .button-refresh:after { left: 15px; bottom: 130%; box-shadow: -12px -12px 0 1.5px #0096ff; }
-    .button-refresh .button-trigger:after, .button-refresh select:after { left: 11px; top: 130%; box-shadow: -12px 12px 0 1.5px #0096ff; }
-    .button-refresh:has(.button-trigger:hover):before { opacity: 1; visibility: visible; bottom: 190%; }
-    .button-refresh:has(.button-trigger:hover):after { opacity: 1; visibility: visible; }
-    .button-refresh:has(.button-trigger:hover) .button-trigger:before { opacity: 1; visibility: visible; top: 190%; }
-    .button-refresh:has(.button-trigger:hover) .button-trigger:after { opacity: 1; visibility: visible; }
+
+    .report_table tbody tr:hover td {
+        background-color: rgba(0, 123, 255, 0.15) !important;
+    }
+
+    table.report_table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table.report_table .mac-val {}
+    table.report_table .ip-val {}
+
+    table.report_table.show-ip .mac-val {
+        display: none !important;
+    }
+
+    table.report_table.show-ip .ip-val {
+        display: inline !important;
+    }
+
+    table.report_table.show-mac .mac-val {
+        display: inline !important;
+    }
+
+    table.report_table.show-mac .ip-val {
+        display: none !important;
+    }
+
+    table.report_table.show-iface .ssid-val {
+        display: none !important;
+    }
+
+    table.report_table.show-iface .iface-val {
+        display: inline !important;
+        color: #64d2ff;
+    }
+
+    table.report_table td {
+        padding: 6px;
+        border-bottom: 1px solid #3d454b;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    table.report_table tfoot td {
+        border-top: 1px solid #475a68;
+        padding: 12px 10px !important;
+        font-weight: bold;
+        color: #fff;
+    }
+
+    table.report_table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        color: #fff;
+        padding: 8px;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    table.report_table th:hover {
+        color: #000;
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+    }
+
+    table.report_table td:nth-child(7) {
+        font-weight: normal;
+    }
+
+    .mac-val,
+    .ssid-val {
+        display: inline;
+    }
+
+    .ip-val,
+    .iface-val {
+        display: none;
+    }
+
+    tfoot td {
+        text-align: center;
+    }
+
+    tfoot td > span:not(:last-child) {
+        margin-right: 6px;
+    }
+
+    #splitView {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+    }
+
+    #allCol {
+        display: none;
+        width: 100%;
+        align-self: flex-start;
+    }
+
+    .router-style {
+        color: $MAIN_COLOR;
+        font-size: 20px;
+        font-weight: bold;
+        display: inline-block;
+        margin-bottom: 4px;
+    }
+
+    @keyframes routerPulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.4; }
+        100% { opacity: 1; }
+    }
+
+    .router-style.pulse-active {
+        animation: routerPulse 1.5s infinite ease-in-out;
+    }
+
+    .cpu-mem-row {
+        display: block;
+        font-size: 14px;
+        color: #f2f2f7;
+        margin-top: 11px;
+        font-weight: bold;
+        white-space: nowrap;
+        width: 100%;
+        overflow: visible !important;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .cpu-mem-row > span:not(:last-child) {
+        margin-right: 1px;
+    }
+
+    .uptime-footer-row {
+        text-align: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+
+    .stat-cool {
+        color: #0096ff !important;
+        font-weight: bold;
+    }
+
+    .stat-warm {
+        color: #ffa500 !important;
+        font-weight: bold;
+    }
+
+    .stat-hot {
+        color: #ff453a !important;
+        font-weight: bold;
+    }
+
+    .main-color {
+        color: $MAIN_COLOR !important;
+        font-weight: bold;
+    }
+
+    .band-24g {
+        color: #0096ff !important;
+        font-weight: bold;
+    }
+
+    .band-5g {
+        color: #30d158 !important;
+        font-weight: bold;
+    }
+
+    .band-6g {
+        color: #bf40bf !important;
+        font-weight: bold;
+    }
+
+    .hidden-node-number {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .separator-line {
+        margin: 8px -12px;
+        width: calc(100% + 24px);
+        display: block;
+    }
+
+    sup {
+        font-size: 0.6em;
+        margin-left: 2px;
+    }
+
+    .sup-header {
+        font-size: 14px;
+        font-weight: bold;
+        margin-left: 2px;
+    }
+
+    .button-refresh:hover select,
+    .button-refresh:hover .button-trigger {
+        color: #0096ff !important;
+    }
+
+    .button-refresh,
+    .button-refresh select,
+    .button-refresh .button-trigger {
+        position: relative;
+        display: inline-block;
+    }
+
+    .button-refresh:before,
+    .button-refresh .button-trigger:before,
+    .button-refresh select:before {
+        position: absolute;
+        height: 28px;
+        line-height: 28px;
+        padding: 0 15px;
+        background: $RT_TOOLTIP;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        border: 1.5px solid #0096ff;
+        border-radius: 20px;
+        box-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 100;
+        pointer-events: none;
+    }
+
+    .button-refresh:after,
+    .button-refresh .button-trigger:after,
+    .button-refresh select:after {
+        content: "";
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #0096ff;
+        border-radius: 50%;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 101;
+        pointer-events: none;
+    }
+
+    .button-refresh:before {
+        content: var(--avg-text, "Avg: calculating...");
+        left: -80px;
+        bottom: 185%;
+        background: $RT_TOOLTIP;
+    }
+
+    .button-refresh .button-trigger:before,
+    .button-refresh select:before {
+        content: var(--highlow-text, "High: 0s   Low: 0s");
+        left: -80px;
+        top: 185%;
+        background: $RT_TOOLTIP;
+    }
+
+    .button-refresh:after {
+        left: 15px;
+        bottom: 130%;
+        box-shadow: -12px -12px 0 1.5px #0096ff;
+    }
+
+    .button-refresh .button-trigger:after,
+    .button-refresh select:after {
+        left: 11px;
+        top: 130%;
+        box-shadow: -12px 12px 0 1.5px #0096ff;
+    }
+
+    .button-refresh:has(.button-trigger:hover):before {
+        opacity: 1;
+        visibility: visible;
+        bottom: 190%;
+    }
+
+    .button-refresh:has(.button-trigger:hover):after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .button-refresh:has(.button-trigger:hover) .button-trigger:before {
+        opacity: 1;
+        visibility: visible;
+        top: 190%;
+    }
+
+    .button-refresh:has(.button-trigger:hover) .button-trigger:after {
+        opacity: 1;
+        visibility: visible;
+    }
+
     .button-refresh .button-trigger:not([style*="--highlow-text"]):before,
-    .button-refresh .button-trigger:not([style*="--highlow-text"]):after { display: none !important; }
+    .button-refresh .button-trigger:not([style*="--highlow-text"]):after {
+        display: none !important;
+    }
+
     .button-refresh:not([style*="--avg-text"]):before,
-    .button-refresh:not([style*="--avg-text"]):after { display: block !important; visibility: hidden !important; opacity: 0 !important; content: "" !important; }
-    body.wr-wide-mode { overflow: hidden !important; }
-    body.wr-wide-mode #wifiReportContainer { position: fixed !important; inset: 0 !important; z-index: 9000 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; margin: 0 !important; padding: 4px 18px 24px 18px !important; box-sizing: border-box !important; overflow: auto !important; background: rgba(0,0,0,0.98); }
+    .button-refresh:not([style*="--avg-text"]):after {
+        display: block !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        content: "" !important;
+    }
+
+    body.wr-wide-mode {
+        overflow: hidden !important;
+    }
+
+    body.wr-wide-mode #wifiReportContainer {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 9000 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 4px 18px 24px 18px !important;
+        box-sizing: border-box !important;
+        overflow: auto !important;
+        background: rgba(0, 0, 0, 0.98);
+    }
+
     body.wr-wide-mode #wifiReportContainer .grid-container,
     body.wr-wide-mode #wifiReportContainer #splitView,
-    body.wr-wide-mode #wifiReportContainer #allCol { width: 100% !important; max-width: none !important; }
-    body.wr-wide-mode #wifiReportContainer table.report_table { min-width: 900px; }
-    body.wr-wide-mode #wifiReportContainer table.report_table tbody td { font-size: 13px; }
-    body.wr-wide-mode #wifiReportContainer table.report_table thead th { font-size: 13px; }
-    body.wr-wide-mode #wifiReportContainer .router-style { font-size: 22px; }
-    body.wr-wide-mode #btnWide { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); background: rgba(0,150,255,0.15); }
-    body.wr-wide-mode table.report_table th:nth-child(1), #popoutModal table.report_table th:nth-child(1) { min-width: 100px; }
-    body.wr-wide-mode table.report_table th:nth-child(2), #popoutModal table.report_table th:nth-child(2) { min-width: 100px; }
-    body.wr-wide-mode table.report_table th:nth-child(3), #popoutModal table.report_table th:nth-child(3) { min-width: 75px; }
-    body.wr-wide-mode table.report_table th:nth-child(4), #popoutModal table.report_table th:nth-child(4) { min-width: 75px; }
-    body.wr-wide-mode table.report_table th:nth-child(5), #popoutModal table.report_table th:nth-child(5) { min-width: 75px; }
-    body.wr-wide-mode table.report_table th:nth-child(6), #popoutModal table.report_table th:nth-child(6) { min-width: 75px; }
-    body.wr-wide-mode table.report_table th:nth-child(7), #popoutModal table.report_table th:nth-child(7) { min-width: 75px; }
-    .popout-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-    .popout-content { background: rgba(0, 0, 0, 0.2); width: fit-content; max-width: 98vw; max-height: 95vh; margin: auto; padding: 12px; box-sizing: border-box; border-radius: 15px; border: 1px solid rgba(0, 150, 255, 0.4); position: relative; overflow-y: auto; box-shadow: 0 0 40px rgba(0,0,0,0.6); backdrop-filter: blur(20px); overflow-x: hidden !important; }
-    .popout-close-x { position: absolute; top: 8px; right: 20px; color: #fff; font-size: 30px; font-weight: bold; }
-    .popout-grid { display: flex; width: 100%; gap: 10px; margin-top: 2px; align-items: flex-start; justify-content: center; }
-    .popout-grid > .report-column, .popout-grid > .popout-main-wrapper { flex: 1 1 0; min-width: 0; max-width: none; overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
-    .popout-main-wrapper { display: flex; flex-direction: column; }
-    .popout-main-wrapper > .report-column { flex: none !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
-    #popoutModal .separator-line { margin: 8px -12px; display: block; width: calc(100% + 24px); }
-    #popoutModal table.report_table tbody td { white-space: nowrap; height: 25px !important; line-height: 25px !important; padding: 0 4px !important; }
-    #popoutModal table.report_table tbody td:not([style*="font-weight: bold"]) { font-size: 12px !important; font-weight: normal !important; }
-    #popoutModal table.report_table tbody td[style*="font-weight: bold"] { font-size: 12px !important; }
-    #popoutModal table.report_table tbody td:nth-child(7) { font-weight: normal !important; }
-    #popoutModal table.report_table thead th { font-size: 12px !important; font-weight: bold !important; white-space: nowrap; vertical-align: middle !important; height: 32px !important; padding: 0 4px !important; }
-    #popoutModal .report-column .section-header .cpu-mem-row { margin-top: -2px !important; margin-bottom: -2px !important; display: block !important; }
-    #popoutModal .report-column .section-header .cpu-mem-row span { font-size: 14px !important; font-weight: bold !important; }
-    #popoutModal .report-column div:last-child, #popoutModal .table-footer, #popoutModal tfoot td { font-size: 14px !important; font-weight: bold !important; line-height: normal !important; padding-top: 12px !important; padding-bottom: 12px !important; background: transparent !important; white-space: nowrap !important; }
-    #popoutModal .rssi-container { position: relative !important; }
-    #popoutModal .rssi-tooltip { position: absolute !important; bottom: 100% !important; left: 50% !important; top: auto !important; right: auto !important; transform: translateX(-50%) !important; margin-bottom: 6px !important; z-index: 999999 !important; }
-    #popoutModal, #popoutModal * { cursor: pointer !important; -webkit-tap-highlight-color: transparent !important; }
-    @media (min-width: 992px) { #popoutModal .separator-line { min-width: 815px; } #popoutModal table.report_table { min-width: 815px !important; } @media (orientation: landscape) { .popout-grid > .report-column::-webkit-scrollbar, .popout-grid > .popout-main-wrapper::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; } .popout-grid > .report-column, .popout-grid > .popout-main-wrapper { -ms-overflow-style: none; scrollbar-width: none; } } @media (orientation: portrait) { #popoutModal table.report_table { width: max-content !important; } .popout-grid .report-column { scrollbar-width: auto !important; -ms-overflow-style: auto !important; } } }
-    @media (max-width: 991px) { .popout-grid > .report-column, .popout-grid > .popout-main-wrapper { display: block !important; } #popoutModal table.report_table { min-width: 100% !important; width: max-content !important; display: block !important; } #popoutModal .separator-line { min-width: max-content !important; width: calc(100% + 24px) !important; display: inline-block !important; } }
+    body.wr-wide-mode #wifiReportContainer #allCol {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    body.wr-wide-mode #wifiReportContainer table.report_table {
+        min-width: 900px;
+    }
+
+    body.wr-wide-mode #wifiReportContainer table.report_table tbody td {
+        font-size: 13px;
+    }
+
+    body.wr-wide-mode #wifiReportContainer table.report_table thead th {
+        font-size: 13px;
+    }
+
+    body.wr-wide-mode #wifiReportContainer .router-style {
+        font-size: 22px;
+    }
+
+    body.wr-wide-mode #btnWide {
+        color: #0096ff;
+        border-color: #0096ff;
+        box-shadow: 0 0 25px rgba(0, 150, 255, 0.6);
+        background: rgba(0, 150, 255, 0.15);
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(1),
+    #popoutModal table.report_table th:nth-child(1) {
+        min-width: 100px;
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(2),
+    #popoutModal table.report_table th:nth-child(2) {
+        min-width: 100px;
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(3),
+    #popoutModal table.report_table th:nth-child(3) {
+        min-width: 75px;
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(4),
+    #popoutModal table.report_table th:nth-child(4) {
+        min-width: 75px;
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(5),
+    #popoutModal table.report_table th:nth-child(5) {
+        min-width: 75px;
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(6),
+    #popoutModal table.report_table th:nth-child(6) {
+        min-width: 75px;
+    }
+
+    body.wr-wide-mode table.report_table th:nth-child(7),
+    #popoutModal table.report_table th:nth-child(7) {
+        min-width: 75px;
+    }
+
+    .popout-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(8px);
+    }
+
+    .popout-content {
+        background: rgba(0, 0, 0, 0.2);
+        width: fit-content;
+        max-width: 98vw;
+        max-height: 95vh;
+        margin: auto;
+        padding: 12px;
+        box-sizing: border-box;
+        border-radius: 15px;
+        border: 1px solid rgba(0, 150, 255, 0.4);
+        position: relative;
+        overflow-y: auto;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(20px);
+        overflow-x: hidden !important;
+    }
+
+    .popout-close-x {
+        position: absolute;
+        top: 8px;
+        right: 20px;
+        color: #fff;
+        font-size: 30px;
+        font-weight: bold;
+    }
+
+    .popout-grid {
+        display: flex;
+        width: 100%;
+        gap: 10px;
+        margin-top: 2px;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .popout-grid > .report-column,
+    .popout-grid > .popout-main-wrapper {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .popout-main-wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .popout-main-wrapper > .report-column {
+        flex: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    #popoutModal .separator-line {
+        margin: 8px -12px;
+        display: block;
+        width: calc(100% + 24px);
+    }
+
+    #popoutModal table.report_table tbody td {
+        white-space: nowrap;
+        height: 25px !important;
+        line-height: 25px !important;
+        padding: 0 4px !important;
+    }
+
+    #popoutModal table.report_table tbody td:not([style*="font-weight: bold"]) {
+        font-size: 12px !important;
+        font-weight: normal !important;
+    }
+
+    #popoutModal table.report_table tbody td[style*="font-weight: bold"] {
+        font-size: 12px !important;
+    }
+
+    #popoutModal table.report_table tbody td:nth-child(7) {
+        font-weight: normal !important;
+    }
+
+    #popoutModal table.report_table thead th {
+        font-size: 12px !important;
+        font-weight: bold !important;
+        white-space: nowrap;
+        vertical-align: middle !important;
+        height: 32px !important;
+        padding: 0 4px !important;
+    }
+
+    #popoutModal .report-column .section-header .cpu-mem-row {
+        margin-top: -2px !important;
+        margin-bottom: -2px !important;
+        display: block !important;
+    }
+
+    #popoutModal .report-column .section-header .cpu-mem-row span {
+        font-size: 14px !important;
+        font-weight: bold !important;
+    }
+
+    #popoutModal .report-column div:last-child,
+    #popoutModal .table-footer,
+    #popoutModal tfoot td {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        line-height: normal !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        background: transparent !important;
+        white-space: nowrap !important;
+    }
+
+    #popoutModal .rssi-container {
+        position: relative !important;
+    }
+
+    #popoutModal .rssi-tooltip {
+        position: absolute !important;
+        bottom: 100% !important;
+        left: 50% !important;
+        top: auto !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        margin-bottom: 6px !important;
+        z-index: 999999 !important;
+    }
+
+    #popoutModal,
+    #popoutModal * {
+        cursor: pointer !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+
+    @media (min-width: 992px) {
+        #popoutModal .separator-line {
+            min-width: 815px;
+        }
+        #popoutModal table.report_table {
+            min-width: 815px !important;
+        }
+        @media (orientation: landscape) {
+            .popout-grid > .report-column::-webkit-scrollbar,
+            .popout-grid > .popout-main-wrapper::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+            .popout-grid > .report-column,
+            .popout-grid > .popout-main-wrapper {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+        @media (orientation: portrait) {
+            #popoutModal table.report_table {
+                width: max-content !important;
+            }
+            .popout-grid .report-column {
+                scrollbar-width: auto !important;
+                -ms-overflow-style: auto !important;
+            }
+        }
+    }
+
+    @media (max-width: 991px) {
+        .popout-grid > .report-column,
+        .popout-grid > .popout-main-wrapper {
+            display: block !important;
+        }
+        #popoutModal table.report_table {
+            min-width: 100% !important;
+            width: max-content !important;
+            display: block !important;
+        }
+        #popoutModal .separator-line {
+            min-width: max-content !important;
+            width: calc(100% + 24px) !important;
+            display: inline-block !important;
+        }
+    }
 </style>
+</head>
+<body onload="initial();">
+    <div id="TopBanner"></div>
+    <div id="Loading" class="popup_bg"></div>
+    <table class="content" align="center" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="17">&nbsp;</td>
+            <td valign="top" width="202"><div id="mainMenu"></div><div id="subMenu"></div></td>
+            <td valign="top">
+                <div id="tabMenu" class="submenuBlock"></div>
+                <div id="wifiReportContainer">
+                    <div class="top-header">
+                        <div class="header-wrap">
+                            <div class="header-tooltip">
+                                <h1 class="$HEADER_TITLE">WIRELESS REPORT</h1>
+                                <span class="header-box">$HOVER_TEXT</span>
+                            </div>
+                        </div>
+                        <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
+                        <div class="top-buttons">
+                            <div class="button-refresh">
+                                <button class="button-trigger button-tables" onclick="triggerRefresh()">Refresh</button>
+                                <div class="button-auto-refresh">
+                                    <span>Auto:</span>
+                                    <select id="refresh-option">
+                                        <option value="0">Off</option>
+                                        <option value="30">30s</option>
+                                        <option value="60">1m</option>
+                                        <option value="120">2m</option>
+                                        <option value="300">5m</option>
+                                        <option value="600">10m</option>
+                                        <option value="1200">20m</option>
+                                        <option value="1800">30m</option>
+                                    </select>
+                                    <span id="refresh-countdown"></span>
+                                </div>
+                            </div>
+                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main</button>
+                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
+                            <button class="button-tables" onclick="openPopout()" style="">Side by Side ◫</button>
+                            <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
+                            <a class="button-tables btn-tooltip" href="https://github.com/JB1366/Wireless_Report" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report Repository">Github</a>
+                            <a class="button-tables btn-tooltip" href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report SNB Forums">SNB</a>
+
+                        </div>
+                    </div>
+                    <div class="grid-container">
+                        <div id="splitView">
+                            <div id="mainCol" class="report-column">
+                                <div class="section-header">
+                                    <span id='wr-main-name' class='router-style pulse-active'>Loading Main Router Devices...</span><br>
+                                    Updated: <span class="wr-updated-time">--</span>
+                                    <hr class="separator-line">
+                                    <div class="cpu-mem-row">
+                                        CPU: <span id='wr-main-cpu' class='stat-cool'>--</span>
+                                        Memory: <span id='wr-main-memory' class='stat-cool'>--</span>
+                                        Devices: <span id='wr-main-count' class='main-color'>--</span>
+                                    </div>
+                                </div>
+                                <table id="mainTable" class="report_table">
+                                    <thead><tr>
+                                        <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
+                                        <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                        <th onclick="sortTable(2, 'mainTable')">RSSI</th>
+                                        <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
+                                        <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                        <th onclick="sortTable(5, 'mainTable')">BAND</th>
+                                        <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
+                                    </tr></thead>
+                                    <tbody></tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="7" class="uptime-footer-row">
+                                                Uptime: <span id='wr-main-uptime' class='main-color'>--</span>
+                                                Reboot: <span id='wr-main-reboot' class='main-color'>--</span>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="rssi-quality-bar">
+                                <div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font wr-rssi-excellent'>0</span></div>
+                                <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font wr-rssi-good'>0</span></div>
+                                <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font wr-rssi-fair'>0</span></div>
+                                <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font wr-rssi-poor'>0</span></div>
+                            </div>
+                            <div id="nodeCol" class="report-column">
+                                <div class="section-header">
+                                    <span id='wr-node-names' class='router-style pulse-active'>Loading AiMesh Node Devices...</span><br>
+                                    Updated: <span class="wr-updated-time">--</span>
+                                    <hr class="separator-line">
+                                    <div class="cpu-mem-row">
+                                        CPU: <span id='wr-node-cpu' class='stat-cool'>--</span>
+                                        Memory: <span id='wr-node-memory' class='stat-cool'>--</span>
+                                        Devices: <span id='wr-node-count' class='stat-cool'>--</span>
+                                    </div>
+                                </div>
+                                <table id="nodeTable" class="report_table">
+                                    <thead><tr>
+                                        <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
+                                        <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                        <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
+                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
+                                        <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                        <th onclick="sortTable(5, 'nodeTable')">BAND</th>
+                                        <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
+                                    </tr></thead>
+                                    <tbody></tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="7" class="uptime-footer-row">
+                                                <span id='wr-node-footer'>Controller telemetry pending...</span>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="allCol" class="report-column">
+                            <div class="section-header">
+                                <span id='wr-all-names' class='router-style pulse-active'>Loading All Devices...</span><br>
+                                Updated: <span class="wr-updated-time">--</span>
+                                <hr class="separator-line">
+                                <div class="cpu-mem-row">
+                                    CPU: <span id='wr-all-cpu' class='stat-cool'>--</span>
+                                    Memory: <span id='wr-all-memory' class='stat-cool'>--</span>
+                                    Devices: <span id='wr-all-count' class='stat-cool'>--</span>
+                                </div>
+                            </div>
+                            <table id="allTable" class="report_table">
+                                <thead><tr>
+                                    <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
+                                    <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
+                                    <th onclick="sortTable(2, 'allTable')">RSSI</th>
+                                    <th onclick="sortTable(3, 'allTable')">RX/TX</th>
+                                    <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
+                                    <th onclick="sortTable(5, 'allTable')">BAND</th>
+                                    <th onclick="sortTable(6, 'allTable')">UPTIME</th>
+                                </tr></thead>
+                                <tbody></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="7" class="uptime-footer-row">
+                                            <span id='wr-all-footer'>Controller telemetry pending...</span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div id="allDevicesQualityBar" class="rssi-quality-bar">
+                            <div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font wr-rssi-excellent'>0</span></div>
+                            <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font wr-rssi-good'>0</span></div>
+                            <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font wr-rssi-fair'>0</span></div>
+                            <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font wr-rssi-poor'>0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <div id="footer"></div>
+    <div id="popoutModal" class="popout-overlay" onclick="closePopout()">
+        <div class="popout-content" onclick="event.stopPropagation()">
+            <div style="height: 40px; position: relative;">
+                <span class="popout-close-x" onclick="closePopout()">&times;</span>
+            </div>
+            <div id="popoutBody" class="popout-grid"></div>
+        </div>
+    </div>
 <script>
 var WR_CUSTOM_NODE_NAMES = {};
 $NODE_NICK_JS
@@ -1649,7 +2719,8 @@ function formatDateTimeStamp(d, includeSeconds) {
         hours = hours ? hours : 12; // the hour '0' should be '12'
     }
 
-    const hoursStr = String(hours).padStart(is12Hour ? 1 : 2, '0'); // Single digit for 12-hour to match shell %-I if needed, or keep 2 for consistency
+    // Single digit for 12-hour to match shell %-I if needed, or keep 2 for consistency
+    const hoursStr = String(hours).padStart(is12Hour ? 1 : 2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     const seconds = String(d.getSeconds()).padStart(2, '0');
 
@@ -4774,177 +5845,10 @@ document.addEventListener('contextmenu', function(e) {
     });
 });
 </script>
-</head>
-<body onload="initial();">
-    <div id="TopBanner"></div>
-    <div id="Loading" class="popup_bg"></div>
-    <table class="content" align="center" cellpadding="0" cellspacing="0">
-        <tr>
-            <td width="17">&nbsp;</td>
-            <td valign="top" width="202"><div id="mainMenu"></div><div id="subMenu"></div></td>
-            <td valign="top">
-                <div id="tabMenu" class="submenuBlock"></div>
-                <div id="wifiReportContainer">
-                    <div class="top-header">
-                        <div class="header-wrap">
-                            <div class="header-tooltip">
-                                <h1 class="$HEADER_TITLE">WIRELESS REPORT</h1>
-                                <span class="header-box">$HOVER_TEXT</span>
-                            </div>
-                        </div>
-                        <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
-                        <div class="top-buttons">
-                            <a class="button-tables btn-tooltip" href="https://github.com/JB1366/Wireless_Report" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report Repository">Github</a>
-                            <div class="button-refresh">
-                                <button class="button-trigger button-tables" onclick="triggerRefresh()">Refresh</button>
-                                <div class="button-auto-refresh">
-                                    <span>Auto:</span>
-                                    <select id="refresh-option">
-                                        <option value="0">Off</option>
-                                        <option value="30">30s</option>
-                                        <option value="60">1m</option>
-                                        <option value="120">2m</option>
-                                        <option value="300">5m</option>
-                                        <option value="600">10m</option>
-                                        <option value="1200">20m</option>
-                                        <option value="1800">30m</option>
-                                    </select>
-                                    <span id="refresh-countdown"></span>
-                                </div>
-                            </div>
-                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main</button>
-                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
-                            <button class="button-tables" onclick="openPopout()" style="">Side by Side ◫</button>
-                            <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
-                            <a class="button-tables btn-tooltip" href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report SNB Forums">SNB</a>
-                        </div>
-                    </div>
-                    <div class="grid-container">
-                        <div id="splitView">
-                            <div id="mainCol" class="report-column">
-                                <div class="section-header">
-                                    <span id='wr-main-name' class='router-style pulse-active'>Loading Main Router Devices...</span><br>
-                                    Updated: <span class="wr-updated-time">--</span>
-                                    <hr class="separator-line">
-                                    <div class="cpu-mem-row">
-                                        CPU: <span id='wr-main-cpu' class='stat-cool'>--</span>
-                                        Memory: <span id='wr-main-memory' class='stat-cool'>--</span>
-                                        Devices: <span id='wr-main-count' class='main-color'>--</span>
-                                    </div>
-                                </div>
-                                <table id="mainTable" class="report_table">
-                                    <thead><tr>
-                                        <th onclick="sortTable(0, 'mainTable')">HOSTNAME</th>
-                                        <th onclick="toggleCols('mainTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-                                        <th onclick="sortTable(2, 'mainTable')">RSSI</th>
-                                        <th onclick="sortTable(3, 'mainTable')">RX/TX</th>
-                                        <th onclick="toggleCols('mainTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                                        <th onclick="sortTable(5, 'mainTable')">BAND</th>
-                                        <th onclick="sortTable(6, 'mainTable')">UPTIME</th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="7" class="uptime-footer-row">
-                                                Uptime: <span id='wr-main-uptime' class='main-color'>--</span>
-                                                Reboot: <span id='wr-main-reboot' class='main-color'>--</span>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div class="rssi-quality-bar">
-                                <div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font wr-rssi-excellent'>0</span></div>
-                                <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font wr-rssi-good'>0</span></div>
-                                <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font wr-rssi-fair'>0</span></div>
-                                <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font wr-rssi-poor'>0</span></div>
-                            </div>
-                            <div id="nodeCol" class="report-column">
-                                <div class="section-header">
-                                    <span id='wr-node-names' class='router-style pulse-active'>Loading AiMesh Node Devices...</span><br>
-                                    Updated: <span class="wr-updated-time">--</span>
-                                    <hr class="separator-line">
-                                    <div class="cpu-mem-row">
-                                        CPU: <span id='wr-node-cpu' class='stat-cool'>--</span>
-                                        Memory: <span id='wr-node-memory' class='stat-cool'>--</span>
-                                        Devices: <span id='wr-node-count' class='stat-cool'>--</span>
-                                    </div>
-                                </div>
-                                <table id="nodeTable" class="report_table">
-                                    <thead><tr>
-                                        <th onclick="sortTable(0, 'nodeTable')">HOSTNAME</th>
-                                        <th onclick="toggleCols('nodeTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-                                        <th onclick="sortTable(2, 'nodeTable')">RSSI</th>
-                                        <th onclick="sortTable(3, 'nodeTable')">RX/TX</th>
-                                        <th onclick="toggleCols('nodeTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                                        <th onclick="sortTable(5, 'nodeTable')">BAND</th>
-                                        <th onclick="sortTable(6, 'nodeTable')">UPTIME</th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="7" class="uptime-footer-row">
-                                                <span id='wr-node-footer'>Controller telemetry pending...</span>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-                        <div id="allCol" class="report-column">
-                            <div class="section-header">
-                                <span id='wr-all-names' class='router-style pulse-active'>Loading All Devices...</span><br>
-                                Updated: <span class="wr-updated-time">--</span>
-                                <hr class="separator-line">
-                                <div class="cpu-mem-row">
-                                    CPU: <span id='wr-all-cpu' class='stat-cool'>--</span>
-                                    Memory: <span id='wr-all-memory' class='stat-cool'>--</span>
-                                    Devices: <span id='wr-all-count' class='stat-cool'>--</span>
-                                </div>
-                            </div>
-                            <table id="allTable" class="report_table">
-                                <thead><tr>
-                                    <th onclick="sortTable(0, 'allTable')">HOSTNAME</th>
-                                    <th onclick="toggleCols('allTable', 'show-ip', this, 'MAC ADDRESS', 'IP ADDRESS')">IP ADDRESS</th>
-                                    <th onclick="sortTable(2, 'allTable')">RSSI</th>
-                                    <th onclick="sortTable(3, 'allTable')">RX/TX</th>
-                                    <th onclick="toggleCols('allTable', 'show-iface', this, 'SSID', 'IFACE')">SSID</th>
-                                    <th onclick="sortTable(5, 'allTable')">BAND</th>
-                                    <th onclick="sortTable(6, 'allTable')">UPTIME</th>
-                                </tr></thead>
-                                <tbody></tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="7" class="uptime-footer-row">
-                                            <span id='wr-all-footer'>Controller telemetry pending...</span>
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <div id="allDevicesQualityBar" class="rssi-quality-bar">
-                            <div class='rssi-quality-box rssi-excl'>Excellent: <span style='background:#30d158;' class='rssi-font wr-rssi-excellent'>0</span></div>
-                            <div class='rssi-quality-box rssi-good'>Good: <span style='background:#64d2ff;' class='rssi-font wr-rssi-good'>0</span></div>
-                            <div class='rssi-quality-box rssi-fair'>Fair: <span style='background:#ffd60a;' class='rssi-font wr-rssi-fair'>0</span></div>
-                            <div class='rssi-quality-box rssi-poor'>Poor: <span style='background:#ff453a;' class='rssi-font wr-rssi-poor'>0</span></div>
-                        </div>
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </table>
-    <div id="footer"></div>
-    <div id="popoutModal" class="popout-overlay" onclick="closePopout()">
-        <div class="popout-content" onclick="event.stopPropagation()">
-            <div style="height: 40px; position: relative;">
-                <span class="popout-close-x" onclick="closePopout()">&times;</span>
-            </div>
-            <div id="popoutBody" class="popout-grid"></div>
-        </div>
-    </div>
 </body>
+</html>
 HTML
-    nvram set wirelessreport_gen="$WR_GENERATION" >/dev/null 2>&1
+nvram set wirelessreport_gen="$WR_GENERATION" >/dev/null 2>&1
 }
 case "$1" in
     install)
