@@ -4816,7 +4816,7 @@ document.addEventListener('contextmenu', function(e) {
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
                             <button class="button-tables" onclick="openPopout()" style="">Side by Side ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
-                             <a class="button-tables btn-tooltip" href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report SNB Forums">SNB</a>
+                            <a class="button-tables btn-tooltip" href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report SNB Forums">SNB</a>
                         </div>
                     </div>
                     <div class="grid-container">
