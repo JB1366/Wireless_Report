@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.2.8"
+SCRIPT_VERSION="3.2.9"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1382,11 +1382,14 @@ cat <<HTML >> "$WEB_PAGE"
     .header-title { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; }
     .header-title2 { display: inline-block; text-align: center; color: #0096ff; margin: 0; font-size: 24px; font-weight: bold; position: static; animation: pulse-twice 1.2s ease-in-out 2; }
     @keyframes pulse-twice { 0%, 100% { color: #0096ff; text-shadow: 0 0 0px transparent; } 50% { color: #66c2ff; text-shadow: 0 0 8px #0096ff; } }
-    .top-buttons { display: flex; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px 0; }
+    .top-buttons { display: flex; justify-content: center; gap: 7px; width: 100%; margin: 0 0 12px 0; }
+
+    .top-buttons > * { height: 28px !important; box-sizing: border-box !important; display: inline-flex !important; align-items: center !important; }
+
 	.total-count { text-align: center; color: #f2f2f7; margin-bottom: 12px; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
 	.count-highlight { background: #0096ff; color: #000; padding: 1px 6px; border-radius: 3px; margin-left: 4px; font-weight: 900; }
 	.header-wrap { text-align: center; width: 100%; margin: 10px 0; }
-	.header-box { visibility: hidden; width: max-content; min-width: 120px; background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #475a68; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
+	.header-box { visibility: hidden; width: max-content; min-width: 120px; background: rgba(0,0,0,0.9); color: white; text-align: center; border: 1px solid #0096ff; border-radius: 6px; padding: 8px; position: absolute; z-index: 999; bottom: 135%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 12px #000; pointer-events: none; line-height: 1.4; }
 	.header-tooltip { position: relative; display: inline-block; }
 	.header-tooltip:hover .header-box { visibility: visible; opacity: 1; bottom: 145%; }
     .section-header { color: #ffffff; font-size: 13px; letter-spacing: 0.5px; font-weight: bold; padding: 12px; text-align: center; border-bottom: 1px solid #475a68; }
@@ -1421,7 +1424,12 @@ cat <<HTML >> "$WEB_PAGE"
     .button-tables { border: 1px solid #475a68; color: white; padding: 0 12px; font-size: 12px; border-radius: 4px; font-weight: bold; height: 28px; cursor: pointer !important; line-height: 26px; transition: all 0.2s ease; box-sizing: border-box; }
     .button-tables:hover, .button-tables.active { color: #0096ff; border-color: #0096ff; box-shadow: 0 0 25px rgba(0,150,255,0.6); position: relative; z-index: 5 }
     .button-tables.active { background: rgba(0,150,255,0.15); }
+
+    .btn-tooltip { position: relative; }
+    .btn-tooltip:before { content: attr(data-tooltip); position: absolute; height: 28px; line-height: 28px; padding: 0 15px; background: $RT_TOOLTIP; color: white; font-size: 12px; font-weight: bold; border: 1.5px solid #0096ff; border-radius: 20px; box-shadow: 0 0 10px rgba(0,150,255,0.3); white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 100; pointer-events: none; top:150%; left: 150%; transform: translateX(-75%); }
+    .btn-tooltip:hover:before { opacity: 1; visibility: visible; top: 150%; }
     #refresh-option { color: #ffffff; background: transparent; border: none; outline: none; font-weight: bold; cursor: pointer; padding: 0; margin: 0; font-family: inherit; font-size: inherit; }
+
     #refresh-option option { font-weight: bold; }
     #refresh-option:focus { outline: none; border: none; }
     #refresh-countdown { color: #0096ff; font-weight: bold; }
@@ -4786,6 +4794,7 @@ document.addEventListener('contextmenu', function(e) {
                         </div>
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
                         <div class="top-buttons">
+                            <a class="button-tables btn-tooltip" href="https://github.com/JB1366/Wireless_Report" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report Repository">Github</a>
                             <div class="button-refresh">
                                 <button class="button-trigger button-tables" onclick="triggerRefresh()">Refresh</button>
                                 <div class="button-auto-refresh">
@@ -4807,6 +4816,7 @@ document.addEventListener('contextmenu', function(e) {
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
                             <button class="button-tables" onclick="openPopout()" style="">Side by Side ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
+                             <a class="button-tables btn-tooltip" href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" data-tooltip="Wireless Report SNB Forums">SNB</a>
                         </div>
                     </div>
                     <div class="grid-container">
