@@ -32,7 +32,6 @@ SCRIPT_VERSION="3.2.9"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
-SE_FILE="/jffs/scripts/service-event"
 SYSTEM_MENU="/www/require/modules/menuTree.js"
 TEMP_MENU="/tmp/menuTree.js"
 WEB_PAGE="/tmp/wireless.asp"
@@ -204,6 +203,7 @@ menu_vars() {
     STATUS="$NC STATUS:"
     CURRENT="CURRENT:$GR v$SCRIPT_VERSION$DEV$NC"
     SS_FILE="/jffs/scripts/services-start"
+    SE_FILE="/jffs/scripts/service-event"
 
     DATE_ISO="$GR$(date +"%Y-%m-%d %H:%M:%S")$NC"
     DATE_INTL="$GR$(date +"%-d-%b %-H:%M:%S")$NC"
@@ -507,7 +507,7 @@ do_uninstall() {
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
     sed -i '/# added by Wireless Report/d' /jffs/configs/profile.add 2>/dev/null
     rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
-    remove_service_event_hook
+    sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
     restart_httpd
     unset MAIN_COLOR NODE_COLORS REPORT_UNIT THEME RTIME RTIME_LOG BACKHAUL PULSE_MINS IPPAD HOST_COLOR
     unset RS_HIST RS_HIST_ENTRIES RS_HIST_DATE CUR_RS_HIST CUR_ENTRIES CUR_DATE BRANCH INJECT
@@ -937,7 +937,7 @@ set_options() {
                                 else
                                     echo 'RTIME_LOG="0"' >> "$CONFIG"
                                 fi
-                                remove_service_event_hook
+                                sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
                                 menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                                 ;;
                             *)
@@ -946,11 +946,14 @@ set_options() {
                                     case "$choice" in
                                         y|Y)
                                             RTIME_LOG="1"
-                                            install_service_event_hook
+                                            if [ ! -f "$SE_FILE" ]; then printf '#!/bin/sh\n' > "$SE_FILE"; fi
+                                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                                            printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
+                                            chmod +x "$SE_FILE"
                                             ;;
                                         n|N)
                                             RTIME_LOG="0"
-                                            remove_service_event_hook
+                                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
                                             ;;
                                         *)
                                             freeze 2
@@ -975,7 +978,7 @@ set_options() {
                         else
                             echo 'RTIME_LOG="0"' >> "$CONFIG"
                         fi
-                        remove_service_event_hook
+                        sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
                         menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                     fi
                     pause
@@ -1275,19 +1278,7 @@ pause() { printf "\nPress $BL[Enter]$NC to return..."; read -r discard; }
 
 freeze() { printf "\033[%dA\033[J" "${1:-1}"; }
 
-install_service_event_hook() {
-    if [ ! -f "$SE_FILE" ]; then printf '#!/bin/sh\n' > "$SE_FILE"; fi
-    sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
-    printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
-    chmod +x "$SE_FILE"
-}
-
-remove_service_event_hook() {
-    [ -f "$SE_FILE" ] || return 0
-    sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
-}
-
-handle_service_event() {
+runtime_syslog() {
     [ "$2" = "start" ] || return 0
     [ "${RTIME:-1}" = "1" ] || return 0
     [ "${RTIME_LOG:-0}" = "1" ] || return 0
@@ -1316,7 +1307,7 @@ handle_service_event() {
     esac
 }
 
-if [ "$1" = "service_event" ]; then handle_service_event "$@"; exit 0; fi
+if [ "$1" = "service_event" ]; then runtime_syslog "$@"; exit 0; fi
 
 mesh_init; check_github; hex_to_ansi
 
