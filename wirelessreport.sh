@@ -226,7 +226,8 @@ menu_vars() {
     TM_STAT="$GR$THEME$NC"
 
     RTIME=${RTIME:-1}
-    RTIME_LOG=${RTIME_LOG:-0}; case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
+    case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
+    RTIME_LOG=${RTIME_LOG:-0}
 
     BACKHAUL=${BACKHAUL:-0}
     case "$BACKHAUL" in 0) WB_STAT="$OFF" ;; *) WB_STAT="$ON" ;; esac
@@ -508,8 +509,8 @@ do_uninstall() {
     rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
     remove_service_event_hook
     restart_httpd
-    unset RTIME RTIME_LOG CUR_DATE RS_HIST_DATE RS_HIST CUR_RS_HIST CUR_ENTRIES REPORT_UNIT
-    unset THEME IPPAD PULSE_MINS DISPLAY_UNIT HOST_COLOR MAIN_COLOR NODE_COLORS
+    unset MAIN_COLOR NODE_COLORS REPORT_UNIT THEME RTIME RTIME_LOG BACKHAUL PULSE_MINS IPPAD HOST_COLOR
+    unset RS_HIST RS_HIST_ENTRIES RS_HIST_DATE CUR_RS_HIST CUR_ENTRIES CUR_DATE BRANCH INJECT
     nvram unset wirelessreport_gen >/dev/null 2>&1
     sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     echo -e "$GR[+] Success: Wireless Report uninstalled.$NC\n"
@@ -936,12 +937,27 @@ set_options() {
                                 else
                                     echo 'RTIME_LOG="0"' >> "$CONFIG"
                                 fi
+                                remove_service_event_hook
                                 menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                                 ;;
                             *)
                                 while true; do
                                     printf "\n Write stats to Syslog? (y/n): "; read -r choice
-                                    case "$choice" in y|Y) RTIME_LOG="1"; break ;; n|N) RTIME_LOG="0"; break ;; *) freeze 2 ;; esac
+                                    case "$choice" in
+                                        y|Y)
+                                            RTIME_LOG="1"
+                                            install_service_event_hook
+                                            ;;
+                                        n|N)
+                                            RTIME_LOG="0"
+                                            remove_service_event_hook
+                                            ;;
+                                        *)
+                                            freeze 2
+                                            continue
+                                            ;;
+                                    esac
+                                    break
                                 done
                                 if grep -q "RTIME_LOG=" "$CONFIG"; then
                                     sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$RTIME_LOG\"/" "$CONFIG"
@@ -959,6 +975,7 @@ set_options() {
                         else
                             echo 'RTIME_LOG="0"' >> "$CONFIG"
                         fi
+                        remove_service_event_hook
                         menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                     fi
                     pause
@@ -1260,14 +1277,14 @@ freeze() { printf "\033[%dA\033[J" "${1:-1}"; }
 
 install_service_event_hook() {
     if [ ! -f "$SE_FILE" ]; then printf '#!/bin/sh\n' > "$SE_FILE"; fi
-    sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
-    printf '%s\n' 'if [ "$1" = "start" ] && echo "$2" | grep -q "^WirelessReportRuntime_"; then '"$REPORT_SCRIPT"' service_event "$@" & fi # Wireless Report runtime syslog' >> "$SE_FILE"
+    sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+    printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
     chmod +x "$SE_FILE"
 }
 
 remove_service_event_hook() {
     [ -f "$SE_FILE" ] || return 0
-    sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
+    sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
 }
 
 handle_service_event() {
@@ -1314,11 +1331,6 @@ run_report() {
 #   /get_diag_content_data.cgi          (388 legacy diagnostic fallback)
 # All client/node refreshes happen in-page with same-origin fetch() calls.
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-
-case "${RTIME_LOG:-0}" in
-    1) install_service_event_hook ;;
-    *) remove_service_event_hook ;;
-esac
 
 WR_GENERATION=$(nvram get wirelessreport_gen 2>/dev/null)
 case "$WR_GENERATION" in ""|*[!0-9]*) WR_GENERATION=0 ;; esac
