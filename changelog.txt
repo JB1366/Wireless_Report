@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.2.9-minor updates.
 v3.2.8-add AM/PM option to Set Date/Time Menu.
       -rollup minor updates.
 v3.2.7-minor updates.
