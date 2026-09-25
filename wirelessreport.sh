@@ -508,6 +508,7 @@ do_uninstall() {
     sed -i '/# added by Wireless Report/d' /jffs/configs/profile.add 2>/dev/null
     rm -rf "$INSTALL_DIR" "$WEB_PAGE" 2>/dev/null
     sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+    sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
     restart_httpd
     unset MAIN_COLOR NODE_COLORS REPORT_UNIT THEME RTIME RTIME_LOG BACKHAUL PULSE_MINS IPPAD HOST_COLOR
     unset RS_HIST RS_HIST_ENTRIES RS_HIST_DATE CUR_RS_HIST CUR_ENTRIES CUR_DATE BRANCH INJECT
@@ -938,6 +939,7 @@ set_options() {
                                     echo 'RTIME_LOG="0"' >> "$CONFIG"
                                 fi
                                 sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                                sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
                                 menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                                 ;;
                             *)
@@ -954,6 +956,7 @@ set_options() {
                                         n|N)
                                             RTIME_LOG="0"
                                             sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                                            sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
                                             ;;
                                         *)
                                             freeze 2
@@ -979,6 +982,7 @@ set_options() {
                             echo 'RTIME_LOG="0"' >> "$CONFIG"
                         fi
                         sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                        sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
                         menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
                     fi
                     pause
