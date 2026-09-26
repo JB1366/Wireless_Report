@@ -227,7 +227,9 @@ menu_vars() {
 
     RTIME=${RTIME:-1}
     case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
+
     RTIME_LOG=${RTIME_LOG:-0}
+    case "$RTIME_LOG" in 0) WS_STAT="$OFF" ;; *) WS_STAT="$ON" ;; esac
 
     BACKHAUL=${BACKHAUL:-0}
     case "$BACKHAUL" in 0) WB_STAT="$OFF" ;; *) WB_STAT="$ON" ;; esac
@@ -932,64 +934,7 @@ set_options() {
             selection
             case "$choice" in
                 1)
-                    if grep -q "RTIME=" "$CONFIG"; then
-                        case "$RTIME" in
-                            1)
-                                sed -i 's/RTIME=.*/RTIME="0"/' "$CONFIG"
-                                if grep -q "RTIME_LOG=" "$CONFIG"; then
-                                    sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
-                                else
-                                    echo 'RTIME_LOG="0"' >> "$CONFIG"
-                                fi
-                                sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
-                                sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
-                                menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
-                                ;;
-                            *)
-                                while true; do
-                                    printf "\n Write stats to Syslog? (y/n): "; read -r choice
-                                    case "$choice" in
-                                        y|Y)
-                                            RTIME_LOG="1"
-                                            if [ ! -f "$SE_FILE" ]; then printf '#!/bin/sh\n' > "$SE_FILE"; fi
-                                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
-                                            printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
-                                            chmod +x "$SE_FILE"
-                                            ;;
-                                        n|N)
-                                            RTIME_LOG="0"
-                                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
-                                            sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
-                                            ;;
-                                        *)
-                                            freeze 2
-                                            continue
-                                            ;;
-                                    esac
-                                    break
-                                done
-                                if grep -q "RTIME_LOG=" "$CONFIG"; then
-                                    sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$RTIME_LOG\"/" "$CONFIG"
-                                else
-                                    echo "RTIME_LOG=\"$RTIME_LOG\"" >> "$CONFIG"
-                                fi
-                                sed -i 's/RTIME=.*/RTIME="1"/' "$CONFIG"; menu_vars
-                                echo -e "$NC Runtime Tracking: ($RT_STAT) Stats RESET."
-                                ;;
-                        esac
-                    else
-                        echo 'RTIME="0"' >> "$CONFIG"
-                        if grep -q "RTIME_LOG=" "$CONFIG"; then
-                            sed -i 's/RTIME_LOG=.*/RTIME_LOG="0"/' "$CONFIG"
-                        else
-                            echo 'RTIME_LOG="0"' >> "$CONFIG"
-                        fi
-                        sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
-                        sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
-                        menu_vars; echo -e "$NC Runtime Tracking: ($RT_STAT)"
-                    fi
-                    pause
-                    ;;
+                    set_runtime ;;
                 2)
                     if grep -q "BACKHAUL=" "$CONFIG"; then
                         if [ "$BACKHAUL" = "0" ]; then
@@ -1054,6 +999,70 @@ set_options() {
             break
         done
         run_report
+    done
+}
+
+set_runtime() {
+    while true; do
+        show_header
+        echo -e "$BL=================================================="
+        echo -e "$NC               Runtime Tracking                   "
+        echo -e "$BL=================================================="
+        echo -e "                                                     "
+        echo -e "  $N1  Toggle Runtime Tracking: ($RT_STAT)           "
+        echo -e "  $N2  Toggle Stats to Syslog: ($WS_STAT)            "
+        echo -e "                                                     "
+        echo -e "  $LE Exit back to Set Options Menu                  "
+        echo -e "                                                     "
+        echo -e "$BL=================================================="
+        while true; do
+            selection
+            case "$choice" in
+                1)
+                    case "$RTIME" in
+                        1)
+                            NEW_RTIME="0"
+                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                            sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
+                            ;;
+                        *)
+                            NEW_RTIME="1"
+                            ;;
+                    esac
+                    if grep -q "RTIME=" "$CONFIG"; then
+                        sed -i "s/RTIME=.*/RTIME=\"$NEW_RTIME\"/" "$CONFIG"
+                    else
+                        echo "RTIME=\"$NEW_RTIME\"" >> "$CONFIG"
+                    fi
+                    ;;
+                2)
+                    case "$RTIME_LOG" in
+                        1)
+                            NEW_LOG="0"
+                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                            sed -i '/# Wireless Report runtime syslog$/d' "$SE_FILE" 2>/dev/null
+                            ;;
+                        *)
+                            NEW_LOG="1"
+                            [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
+                            sed -i '/# Wireless Report Syslog$/d' "$SE_FILE" 2>/dev/null
+                            printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
+                            chmod +x "$SE_FILE"
+                            ;;
+                    esac
+                    if grep -q "RTIME_LOG=" "$CONFIG"; then
+                        sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$NEW_LOG\"/" "$CONFIG"
+                    else
+                        echo "RTIME_LOG=\"$NEW_LOG\"" >> "$CONFIG"
+                    fi
+                    ;;
+                e|E)
+                    break 2 ;;
+                *)
+                    freeze 2; continue ;;
+            esac
+            break
+        done
     done
 }
 
