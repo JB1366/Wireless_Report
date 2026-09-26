@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.2.9"
+SCRIPT_VERSION="3.3.0"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -458,22 +458,25 @@ inject_menu() {
     sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
 	sed -i '/tabName:[[:space:]]*"Wireless Report"/d' "$TEMP_MENU" 2>/dev/null
 
-    if [ "$INJECT" = "2" ]; then
-		INSERT_DATA="{\
-		\nmenuName: \"$TAB_LABEL\",\
-		\nindex: \"menu_AiMesh\",\
-		\ntab: [\
-		\n{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\
-		\n{url: \"NULL\", tabName: \"__INHERIT__\"}\
-		\n]\
-		\n},"
-		sed -i "/^.*{[[:space:]]*$/ { N; /menuName: \"<#1558#>\",/ i $INSERT_DATA
-		}" "$TEMP_MENU"
-		sys_log "Mounting Menu $TAB_LABEL as $am_webui_page"
-	else
-		sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ s|{url: \"NULL\", tabName: \"__INHERIT__\"}|{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\n&|" "$TEMP_MENU"
-		sys_log "Mounting TAB $TAB_LABEL as $am_webui_page"
-	fi
+    case "$INJECT" in
+        2)
+            INSERT_DATA="{\
+            \nmenuName: \"$TAB_LABEL\",\
+            \nindex: \"menu_AiMesh\",\
+            \ntab: [\
+            \n{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\
+            \n{url: \"NULL\", tabName: \"__INHERIT__\"}\
+            \n]\
+            \n},"
+            sed -i "/^.*{[[:space:]]*$/ { N; /menuName: \"<#1558#>\",/ i $INSERT_DATA
+            }" "$TEMP_MENU"
+            sys_log "Mounting Menu $TAB_LABEL as $am_webui_page"
+            ;;
+        *)
+            sed -i "/index: \"menu_Wireless\"/,/{url: \"NULL\", tabName: \"__INHERIT__\"}/ s|{url: \"NULL\", tabName: \"__INHERIT__\"}|{url: \"$am_webui_page\", tabName: \"$TAB_LABEL\"},\n&|" "$TEMP_MENU"
+            sys_log "Mounting TAB $TAB_LABEL as $am_webui_page"
+            ;;
+    esac
 
     umount "$SYSTEM_MENU" && mount -o bind "$TEMP_MENU" "$SYSTEM_MENU"
 	umount "/www/user/$am_webui_page" 2>/dev/null
