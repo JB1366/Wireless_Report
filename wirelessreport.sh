@@ -1085,7 +1085,7 @@ set_ippad() {
         if grep -q "IPPAD=" "$CONFIG"; then
             sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
         else
-            echo 'IPPAD="'"$NEW_PAD"'"' >> "$CONFIG"
+            echo "IPPAD=\"$NEW_PAD\"" >> "$CONFIG"
         fi
     done
 }
