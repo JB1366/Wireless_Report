@@ -1042,10 +1042,6 @@ set_options() {
                         echo -e "\n$GR[+] Adding INJECT=\"2\" to CONFIG.$NC"
                         INJECT="2"
                     fi
-                    if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
-                    sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
-                    echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
-                    chmod +x "$SS_FILE"
                     inject_menu
                     pause
                     continue 2
