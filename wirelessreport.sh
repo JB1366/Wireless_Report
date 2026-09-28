@@ -322,7 +322,6 @@ do_install() {
     chmod +x "$SS_FILE"
 
     SCRIPT_VERSION="$REMOTE_VERSION"
-    set_default_colors
     sys_log "(v$SCRIPT_VERSION) successfully installed."
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
     echo -e "$YL[i] To access Report, navigate to Advanced Settings > Wireless "
@@ -532,7 +531,7 @@ do_uninstall() {
     unset RS_HIST RS_HIST_ENTRIES RS_HIST_DATE CUR_RS_HIST CUR_ENTRIES CUR_DATE BRANCH INJECT
     nvram unset wirelessreport_gen >/dev/null 2>&1
 
-    restart_httpd
+    restart_httpd; set_default_colors
     sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     echo -e "$GR[+] Success: Wireless Report uninstalled.$NC\n"
 	pause
