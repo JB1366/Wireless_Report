@@ -249,7 +249,7 @@ menu_vars() {
     esac
 
     HOST_COLOR=${HOST_COLOR:-0}
-    case "$HOST_COLOR" in 1) HN_STAT="${BL}Colored${NC}" ;; *) HN_STAT="${GR}Numbered${NC}" ;; esac
+    case "$HOST_COLOR" in 1) HN_STAT="${BL}Colored$NC" ;; *) HN_STAT="${GR}Numbered$NC" ;; esac
 
     RS_HIST=${RS_HIST:-0}
     case "$RS_HIST" in 0|1) ;; *) RS_HIST=0 ;; esac
@@ -295,7 +295,7 @@ do_install() {
         done
     fi
 
-    echo -e "\n$GR[+] Downloading latest version (${NC}v$REMOTE_VERSION$GR)$NC"
+    echo -e "\n$GR[+] Downloading latest version($NC v$REMOTE_VERSION$GR)$NC"
     do_update || return 1
 
     mkdir -p "$(dirname "$PROFILE_ADD")"
@@ -347,7 +347,6 @@ do_update() {
         [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
         TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null)
         [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
-
         if [ "$CURRENT_PATH" != "$TARGET_PATH" ]; then
             echo -e "\n$YL[!] GitHub unreachable. Installing current local copy...$NC"
             cp "$0" "$REPORT_SCRIPT"
@@ -593,8 +592,8 @@ set_nicknames() {
         echo -e "  $LE Exit back to main menu                         "
 		echo -e "                                                     "
         echo -e "$BL=================================================="
-        local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node model ip clean_ip hex_clr
-        local node_clr old_name new_loc node_loc old_nick manual_main input_node
+        local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node MODEL IP CLEAN_IP HEX_CLR
+        local NODE_CLR OLD_NAME NEW_LOC NODE_LOC OLD_NICK manual_main input_node
 
         MAIN_ROUTER=$(nvram get productid)
         MAIN_IP=$(nvram get lan_ipaddr)
@@ -958,7 +957,8 @@ set_options() {
             selection
             case "$choice" in
                 1)
-                    set_runtime ;;
+                    set_runtime
+                    continue 2 ;;
                 2)
                     if grep -q "BACKHAUL=" "$CONFIG"; then
                         if [ "$BACKHAUL" = "0" ]; then
@@ -988,7 +988,8 @@ set_options() {
                     pause
                     ;;
                 4)
-                    set_ippad ;;
+                    set_ippad
+                    continue 2 ;;
                 5)
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
                         case "$HOST_COLOR" in 1) NEW_HC="0" ;; *) NEW_HC="1" ;; esac
@@ -997,8 +998,6 @@ set_options() {
                         echo 'HOST_COLOR="1"' >> "$CONFIG"
                     fi
                     ;;
-                dev)
-                    set_branch ;;
                 inject|inject2)
                     if [ "$choice" = "inject2" ]; then
                         if grep -q "INJECT=" "$CONFIG"; then
@@ -1019,6 +1018,9 @@ set_options() {
                     pause
                     continue 2
                     ;;
+                dev)
+                    set_branch
+                    continue 2 ;;
                 e|E)
                     return 0 ;;
                 *)
@@ -1098,13 +1100,14 @@ set_runtime() {
                     fi
                     ;;
                 e|E)
-                    break 2 ;;
+                    return 0 ;;
                 *)
                     freeze 2
                     continue ;;
             esac
             break
         done
+        run_report
     done
 }
 
@@ -1138,6 +1141,7 @@ set_ippad() {
         else
             echo "IPPAD=\"$NEW_PAD\"" >> "$CONFIG"
         fi
+        run_report
     done
 }
 
