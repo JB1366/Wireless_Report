@@ -295,7 +295,7 @@ do_install() {
         done
     fi
 
-    echo -e "\n$GR[+] Downloading latest version($NC v$REMOTE_VERSION$GR)$NC"
+    echo -e "\n$GR[+] Downloading latest version (${NC}v$REMOTE_VERSION$GR)$NC"
     do_update || return 1
 
     mkdir -p "$(dirname "$PROFILE_ADD")"
@@ -322,6 +322,7 @@ do_install() {
     chmod +x "$SS_FILE"
 
     SCRIPT_VERSION="$REMOTE_VERSION"
+    set_default_colors
     sys_log "(v$SCRIPT_VERSION) successfully installed."
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
     echo -e "$YL[i] To access Report, navigate to Advanced Settings > Wireless "
