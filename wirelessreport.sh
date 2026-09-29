@@ -183,11 +183,6 @@ version_compare() {
         }'
 }
 
-set_default_colors() {
-    MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
-    NODE_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
-}
-
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
@@ -272,6 +267,11 @@ menu_vars() {
 
     case "$BRANCH" in 2) BRANCH_NAME="EFT-Development" ;; esac
     BN="$GR$BRANCH_NAME$NC"
+}
+
+default_colors() {
+    MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
+    NODE_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
 }
 
 do_install() {
@@ -531,7 +531,7 @@ do_uninstall() {
     unset RS_HIST RS_HIST_ENTRIES RS_HIST_DATE CUR_RS_HIST CUR_ENTRIES CUR_DATE BRANCH INJECT
     nvram unset wirelessreport_gen >/dev/null 2>&1
 
-    restart_httpd; set_default_colors
+    restart_httpd; default_colors
     sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     echo -e "$GR[+] Success: Wireless Report uninstalled.$NC\n"
 	pause
@@ -809,7 +809,7 @@ set_colors() {
             case "$node_choice" in
                 r|R)
                     unset MAIN_COLOR NODE_COLORS
-                    set_default_colors
+                    default_colors
                     m_color_hex="$MAIN_COLOR"
                     working_colors=""
                     local idx=1
@@ -1369,7 +1369,7 @@ runtime_syslog() {
 
 if [ "$1" = "service_event" ]; then runtime_syslog "$@"; exit 0; fi
 
-mesh_init; check_github; hex_to_ansi; set_default_colors
+mesh_init; check_github; hex_to_ansi; default_colors
 
 run_report() {
 #==========================================================================#
