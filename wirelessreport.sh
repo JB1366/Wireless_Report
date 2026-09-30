@@ -2380,6 +2380,20 @@ cat <<HTML >> "$WEB_PAGE"
         -webkit-tap-highlight-color: transparent !important;
     }
 
+    #popoutModal #popMainTable,
+    #popoutModal #popNodeTable {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(1) { width: 25% !important; } /* HOSTNAME */
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(2) { width: 18% !important; } /* IP ADDRESS */
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(3) { width: 12% !important; } /* RSSI */
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(4) { width: 12% !important; } /* RX/TX */
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(5) { width: 13% !important; } /* SSID */
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(6) { width: 10% !important; } /* BAND */
+    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(7) { width: 10% !important; } /* Uptime */
+
     @media (min-width: 992px) {
         #popoutModal .separator-line {
             min-width: 815px;
@@ -2427,20 +2441,6 @@ cat <<HTML >> "$WEB_PAGE"
             display: inline-block !important;
         }
     }
-
-    #popoutModal #popMainTable,
-    #popoutModal #popNodeTable {
-        min-width: 0 !important;
-        width: 100% !important;
-        table-layout: fixed !important;
-    }
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(1) { width: 25% !important; } /* HOSTNAME */
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(2) { width: 18% !important; } /* IP ADDRESS */
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(3) { width: 12% !important; } /* RSSI */
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(4) { width: 12% !important; } /* RX/TX */
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(5) { width: 13% !important; } /* SSID */
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(6) { width: 10% !important; } /* BAND */
-    #popoutModal :is(#popMainTable, #popNodeTable) :is(th, td):nth-child(7) { width: 10% !important; } /* Uptime */
 </style>
 </head>
 <body onload="initial();">
