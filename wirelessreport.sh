@@ -2223,40 +2223,13 @@ cat <<HTML >> "$WEB_PAGE"
         background: rgba(0, 150, 255, 0.15);
     }
 
-    body.wr-wide-mode table.report_table th:nth-child(1),
-    #popoutModal table.report_table th:nth-child(1) {
-        min-width: 100px;
-    }
-
-    body.wr-wide-mode table.report_table th:nth-child(2),
-    #popoutModal table.report_table th:nth-child(2) {
-        min-width: 100px;
-    }
-
-    body.wr-wide-mode table.report_table th:nth-child(3),
-    #popoutModal table.report_table th:nth-child(3) {
-        min-width: 75px;
-    }
-
-    body.wr-wide-mode table.report_table th:nth-child(4),
-    #popoutModal table.report_table th:nth-child(4) {
-        min-width: 75px;
-    }
-
-    body.wr-wide-mode table.report_table th:nth-child(5),
-    #popoutModal table.report_table th:nth-child(5) {
-        min-width: 75px;
-    }
-
-    body.wr-wide-mode table.report_table th:nth-child(6),
-    #popoutModal table.report_table th:nth-child(6) {
-        min-width: 75px;
-    }
-
-    body.wr-wide-mode table.report_table th:nth-child(7),
-    #popoutModal table.report_table th:nth-child(7) {
-        min-width: 75px;
-    }
+    body.wr-wide-mode table.report_table th:nth-child(1) { min-width: 100px; }
+    body.wr-wide-mode table.report_table th:nth-child(2) { min-width: 100px; }
+    body.wr-wide-mode table.report_table th:nth-child(3) { min-width: 75px; }
+    body.wr-wide-mode table.report_table th:nth-child(4) { min-width: 75px; }
+    body.wr-wide-mode table.report_table th:nth-child(5) { min-width: 75px; }
+    body.wr-wide-mode table.report_table th:nth-child(6) { min-width: 75px; }
+    body.wr-wide-mode table.report_table th:nth-child(7) { min-width: 75px; }
 
     .popout-overlay {
         display: none;
