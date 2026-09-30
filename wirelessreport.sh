@@ -2454,6 +2454,29 @@ cat <<HTML >> "$WEB_PAGE"
             display: inline-block !important;
         }
     }
+
+    #popoutModal #popMainTable,
+    #popoutModal #popNodeTable {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+    #popoutModal #popMainTable th:nth-child(1),
+    #popoutModal #popMainTable td:nth-child(1),
+    #popoutModal #popNodeTable th:nth-child(1),
+    #popoutModal #popNodeTable td:nth-child(1) { width: 25% !important; overflow: hidden !important; text-overflow: ellipsis !important; } /* HOSTNAME */
+    #popoutModal #popMainTable th:nth-child(2), #popoutModal #popMainTable td:nth-child(2),
+    #popoutModal #popNodeTable th:nth-child(2), #popoutModal #popNodeTable td:nth-child(2) { width: 18% !important; } /* IP ADDRESS */
+    #popoutModal #popMainTable th:nth-child(3), #popoutModal #popMainTable td:nth-child(3),
+    #popoutModal #popNodeTable th:nth-child(3), #popoutModal #popNodeTable td:nth-child(3) { width: 12% !important; } /* RSSI */
+    #popoutModal #popMainTable th:nth-child(4), #popoutModal #popMainTable td:nth-child(4),
+    #popoutModal #popNodeTable th:nth-child(4), #popoutModal #popNodeTable td:nth-child(4) { width: 12% !important; } /* RX/TX */
+    #popoutModal #popMainTable th:nth-child(5), #popoutModal #popMainTable td:nth-child(5),
+    #popoutModal #popNodeTable th:nth-child(5), #popoutModal #popNodeTable td:nth-child(5) { width: 13% !important; } /* SSID */
+    #popoutModal #popMainTable th:nth-child(6), #popoutModal #popMainTable td:nth-child(6),
+    #popoutModal #popNodeTable th:nth-child(6), #popoutModal #popNodeTable td:nth-child(6) { width: 10% !important; } /* BAND */
+    #popoutModal #popMainTable th:nth-child(7), #popoutModal #popMainTable td:nth-child(7),
+    #popoutModal #popNodeTable th:nth-child(7), #popoutModal #popNodeTable td:nth-child(7) { width: 10% !important; } /* Uptime */
 </style>
 </head>
 <body onload="initial();">
