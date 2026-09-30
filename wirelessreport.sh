@@ -2461,10 +2461,8 @@ cat <<HTML >> "$WEB_PAGE"
         width: 100% !important;
         table-layout: fixed !important;
     }
-    #popoutModal #popMainTable th:nth-child(1),
-    #popoutModal #popMainTable td:nth-child(1),
-    #popoutModal #popNodeTable th:nth-child(1),
-    #popoutModal #popNodeTable td:nth-child(1) { width: 25% !important; overflow: hidden !important; text-overflow: ellipsis !important; } /* HOSTNAME */
+    #popoutModal #popMainTable th:nth-child(1), #popoutModal #popMainTable td:nth-child(1),
+    #popoutModal #popNodeTable th:nth-child(1), #popoutModal #popNodeTable td:nth-child(1) { width: 25% !important; } /* HOSTNAME */
     #popoutModal #popMainTable th:nth-child(2), #popoutModal #popMainTable td:nth-child(2),
     #popoutModal #popNodeTable th:nth-child(2), #popoutModal #popNodeTable td:nth-child(2) { width: 18% !important; } /* IP ADDRESS */
     #popoutModal #popMainTable th:nth-child(3), #popoutModal #popMainTable td:nth-child(3),
