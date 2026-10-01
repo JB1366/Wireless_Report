@@ -32,7 +32,7 @@ SCRIPT_VERSION="3.3.1"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
-SYSTEM_MENU="/www/require/modules/menuTree.js"
+SYSTEM_MENU="/www/require/modules/menuTree.js"do_hash_check
 TEMP_MENU="/tmp/menuTree.js"
 WEB_PAGE="/tmp/wireless.asp"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
@@ -94,14 +94,14 @@ install_menu() {
 					case "$choice" in
 						2) do_uninstall ;;
 						3) set_date_time ;;
-						4) set_nicknames ;;
-						5) set_colors ;;
+						4) set_device_nicknames ;;
+						5) set_device_colors ;;
 						6) set_theme ;;
                         7) set_options ;;
-                        8) set_rssi ;;
+                        8) set_rssi_tooltip ;;
 					esac
 					break ;;
-				e|E) clear; hasta; exit 0 ;;
+				e|E) clear; hasta_la_vista; exit 0 ;;
 				*) freeze 2; continue ;;
 			esac
 		done
@@ -269,11 +269,6 @@ menu_vars() {
     BN="$GR$BRANCH_NAME$NC"
 }
 
-default_colors() {
-    MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
-    NODE_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
-}
-
 do_install() {
 	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "\n$RD[!] ERROR: JFFS custom scripts not enabled.$NC"
@@ -375,7 +370,7 @@ ScriptUpdateFromAMTM() {
     return 1
 }
 
-wr_sha256() {
+do_hash_check() {
     local file="$1" hash=""
     [ -f "$file" ] || return 1
     if command -v sha256sum >/dev/null 2>&1; then
@@ -401,8 +396,8 @@ check_github() {
     REMOTE_TMP="/tmp/wr_remote.tmp"; LOCAL_HASH=""; REMOTE_HASH=""
     if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
         REMOTE_VERSION=$(grep "SCRIPT_VERSION=" "$REMOTE_TMP" | head -n 1 | cut -d'"' -f2 | tr -cd '0-9.')
-        LOCAL_HASH=$(wr_sha256 "$REPORT_SCRIPT" 2>/dev/null)
-        REMOTE_HASH=$(wr_sha256 "$REMOTE_TMP" 2>/dev/null)
+        LOCAL_HASH=$(do_hash_check "$REPORT_SCRIPT" 2>/dev/null)
+        REMOTE_HASH=$(do_hash_check "$REMOTE_TMP" 2>/dev/null)
         if [ -z "$LOCAL_HASH" ] || [ -z "$REMOTE_HASH" ]; then
             if [ -f "$REPORT_SCRIPT" ]; then
                 if cmp -s "$REPORT_SCRIPT" "$REMOTE_TMP"; then
@@ -421,7 +416,7 @@ check_github() {
     rm -f "$REMOTE_TMP"
 }
 
-mesh_init() {
+get_mesh_nodes() {
 	local ASUS_DEVICE_LIST MAIN_IP
 	MAIN_IP=$(nvram get lan_ipaddr)
 	ASUS_DEVICE_LIST=$(nvram get asus_device_list)
@@ -531,7 +526,7 @@ do_uninstall() {
     unset RS_HIST RS_HIST_ENTRIES RS_HIST_DATE CUR_RS_HIST CUR_ENTRIES CUR_DATE BRANCH INJECT
     nvram unset wirelessreport_gen >/dev/null 2>&1
 
-    restart_httpd; default_colors
+    restart_httpd; device_default_colors
     sys_log "(v$SCRIPT_VERSION) successfully uninstalled."
     echo -e "$GR[+] Success: Wireless Report uninstalled.$NC\n"
 	pause
@@ -579,7 +574,12 @@ set_date_time() {
     done
 }
 
-set_nicknames() {
+device_default_colors() {
+    MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
+    NODE_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
+}
+
+set_device_nicknames() {
     while true; do
         show_header
         echo -e "$BL=================================================="
@@ -746,7 +746,7 @@ get_node_nick() {
     ' "$CONFIG" 2>/dev/null
 }
 
-set_colors() {
+set_device_colors() {
     local main_name=$(nvram get productid)
     local main_ip=$(nvram get lan_ipaddr)
     local m_color_hex="" current_colors=""
@@ -809,7 +809,7 @@ set_colors() {
             case "$node_choice" in
                 r|R)
                     unset MAIN_COLOR NODE_COLORS
-                    default_colors
+                    device_default_colors
                     m_color_hex="$MAIN_COLOR"
                     working_colors=""
                     local idx=1
@@ -958,7 +958,7 @@ set_options() {
             selection
             case "$choice" in
                 1)
-                    set_runtime
+                    set_runtime_tracking
                     continue 2 ;;
                 2)
                     if grep -q "BACKHAUL=" "$CONFIG"; then
@@ -989,7 +989,7 @@ set_options() {
                     pause
                     ;;
                 4)
-                    set_ippad
+                    set_ip_padding
                     continue 2 ;;
                 5)
                     if grep -q "HOST_COLOR=" "$CONFIG"; then
@@ -1020,7 +1020,7 @@ set_options() {
                     continue 2
                     ;;
                 dev)
-                    set_branch
+                    set_github_branch
                     continue 2 ;;
                 e|E)
                     return 0 ;;
@@ -1034,7 +1034,7 @@ set_options() {
     done
 }
 
-set_runtime() {
+set_runtime_tracking() {
     while true; do
         show_header
         echo -e "$BL=================================================="
@@ -1112,7 +1112,7 @@ set_runtime() {
     done
 }
 
-set_ippad() {
+set_ip_padding() {
     while true; do
         show_header
         echo -e "$BL=================================================="
@@ -1146,7 +1146,7 @@ set_ippad() {
     done
 }
 
-set_branch() {
+set_github_branch() {
     while true; do
         show_header
         echo -e "$BL=================================================="
@@ -1191,7 +1191,7 @@ set_branch() {
     done
 }
 
-set_rssi() {
+set_rssi_tooltip() {
     while true; do
         show_header
         echo -e "$BL=================================================="
@@ -1313,7 +1313,7 @@ get_theme() {
     THEME_CSS=$(echo "$THEME_CSS" | sed 's/^        //')
 }
 
-hasta() {
+hasta_la_vista() {
 echo -e "\n\n\n$BL" #============================================================================================================#
 echo -e "                                                                                                                        "
 echo -e "                                                                                                                        "
@@ -1369,7 +1369,7 @@ runtime_syslog() {
 
 if [ "$1" = "service_event" ]; then runtime_syslog "$@"; exit 0; fi
 
-mesh_init; check_github; hex_to_ansi; default_colors
+get_mesh_nodes; check_github; hex_to_ansi; device_default_colors
 
 run_report() {
 #==========================================================================#
