@@ -32,7 +32,7 @@ SCRIPT_VERSION="3.3.1"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
-SYSTEM_MENU="/www/require/modules/menuTree.js"do_hash_check
+SYSTEM_MENU="/www/require/modules/menuTree.js"
 TEMP_MENU="/tmp/menuTree.js"
 WEB_PAGE="/tmp/wireless.asp"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
