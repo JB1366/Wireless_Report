@@ -2,6 +2,8 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.3.1-popoutModal adjustments.
+      -minor shellside updates.
 v3.3.0-update runtime tracking.
       -minor install updates.
 v3.2.9-minor updates.

@@ -119,7 +119,6 @@ check_version() {
     else
         version_cmp=$(version_compare "$SCRIPT_VERSION" "$REMOTE_VERSION")
         case "$version_cmp" in -1|0|1) ;; *) version_cmp=0 ;; esac
-
         if [ "$version_cmp" -gt 0 ]; then
             STATE="UP_TO_DATE"
         elif [ "$version_cmp" -lt 0 ]; then
