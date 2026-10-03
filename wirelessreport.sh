@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.3.1"
+SCRIPT_VERSION="3.3.2"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1279,7 +1279,7 @@ get_theme() {
         "DARKMODE")
             RT_TOOLTIP="#000000"
             THEME_CSS=".top-header { background: transparent !important; }
-            .header-box { background: rgba(0,0,0,0.9); }
+            .header-box { background: #000000; }
             .section-header { background: transparent !important; }
             .report-column { background: transparent !important; }
             table.report_table td { background: transparent !important; }
@@ -1295,7 +1295,7 @@ get_theme() {
         "ORIGINAL"|*)
             RT_TOOLTIP="#000000"
             THEME_CSS=".top-header { background: transparent !important; }
-            .header-box { background: rgba(0,0,0,0.9); }
+            .header-box { background: #000000; }
             .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
             .report-column { background: #1c232b; }
             table.report_table td { background: #1c232b; }
@@ -2113,7 +2113,7 @@ cat <<HTML >> "$WEB_PAGE"
 
     .button-refresh:before {
         content: var(--avg-text, "Avg: calculating...");
-        left: -80px;
+        left: -70px;
         bottom: 185%;
         background: $RT_TOOLTIP;
     }
@@ -2121,7 +2121,7 @@ cat <<HTML >> "$WEB_PAGE"
     .button-refresh .button-trigger:before,
     .button-refresh select:before {
         content: var(--highlow-text, "High: 0s   Low: 0s");
-        left: -80px;
+        left: -70px;
         top: 185%;
         background: $RT_TOOLTIP;
     }
@@ -2478,9 +2478,9 @@ cat <<HTML >> "$WEB_PAGE"
                                     <span id="refresh-countdown"></span>
                                 </div>
                             </div>
-                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main</button>
+                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main View</button>
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
-                            <button class="button-tables" onclick="openPopout()" style="">Side by Side ◫</button>
+                            <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
                         </div>
                     </div>
