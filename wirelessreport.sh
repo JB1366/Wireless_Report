@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.3.2"
+SCRIPT_VERSION="3.3.3"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -69,9 +69,9 @@ show_header() {
 install_menu() {
 	while true; do
 		show_header
-		echo -e "$BL=================================================="
+		echo -e "$BL══════════════════════════════════════════════════"
 		check_version
-		echo -e "$BL=================================================="
+		echo -e "$BL══════════════════════════════════════════════════"
 		echo -e "                                                     "
 		echo -e "  $N1  Install/Update                                "
 		echo -e "  $N2  Uninstall                                     "
@@ -82,9 +82,7 @@ install_menu() {
         echo -e "  $N7  Set Options                                   "
         echo -e "  $N8  Config RSSI Tooltip History ($CH)             "
 		echo -e "                                                     "
-        echo -e "  $LE  Exit                                          "
-		echo -e "                                                     "
-		echo -e "$BL=================================================="
+		echo -e "$BL══════════════════════════════════════════════════"
 		while true; do
 			selection
 			case "$choice" in
@@ -533,11 +531,11 @@ do_uninstall() {
 set_date_time() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC                  Set Date/Time                   "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC  Format: $DU        Current: $CT                 "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                               $NC [MILITARY]        "
         echo -e "  $N1  USA                   ($DATE_USA)             "
         echo -e "  $N2  INTL                  ($DATE_INTL)            "
@@ -548,9 +546,7 @@ set_date_time() {
         echo -e "  $N5  INTL                ($DATE_INTL1)             "
         echo -e "  $N6  ISO               ($DATE_ISO1)                "
         echo -e "                                                     "
-        echo -e "  $LE  Exit back to main menu                        "
-        echo -e "                                                     "
-		echo -e "$BL=================================================="
+		echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -580,17 +576,15 @@ device_default_colors() {
 set_device_nicknames() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC               Set Device Nicknames               "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
 		echo -e "  $N1 Default Nicknames                              "
 		echo -e "  $N2 Location Nicknames                             "
 		echo -e "  $N3 Manual Nicknames                               "
 		echo -e "                                                     "
-        echo -e "  $LE Exit back to main menu                         "
-		echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node MODEL IP CLEAN_IP HEX_CLR
         local NODE_CLR OLD_NAME NEW_LOC NODE_LOC OLD_NICK manual_main input_node
 
@@ -612,7 +606,7 @@ set_device_nicknames() {
 
             node_idx=$((node_idx + 1))
         done
-        echo -e "\n$BL=================================================="
+        echo -e "\n$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -766,9 +760,9 @@ set_device_colors() {
     done
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC                Set Device Colors                 "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "$NC  Current Device Configuration:                   "
         echo -e "                                                     "
@@ -801,7 +795,7 @@ set_device_colors() {
         echo -e "  $LS Save Changes & Exit                            "
         echo -e "  $LE Exit back to main menu                         "
         echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             printf "\n$NC Select a Device number to change color $BL(0-$total_nodes): $NC"; read -r node_choice
             case "$node_choice" in
@@ -905,17 +899,15 @@ set_device_colors() {
 set_theme() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC  Set Theme                    Current: $TM_STAT  "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "  $N1 Original Theme                                 "
         echo -e "  $N2 Darkmode Theme                                 "
         echo -e "  $N3 Asus WebUI Theme                               "
         echo -e "                                                     "
-        echo -e "  $LE Exit back to main menu                         "
-        echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -939,9 +931,9 @@ set_theme() {
 set_options() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC                  Set Options                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "  $N1  Toggle Runtime Tracking: ($RT_STAT)           "
         echo -e "  $N2  Toggle Wireless Backhaul: ($WB_STAT)          "
@@ -949,9 +941,7 @@ set_options() {
         echo -e "  $N4  Toggle IP Column Padding: ($PD_STAT)          "
         echo -e "  $N5  Toggle Node Hostname Display: ($HN_STAT)      "
         echo -e "                                                     "
-        echo -e "  $LE  Exit back to main menu                        "
-        echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -1035,16 +1025,14 @@ set_options() {
 set_runtime_tracking() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC               Runtime Tracking                   "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "  $N1 Toggle Runtime Tracking: ($RT_STAT)            "
         echo -e "  $N2 Toggle Stats to Syslog: ($WS_STAT)             "
         echo -e "                                                     "
-        echo -e "  $LE Exit back to Set Options Menu                  "
-        echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -1113,17 +1101,15 @@ set_runtime_tracking() {
 set_ip_padding() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC IP Column Padding       Current: ($PD_STAT)      "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "  $N1 192.168.50.3     (${RD}Disabled$NC)            "
         echo -e "  $N2 192.168.50.003   (${BL}Last Octet$NC)          "
         echo -e "  $N3 192.168.050.003  (${GR}Last 2 Octets$NC)       "
         echo -e "                                                     "
-        echo -e "  $LE Exit back to Set Options Menu                  "
-        echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -1147,19 +1133,17 @@ set_ip_padding() {
 set_github_branch() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC                Set Github Branch                 "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC  Branch: [$BN]      $CURRENT                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "  $N1 main (JB1366)                                  "
         echo -e "  $N2 Development (JB1366)                           "
         echo -e "  $N3 Development (ExtremeFiretop)                   "
         echo -e "                                                     "
-        echo -e "  $LE Exit back to Set Options Menu                  "
-        echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -1192,18 +1176,17 @@ set_github_branch() {
 set_rssi_tooltip() {
     while true; do
         show_header
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC          Config RSSI Tooltip History             "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         echo -e "                                                     "
         echo -e "  $N1 Toggle RSSI History: [$CH]                     "
         echo -e "  $N2 Set History Depth:   [$CE] entries             "
         echo -e "  $N3 Toggle Timestamps:   [$TS]                     "
         echo -e "                                                     "
         echo -e "  $LS Save Changes & Exit                            "
-        echo -e "  $LE Exit back to main menu                         "
         echo -e "                                                     "
-        echo -e "$BL=================================================="
+        echo -e "$BL══════════════════════════════════════════════════"
         while true; do
             selection
             case "$choice" in
@@ -1328,7 +1311,7 @@ echo -e "$NC\n\n\n" #===========================================================
 
 sys_log() { logger -p user.info -t "Wireless_Report" "$1"; }
 
-selection() { printf "\n$NC Selection: "; read -r choice; }
+selection() { printf "\n$NC Selection ${LE}xit: "; read -r choice; }
 
 restart_httpd() { service restart_httpd >/dev/null 2>&1; killall -HUP httpd >/dev/null 2>&1; }
 
