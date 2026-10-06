@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.3.3-update shell menus.
 v3.3.2-renamed a couple top buttons.
 v3.3.1-popoutModal adjustments.
       -minor shellside updates.
