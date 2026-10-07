@@ -183,6 +183,7 @@ version_compare() {
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
+
     UL='\033[4m'; YL='\033[0;33m'; NC='\033[0m'
     BL='\033[38;5;39m'; GR='\033[0;32m'; RD='\033[0;31m'
 
@@ -579,13 +580,13 @@ set_device_nicknames() {
         echo -e "$BL══════════════════════════════════════════════════"
         echo -e "$NC        Set Nicknames & Node Display Order        "
         echo -e "$BL══════════════════════════════════════════════════"
-        echo -e "                                                  "
-        echo -e "  $N1 Reset to Default Nicknames                  "
-        echo -e "  $N2 Location-Based Nicknames                    "
-        echo -e "  $N3 Manual Custom Nicknames                     "
-        echo -e "                                                  "
-        echo -e "  $N4 Sort Node Display Order                     "
-        echo -e "                                                  "
+        echo -e "                                                     "
+        echo -e "  $N1 Reset to Default Nicknames                     "
+        echo -e "  $N2 Location-Based Nicknames                       "
+        echo -e "  $N3 Manual Custom Nicknames                        "
+        echo -e "                                                     "
+        echo -e "  $N4 Sort Node Display Order                        "
+        echo -e "                                                     "
         echo -e "$BL══════════════════════════════════════════════════"
         local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node MODEL IP CLEAN_IP HEX_CLR
         local NODE_CLR OLD_NAME NEW_LOC NODE_LOC OLD_NICK manual_main input_node
