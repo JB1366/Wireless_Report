@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #=================================================================#
 
-SCRIPT_VERSION="3.3.3"
+SCRIPT_VERSION="3.3.4"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -76,7 +76,7 @@ install_menu() {
 		echo -e "  $N1  Install/Update                                "
 		echo -e "  $N2  Uninstall                                     "
 		echo -e "  $N3  Set Date/Time ($DU) ($CT)                     "
-		echo -e "  $N4  Set Device Nicknames                          "
+		echo -e "  $N4  Set Nicknames & Node Display Order            "
         echo -e "  $N5  Set Device Colors                             "
 		echo -e "  $N6  Set Theme ($TM_STAT)                          "
         echo -e "  $N7  Set Options                                   "
@@ -183,7 +183,6 @@ version_compare() {
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
-
     UL='\033[4m'; YL='\033[0;33m'; NC='\033[0m'
     BL='\033[38;5;39m'; GR='\033[0;32m'; RD='\033[0;31m'
 
@@ -578,13 +577,15 @@ set_device_nicknames() {
     while true; do
         show_header
         echo -e "$BL══════════════════════════════════════════════════"
-        echo -e "$NC               Set Device Nicknames               "
+        echo -e "$NC        Set Nicknames & Node Display Order        "
         echo -e "$BL══════════════════════════════════════════════════"
-        echo -e "                                                     "
-		echo -e "  $N1 Default Nicknames                              "
-		echo -e "  $N2 Location Nicknames                             "
-		echo -e "  $N3 Manual Nicknames                               "
-		echo -e "                                                     "
+        echo -e "                                                  "
+        echo -e "  $N1 Reset to Default Nicknames                  "
+        echo -e "  $N2 Location-Based Nicknames                    "
+        echo -e "  $N3 Manual Custom Nicknames                     "
+        echo -e "                                                  "
+        echo -e "  $N4 Sort Node Display Order                     "
+        echo -e "                                                  "
         echo -e "$BL══════════════════════════════════════════════════"
         local MAIN_ROUTER MAIN_IP MAIN_CLR node_idx node MODEL IP CLEAN_IP HEX_CLR
         local NODE_CLR OLD_NAME NEW_LOC NODE_LOC OLD_NICK manual_main input_node
@@ -596,9 +597,17 @@ set_device_nicknames() {
         echo -e "\n  ${MAIN_CLR}Main $MAIN_IP -> ${MAIN_NICK:-$MAIN_ROUTER}$NC"
 
         get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
+
+        # Load SSH_NODES from CONFIG file (required for API/JS updates), fallback to MESH_NODES if missing
+        if [ -f "$CONFIG" ]; then
+            eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
+        fi
+        [ -z "$SSH_NODES" ] && SSH_NODES="$MESH_NODES"
+
         node_idx=1
-        for node in $MESH_NODES; do
-            MODEL="${node%%|*}"; IP="${node#*|}"; CLEAN_IP="${IP//./_}"
+        for node in $SSH_NODES; do
+            MODEL="${node%%|*}"; IP="${node#*|}"
+            CLEAN_IP="${IP//./_}"
             eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
             HEX_CLR=$(get_node_color "$node_idx")
             NODE_CLR=$(hex_to_ansi "$HEX_CLR")
@@ -693,6 +702,80 @@ set_device_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
                     printf "\n$GR[+] Manual nicknames saved (max 25 chars).$NC\n"
+                    ;;
+                4)
+                    echo -e "\n$BL[*] Manual Node Sorting$NC\n"
+                    echo -e "Current order:\n"
+                    if [ -f "$CONFIG" ]; then
+                        eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
+                    fi
+                    [ -z "$SSH_NODES" ] && SSH_NODES="$MESH_NODES"
+                    node_idx=1
+                    for node in $SSH_NODES; do
+                        MODEL="${node%%|*}"
+                        IP="${node#*|}"
+                        CLEAN_IP="${IP//./_}"
+                        eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
+                        HEX_CLR=$(get_node_color "$node_idx")
+                        NODE_CLR=$(hex_to_ansi "$HEX_CLR")
+
+                        echo -e "  [$node_idx] ${NODE_CLR}Node $IP -> ${SAVED_NICK:-$MODEL}$NC"
+
+                        node_idx=$((node_idx + 1))
+                    done
+                    orig_count=$((node_idx - 1))
+
+                    while true; do
+                        printf "\n Enter new order by index [E]xit $BL(e.g., 2 1 3):$NC "
+                        read -r new_order_input
+                        [ -z "$new_order_input" ] && { freeze 2; continue; }
+                        case "$new_order_input" in e|E) break 2 ;; esac
+                        valid="true"
+                        entered_count=0
+                        for idx in $new_order_input; do
+                            entered_count=$((entered_count + 1))
+                            case "$idx" in
+                                *[!0-9]*|'')
+                                    valid="false"
+                                    ;;
+                                *)
+                                    if [ "$idx" -lt 1 ] || [ "$idx" -gt "$orig_count" ]; then
+                                        valid="false"
+                                    fi
+                                    ;;
+                            esac
+                        done
+
+                        if [ "$entered_count" -ne "$orig_count" ]; then
+                            valid="false"
+                        fi
+                        if [ "$valid" = "true" ]; then
+                            unique_check=$(for idx in $new_order_input; do echo "$idx"; done | sort -n | uniq | wc -l | tr -d ' ')
+                            if [ "$unique_check" -ne "$orig_count" ]; then
+                                freeze 2
+                                continue
+                            fi
+                            new_ssh_nodes=""
+                            for idx in $new_order_input; do
+                                current_idx=1
+                                for node in $SSH_NODES; do
+                                    if [ "$current_idx" -eq "$idx" ]; then
+                                        new_ssh_nodes="$new_ssh_nodes $node"
+                                        break
+                                    fi
+                                    current_idx=$((current_idx + 1))
+                                done
+                            done
+                            break
+                        else
+                            freeze 2
+                            continue
+                        fi
+                    done
+                    sed -i '/^SSH_NODES=/d' "$CONFIG"
+                    echo "SSH_NODES=\"$new_ssh_nodes\"" >> "$CONFIG"
+                    SSH_NODES="$new_ssh_nodes"
+                    printf "\n$GR[+] Node order successfully updated!$NC\n"
                     ;;
                 e|E)
                     return ;;
@@ -2609,7 +2692,8 @@ var WR_CONFIG = {
     rssiHistoryDate: Number("${RS_HIST_DATE:-0}") || 0,
     rssiHistoryEntries: Number("${RS_HIST_ENTRIES:-5}") || 5,
     runtimeLog: Number("${RTIME_LOG:-0}") || 0,
-    runtimeTracking: Number("${RTIME:-1}") || 0
+    runtimeTracking: Number("${RTIME:-1}") || 0,
+    sshNodes: "${SSH_NODES:-}"
 };
 
 var WR_PAGE_GENERATION = "$WR_GENERATION";
@@ -5037,12 +5121,30 @@ async function loadWirelessReport() {
         return false;
     });
 
-    // Match the shell menus' deterministic IP order. get_cfg_clientlist() can
-    // return AiMesh nodes in a different order, which previously juxtaposed
-    // node names, numeric markers and positional colors in the WebUI.
+    /// Check if custom node order exists in CONFIG via WR_CONFIG.sshNodes,
+    // otherwise fallback to deterministic IP sorting.
+    var customOrder = [];
+    if (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.sshNodes) {
+        var rawNodes = String(WR_CONFIG.sshNodes).trim().split(/\s+/);
+        rawNodes.forEach(function(token) {
+            var parts = token.split('|');
+            var ip = parts.length > 1 ? parts[1] : parts[0];
+            if (ip) customOrder.push(ip);
+        });
+    }
+
     nodes.sort(function(a, b) {
         var aip = String(wrFirst(a, ['ip', 'ip_addr', 'ipAddr']) || '');
         var bip = String(wrFirst(b, ['ip', 'ip_addr', 'ipAddr']) || '');
+
+        if (customOrder.length > 0) {
+            var aIdx = customOrder.indexOf(aip);
+            var bIdx = customOrder.indexOf(bip);
+            if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+            if (aIdx !== -1) return -1;
+            if (bIdx !== -1) return 1;
+        }
+
         var cmp = wrIpSort(aip).localeCompare(wrIpSort(bip));
         if (cmp) return cmp;
         return wrNormMac(a.mac || a.mac_addr).localeCompare(wrNormMac(b.mac || b.mac_addr));
