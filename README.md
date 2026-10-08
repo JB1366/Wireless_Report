@@ -77,9 +77,9 @@ $\color{green}{\text{Option (7):}}$ Set Options
  * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
  * $\color{blue}{\text{Configure Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
  * $\color{blue}{\text{Toggle IP Padding:}}$ Automatically aligns IP columns for a cleaner, unified dashboard layout across complex network setups. <br>
-   * $\color{green}{\text{Mode 1:}}$ 192.168.50.3 --> 192.168.50.003 (Pads Last Octet Only) (Default)
-   * $\color{green}{\text{Disabled:}}$ 192.168.50.003 --> 192.168.50.3 (Standard IP Display)
-   * $\color{green}{\text{Mode 2:}}$ 192.168.50.3 --> 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
+   * $\color{green}{\text{Disabled:}}$ 192.168.50.3 (Standard IP Display)
+   * $\color{green}{\text{Last Octet Only:}}$ 192.168.50.003 (Pads Last Octet Only) (Default)
+   * $\color{green}{\text{Last 2 Octets:}}$ 192.168.050.003 (Pads Last 2 Octets for Multi-Subnet Alignment)
  * $\color{blue}{\text{Toggle Node Hostname Display:}}$ Gives you full control over how mesh node identifiers look, allowing for an incredibly clean, unified text layout or distinct color-coded node tracking.<br>
    * $\color{green}{\text{Numbered Hostnames (Default):}}$ Hostnames remain a uniform, clean white while their tracking superscripts (sup) are color-coded to match their respective nodes.
    * $\color{green}{\text{Colored Hostnames:}}$ The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.
@@ -135,9 +135,9 @@ $\color{blue}{\Large\text{ADVANCED VIEWING + INTERACTIVE FEATURES}}$<br>
 Wireless Report is designed to be more than just a static table. Use these interactive elements to manage your network:
   * $\color{green}{\text{Version, Hash + Update Alerts:}}$ Hover your mouse over the "Wireless Report" header to instantly check your current script version and view file hash updates—when an update or hash change is available, the header text softly pulses twice to catch your eye. Additionally, the browser tab title displays the active Wireless Report version, dynamically appending an alert whenever a new version or hash update is detected.
   * $\color{green}{\text{Dynamic UI Modes:}}$ Choose how you view your data using the built-in button toggles:<br>
-    * $\color{blue}{\text{Main:}}$ A clean, vertical list of router and nodes.<br>
+    * $\color{blue}{\text{Main View:}}$ A clean, vertical list of router and nodes.<br>
     * $\color{blue}{\text{All Devices:}}$ A consolidated view of every wireless client on the network.<br>
-    * $\color{blue}{\text{Side-by-Side (Pop-out):}}$ Launches a separate window for easier comparison between the Router and Nodes.
+    * $\color{blue}{\text{Popout View:}}$ Launches a separate window for easier comparison between the Router and Nodes.
     * $\color{blue}{\text{Wide View:}}$ Expands the existing views to full-page width for a more expansive layout.
   * $\color{green}{\text{Visual Notifications:}}$<br>
     * $\color{blue}{\text{New Device Pulse:}}$ The entire row will pulse when a new device is first detected on the network.<br>
@@ -164,7 +164,7 @@ sh /jffs/addons/wireless_report/wirelessreport.sh install
 ```
 \
 \
-$\color{blue}{\Large\text{CLI-ALIAS}}$ <br>
+$\color{blue}{\Large\text{ALIAS}}$ <br>
 Command Shortcut (Alias)
 
 alias 'wr' is automatically created on new installs/updates.
