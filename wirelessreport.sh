@@ -1,5 +1,5 @@
 #!/bin/sh
-#=================================================================#
+#═════════════════════════════════════════════════════════════════#
 #                                                                 #
 #                                                                 #
 #  ██╗    ██╗██╗██████╗ ███████╗██╗     ███████╗███████╗███████╗  #
@@ -17,18 +17,18 @@
 #       ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝           #
 #                                                                 #
 #                                                                 #
-#=================================================================#
+#═════════════════════════════════════════════════════════════════#
 #                                                                 #
 #        Copyright (c) 2026 JB_1366 - All Rights Reserved         #
 #           https://github.com/JB1366/Wireless_Report             #
 #                                                                 #
 #                    Browser/API Version                          #
 #                API coded by ExtremeFiretop                      #
-#=================================================================#
+#═════════════════════════════════════════════════════════════════#
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
-#=================================================================#
+#═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.3.4"
+SCRIPT_VERSION="3.3.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -39,12 +39,9 @@ if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 unset LD_LIBRARY_PATH
 
-#==================#
-#  Script Install  #
-#==================#
 show_header() {
 	clear; menu_vars
-	#=======================================================================#
+	#═══════════════════════════════════════════════════════════════════════#
 	echo -e "                                                               "
 	echo -e " ██╗    ██╗██╗██████╗ ███████╗██╗     ███████╗███████╗███████╗ "
 	echo -e " ██║    ██║██║██╔══██╗██╔════╝██║     ██╔════╝██╔════╝██╔════╝ "
@@ -63,7 +60,7 @@ show_header() {
     echo -e "     $JB_1366                                                  "
     echo -e "         $JB1366                                               "
     echo -e "                                                               "
-    #=======================================================================#
+    #═══════════════════════════════════════════════════════════════════════#
 }
 
 install_menu() {
@@ -219,7 +216,7 @@ menu_vars() {
     esac
 
     THEME=${THEME:-ORIGINAL}
-    TM_STAT="$GR$THEME$NC"
+    TM_STAT="$BL$THEME$NC"
 
     RTIME=${RTIME:-1}
     case "$RTIME" in 0) RT_STAT="$OFF" ;; *) RT_STAT="$ON" ;; esac
@@ -599,7 +596,6 @@ set_device_nicknames() {
 
         get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
 
-        # Load SSH_NODES from CONFIG file (required for API/JS updates), fallback to MESH_NODES if missing
         if [ -f "$CONFIG" ]; then
             eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
         fi
@@ -727,7 +723,7 @@ set_device_nicknames() {
                     orig_count=$((node_idx - 1))
 
                     while true; do
-                        printf "\n Enter new order by index [E]xit $BL(e.g., 2 1 3):$NC "
+                        printf "\n Enter new order by index [${BL}E$NC]xit $BL(e.g., 2 1 3):$NC "
                         read -r new_order_input
                         [ -z "$new_order_input" ] && { freeze 2; continue; }
                         case "$new_order_input" in e|E) break 2 ;; esac
@@ -851,7 +847,7 @@ set_device_colors() {
         echo -e "                                                     "
         echo -e "$NC  Current Device Configuration:                   "
         echo -e "                                                     "
-        #=============================================================#
+        #═════════════════════════════════════════════════════════════#
         local main_display_name="${MAIN_NICK:-$main_name}"
         local main_display_color=$(hex_to_ansi "$m_color_hex")
         local formatted_main_ip=$(printf "(%s)" "$main_ip")
@@ -874,15 +870,14 @@ set_device_colors() {
 
             idx=$((idx + 1))
         done
-        #=============================================================#
+        #═════════════════════════════════════════════════════════════#
         echo -e "                                                     "
         echo -e "  $LR Restore Default Colors                         "
         echo -e "  $LS Save Changes & Exit                            "
-        echo -e "  $LE Exit back to main menu                         "
         echo -e "                                                     "
         echo -e "$BL══════════════════════════════════════════════════"
         while true; do
-            printf "\n$NC Select a Device number to change color $BL(0-$total_nodes): $NC"; read -r node_choice
+            printf "\n$NC Select number to change color [${BL}E$NC]xit (${BL}0-$total_nodes$NC): "; read -r node_choice
             case "$node_choice" in
                 r|R)
                     unset MAIN_COLOR NODE_COLORS
@@ -921,6 +916,7 @@ set_device_colors() {
             local selected_hex=""
             local target_prompt_color=$(hex_to_ansi "$target_hex")
             echo -e "\n$NC Select a new color for ${target_prompt_color}[${target_name}]:$NC"
+            #════════════════════════════════════════#
             echo -e "                                "
             echo -e "$NB  (1) Neon-Blue (#0096ff)    "
             echo -e "$LG  (2) Lime-Green (#30d158)   "
@@ -933,6 +929,7 @@ set_device_colors() {
             echo -e "$PK  (9) Light-Pink (#ff70a6)   "
             echo -e "$MT (10) Mint-Green (#64ffda)   "
             echo -e "                                "
+            #════════════════════════════════════════#
             while true; do
                 printf "$NC Choose option $BL(1-10): $NC"; read -r color_choice
                 case "$color_choice" in
@@ -1376,11 +1373,10 @@ get_theme() {
             .button-tables { background: transparent !important; }"
             ;;
     esac
-    THEME_CSS=$(echo "$THEME_CSS" | sed 's/^        //')
 }
 
 hasta_la_vista() {
-echo -e "\n\n\n$BL" #============================================================================================================#
+echo -e "\n\n\n$BL" #════════════════════════════════════════════════════════════════════════════════════════════════════════════#
 echo -e "                                                                                                                        "
 echo -e "                                                                                                                        "
 echo -e "             ██╗  ██╗ █████╗ ███████╗████████╗ █████╗      ██╗      █████╗      ██╗   ██╗██╗███████╗████████╗ █████╗    "
@@ -1391,7 +1387,7 @@ echo -e "    ██║      ██║  ██║██║  ██║████
 echo -e "    ██║      ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝     ╚══════╝╚═╝  ╚═╝       ╚═══╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   "
 echo -e "    ╚═╝                                                                                                                 "
 echo -e "                                                                                                                        "
-echo -e "$NC\n\n\n" #============================================================================================================#
+echo -e "$NC\n\n\n" #════════════════════════════════════════════════════════════════════════════════════════════════════════════#
 }
 
 sys_log() { logger -p user.info -t "Wireless_Report" "$1"; }
@@ -1438,9 +1434,9 @@ if [ "$1" = "service_event" ]; then runtime_syslog "$@"; exit 0; fi
 get_mesh_nodes; check_github; hex_to_ansi; device_default_colors
 
 run_report() {
-#==========================================================================#
+#══════════════════════════════════════════════════════════════════════════#
 #                  Browser/API Report Page Preparation                     #
-#==========================================================================#
+#══════════════════════════════════════════════════════════════════════════#
 #                                                                          #
 # The generated page uses the browser's                                    #
 # already-authenticated primary-router WebUI session:                      #
@@ -1449,7 +1445,7 @@ run_report() {
 #   /get_diag_content_data.cgi          (388 legacy diagnostic fallback)   #
 # All client/node refreshes happen in-page with same-origin fetch() calls. #
 #                                                                          #
-#==========================================================================#
+#══════════════════════════════════════════════════════════════════════════#
 
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 WR_GENERATION=$(nvram get wirelessreport_gen 2>/dev/null)
@@ -1483,9 +1479,6 @@ done
 
 get_theme; check_version header_box
 
-#=================#
-#  Generate HTML  #
-#=================#
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
 <!DOCTYPE html>
