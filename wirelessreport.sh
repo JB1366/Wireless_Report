@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.3.5"
+SCRIPT_VERSION="3.3.6"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -179,7 +179,10 @@ version_compare() {
 
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
+    if [ "$RR" = "1" ]; then RR=""; run_report; fi
+
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
+
     UL='\033[4m'; YL='\033[0;33m'; NC='\033[0m'
     BL='\033[38;5;39m'; GR='\033[0;32m'; RD='\033[0;31m'
 
@@ -419,6 +422,27 @@ get_mesh_nodes() {
 				print $2 "|" $3
 			}
 		' | sort -t . -k 4,4n)
+
+    if [ -f "$CONFIG" ]; then
+        local saved_ssh_nodes=""
+        saved_ssh_nodes=$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null | cut -d'"' -f2)
+        if [ -n "$saved_ssh_nodes" ]; then
+            local live_count=0
+            for node in $MESH_NODES; do
+                live_count=$((live_count + 1))
+            done
+            local saved_count=0
+            for node in $saved_ssh_nodes; do
+                saved_count=$((saved_count + 1))
+            done
+            if [ "$live_count" -ne "$saved_count" ]; then
+                sed -i '/^SSH_NODES=/d' "$CONFIG"
+                SSH_NODES=""; RR="1"
+            else
+                MESH_NODES="$saved_ssh_nodes"
+            fi
+        fi
+    fi
 }
 
 inject_menu() {
@@ -598,10 +622,11 @@ set_device_nicknames() {
         if [ -f "$CONFIG" ]; then
             eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
         fi
-        [ -z "$SSH_NODES" ] && SSH_NODES="$MESH_NODES"
+
+        [ -n "$SSH_NODES" ] && MESH_NODES="$SSH_NODES"
 
         node_idx=1
-        for node in $SSH_NODES; do
+        for node in $MESH_NODES; do
             MODEL="${node%%|*}"; IP="${node#*|}"
             CLEAN_IP="${IP//./_}"
             eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
@@ -702,12 +727,8 @@ set_device_nicknames() {
                 4)
                     echo -e "\n$BL[*] Manual Node Sorting$NC\n"
                     echo -e "Current order:\n"
-                    if [ -f "$CONFIG" ]; then
-                        eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
-                    fi
-                    [ -z "$SSH_NODES" ] && SSH_NODES="$MESH_NODES"
                     node_idx=1
-                    for node in $SSH_NODES; do
+                    for node in $MESH_NODES; do
                         MODEL="${node%%|*}"
                         IP="${node#*|}"
                         CLEAN_IP="${IP//./_}"
@@ -720,7 +741,6 @@ set_device_nicknames() {
                         node_idx=$((node_idx + 1))
                     done
                     orig_count=$((node_idx - 1))
-
                     while true; do
                         printf "\n Enter new order by index [${BL}E$NC]xit (e.g., ${BL}2 1 3$NC): "
                         read -r new_order_input
@@ -826,9 +846,12 @@ set_device_colors() {
     if [ -f "$CONFIG" ]; then
         m_color_hex=$(grep "^MAIN_COLOR=" "$CONFIG" | cut -d'"' -f2)
         current_colors=$(grep "^NODE_COLORS=" "$CONFIG" | cut -d'"' -f2)
+        eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
     fi
+
     [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
     [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
+    [ -n "$SSH_NODES" ] && MESH_NODES="$SSH_NODES"
 
     local total_nodes=0
     for node in $MESH_NODES; do total_nodes=$((total_nodes + 1)); done
@@ -5114,7 +5137,7 @@ async function loadWirelessReport() {
         return false;
     });
 
-    /// Check if custom node order exists in CONFIG via WR_CONFIG.sshNodes,
+    // Check if custom node order exists in CONFIG via WR_CONFIG.sshNodes,
     // otherwise fallback to deterministic IP sorting.
     var customOrder = [];
     if (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.sshNodes) {
@@ -5123,6 +5146,19 @@ async function loadWirelessReport() {
             var parts = token.split('|');
             var ip = parts.length > 1 ? parts[1] : parts[0];
             if (ip) customOrder.push(ip);
+        });
+    }
+
+    // Re-apply/overwrite WR_NODE_COLOR_BY_IP positionally based on the new customOrder sequence
+    if (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.nodeColors && customOrder.length > 0) {
+        if (typeof WR_NODE_COLOR_BY_IP === 'undefined') {
+            WR_NODE_COLOR_BY_IP = {};
+        }
+        customOrder.forEach(function(ip, index) {
+            var sequentialColor = WR_CONFIG.nodeColors[index];
+            if (sequentialColor && ip) {
+                WR_NODE_COLOR_BY_IP[ip] = sequentialColor;
+            }
         });
     }
 
