@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.3.6"
+SCRIPT_VERSION="3.3.7"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -619,12 +619,6 @@ set_device_nicknames() {
 
         get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
 
-        if [ -f "$CONFIG" ]; then
-            eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
-        fi
-
-        [ -n "$SSH_NODES" ] && MESH_NODES="$SSH_NODES"
-
         node_idx=1
         for node in $MESH_NODES; do
             MODEL="${node%%|*}"; IP="${node#*|}"
@@ -774,7 +768,7 @@ set_device_nicknames() {
                             new_ssh_nodes=""
                             for idx in $new_order_input; do
                                 current_idx=1
-                                for node in $SSH_NODES; do
+                                for node in $MESH_NODES; do
                                     if [ "$current_idx" -eq "$idx" ]; then
                                         new_ssh_nodes="$new_ssh_nodes $node"
                                         break
@@ -790,7 +784,7 @@ set_device_nicknames() {
                     done
                     sed -i '/^SSH_NODES=/d' "$CONFIG"
                     echo "SSH_NODES=\"$new_ssh_nodes\"" >> "$CONFIG"
-                    SSH_NODES="$new_ssh_nodes"
+                    MESH_NODES="$new_ssh_nodes"
                     printf "\n$GR[+] Node order successfully updated!$NC\n"
                     ;;
                 e|E)
@@ -846,12 +840,10 @@ set_device_colors() {
     if [ -f "$CONFIG" ]; then
         m_color_hex=$(grep "^MAIN_COLOR=" "$CONFIG" | cut -d'"' -f2)
         current_colors=$(grep "^NODE_COLORS=" "$CONFIG" | cut -d'"' -f2)
-        eval "$(grep '^SSH_NODES=' "$CONFIG" 2>/dev/null)"
     fi
 
     [ -z "$m_color_hex" ] && m_color_hex="$MAIN_COLOR"
     [ -z "$current_colors" ] && current_colors="$NODE_COLORS"
-    [ -n "$SSH_NODES" ] && MESH_NODES="$SSH_NODES"
 
     local total_nodes=0
     for node in $MESH_NODES; do total_nodes=$((total_nodes + 1)); done
