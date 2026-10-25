@@ -1510,7 +1510,7 @@ go_developer() {
                     fi
                     echo -e "\n$B_COLOR[!]$NC $MESSAGE"
                     pause
-                    #inject_menu
+                    inject_menu
                     break
                     ;;
                 4)
