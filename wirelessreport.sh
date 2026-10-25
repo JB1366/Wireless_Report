@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.0"
+SCRIPT_VERSION="3.5.1"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1537,62 +1537,35 @@ go_developer() {
                     fi
                     ;;
                 5)
-                    echo -e "\n$B_COLOR═══════════════════════$NC menuTree.js $B_COLOR═══════════════════════════$NC"
-                    LOG="$TEMP_MENU"
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "menuTree.js" "$TEMP_MENU"
                     ;;
                 6)
-                    echo -e "\n$B_COLOR═══════════════════════════$NC CONFIG $B_COLOR════════════════════════════$NC\n"
                     sort -u -o "$CONFIG" "$CONFIG"
-                    LOG="$CONFIG"
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "CONFIG" "$CONFIG"
                     ;;
                 7)
-                    echo -e "\n$B_COLOR═══════════════════════$NC profile.add $B_COLOR═══════════════════════════$NC\n"
-                    LOG="$PROFILE_ADD"
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "profile.add" "$PROFILE_ADD"
                     ;;
                 8)
-                    echo -e "\n$B_COLOR═══════════════════════$NC syslog.log $B_COLOR════════════════════════════$NC\n"
-                    LOG="/jffs/syslog.log"
-                    if [ -f "$LOG" ]; then log_tail; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "syslog.log" "/jffs/syslog.log" log_tail
                     ;;
-
                 9)
-                    echo -e "\n$B_COLOR═══════════════════════$NC iocmon.log $B_COLOR════════════════════════════$NC\n"
                     get_usb
-                    LOG="$ROOT_PATH/iocmon.d/state/iocmon.log"
-                    if [ -f "$LOG" ]; then log_tail; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "iocmon.log" "$ROOT_PATH/iocmon.d/state/iocmon.log" log_tail
                     ;;
                 10)
-                    echo -e "\n$B_COLOR════════════════════════$NC iptables $B_COLOR═════════════════════════════$NC\n"
                     LOG="/tmp/iptables_view.log"
                     iptables -L -v -n --line-numbers > "$LOG" 2>&1
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "iptables" "$LOG"
                     ;;
                 11)
-                    echo -e "\n$B_COLOR═════════════════════$NC services-start $B_COLOR══════════════════════════$NC\n"
-                    LOG="/jffs/scripts/services-start"
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "services-start" "/jffs/scripts/services-start"
                     ;;
                 12)
-                    echo -e "\n$B_COLOR══════════════════════$NC service-event $B_COLOR══════════════════════════$NC\n"
-                    LOG="/jffs/scripts/service-event"
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "service-event" "/jffs/scripts/service-event"
                     ;;
                 13)
-                    echo -e "\n$B_COLOR═════════════════════$NC firewall-start $B_COLOR══════════════════════════$NC\n"
-                    LOG="/jffs/scripts/firewall-start"
-                    if [ -f "$LOG" ]; then log2; else not_found; fi
-                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    file_viewer "firewall-start" "/jffs/scripts/firewall-start"
                     ;;
                 e|E)
                     return 0 ;;
@@ -1604,6 +1577,40 @@ go_developer() {
             break
         done
     done
+}
+
+file_viewer() {
+    local title="$1"
+    local log_file="$2"
+    local viewer="${3:-log2}"
+    local total_width=63
+    local decorated=" $title "
+    local title_len=${#decorated}
+    local pad_total=$(( total_width - title_len ))
+    [ $pad_total -lt 0 ] && pad_total=0
+    local left_pad=$(( pad_total / 2 ))
+    local right_pad=$(( pad_total - left_pad ))
+    local top_line=""
+    local i=0
+    while [ $i -lt $left_pad ]; do
+        top_line="${top_line}═"
+        i=$((i + 1))
+    done
+    top_line="${top_line}${decorated}"
+    i=0
+    while [ $i -lt $right_pad ]; do
+        top_line="${top_line}═"
+        i=$((i + 1))
+    done
+    local btm_line=""
+    i=0
+    while [ $i -lt $total_width ]; do
+        btm_line="${btm_line}═"
+        i=$((i + 1))
+    done
+    echo -e "\n$B_COLOR$top_line$NC\n"
+    if [ -f "$log_file" ]; then LOG="$log_file"; $viewer; else not_found; fi
+    echo -e "\n$B_COLOR$btm_line$NC"
 }
 
 get_theme() {
