@@ -314,7 +314,7 @@ menu_time_color() {
     esac
 
     B_COLOR=${B_COLOR:-$BL}
-    for i in 0 1 2 3 4 5 6 7 8 9 10; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
+    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
 	for i in E R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
 
     MODELID="${MODEL_PAD}${B_COLOR}Router: ${NC}${CACHED_PRODID}${B_COLOR}   FW:${NC} ${CACHED_FW}"
@@ -1475,11 +1475,15 @@ go_developer() {
         printm "  $N3 Inject WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
         printm "  $N4 Insert WR Menu before $B_COLOR<#TAG#>$NC --> menuTree"
         printm "  $N5 View menuTree - /tmp/menuTree.js"
-        printm "  $N6 View CONGIG - webui-ssh.conf"
-        printm "  $N7 Sort CONFIG - webui-ssh.conf "
-        printm "  $N8 View ALIAS'S - /jffs/configs/profile.add"
-        printm "  $N9 View SYSLOG - /jffs/syslog.log"
-        printm " $N10 View IOCMON - $ROOT_PATH/iocmon.d/state/iocmon.log"
+        printb "╠═════════════════════════════════════════════════════════════╣"
+        printm "  $N6 View CONGIG - /jffs/addons/wireless_report/webui.conf"
+        printm "  $N7 View ALIAS'S - /jffs/configs/profile.add"
+        printm "  $N8 View syslog - /jffs/syslog.log"
+        printm "  $N9 View iocmon - $ROOT_PATH/iocmon.d/state/iocmon.log"
+        printm " $N10 View iptables - iptables -L -v -n --line-numbers"
+        printm " $N11 View services-start - /jffs/scripts/services-start"
+        printm " $N12 View service-event - /jffs/scripts/service-event"
+        printm " $N13 View firewall-start - /jffs/scripts/firewall-start"
         printm ""
         printm "  $LZ Power Exit from any Menu"
         printm ""
@@ -1540,30 +1544,54 @@ go_developer() {
                     ;;
                 6)
                     echo -e "\n$B_COLOR═══════════════════════════$NC CONFIG $B_COLOR════════════════════════════$NC\n"
+                    sort -u -o "$CONFIG" "$CONFIG"
                     LOG="$CONFIG"
                     if [ -f "$LOG" ]; then log2; else not_found; fi
                     echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
                     ;;
                 7)
-                    sort -u -o "$CONFIG" "$CONFIG"
-                    echo -e "\n$YL[!] CONFIG Sorted.$NC"
-                    ;;
-                8)
                     echo -e "\n$B_COLOR═══════════════════════$NC profile.add $B_COLOR═══════════════════════════$NC\n"
                     LOG="$PROFILE_ADD"
                     if [ -f "$LOG" ]; then log2; else not_found; fi
                     echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
                     ;;
-                9)
+                8)
                     echo -e "\n$B_COLOR═══════════════════════$NC syslog.log $B_COLOR════════════════════════════$NC\n"
                     LOG="/jffs/syslog.log"
                     if [ -f "$LOG" ]; then log_tail; else not_found; fi
                     echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
                     ;;
-                10)
+
+                9)
                     echo -e "\n$B_COLOR═══════════════════════$NC iocmon.log $B_COLOR════════════════════════════$NC\n"
+                    get_usb
                     LOG="$ROOT_PATH/iocmon.d/state/iocmon.log"
                     if [ -f "$LOG" ]; then log_tail; else not_found; fi
+                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    ;;
+                10)
+                    echo -e "\n$B_COLOR════════════════════════$NC iptables $B_COLOR═════════════════════════════$NC\n"
+                    LOG="/tmp/iptables_view.log"
+                    iptables -L -v -n --line-numbers > "$LOG" 2>&1
+                    if [ -f "$LOG" ]; then log2; else not_found; fi
+                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    ;;
+                11)
+                    echo -e "\n$B_COLOR═════════════════════$NC services-start $B_COLOR══════════════════════════$NC\n"
+                    LOG="/jffs/scripts/services-start"
+                    if [ -f "$LOG" ]; then log2; else not_found; fi
+                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    ;;
+                12)
+                    echo -e "\n$B_COLOR══════════════════════$NC service-event $B_COLOR══════════════════════════$NC\n"
+                    LOG="/jffs/scripts/service-event"
+                    if [ -f "$LOG" ]; then log2; else not_found; fi
+                    echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
+                    ;;
+                13)
+                    echo -e "\n$B_COLOR═════════════════════$NC firewall-start $B_COLOR══════════════════════════$NC\n"
+                    LOG="/jffs/scripts/firewall-start"
+                    if [ -f "$LOG" ]; then log2; else not_found; fi
                     echo -e "\n$B_COLOR═══════════════════════════════════════════════════════════════$NC"
                     ;;
                 e|E)
