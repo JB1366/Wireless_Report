@@ -1474,7 +1474,7 @@ go_developer() {
         printm "  $N1 Inject WR TAB  --> menu_wireless"
         printm "  $N2 Inject WR TAB  --> menu_addons"
         printm "  $N3 Inject WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
-        printm "  $N4 Insert WR Menu before $B_COLOR<#TAG#>$NC --> menuTree"
+        printm "  $N4 Insert WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
         printm "  $N5 View menuTree - /tmp/menuTree.js"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm "  $N6 View CONGIG - /jffs/addons/wireless_report/webui.conf"
@@ -1520,7 +1520,7 @@ go_developer() {
                     ;;
                 4)
                     echo -e "\nCurrent Insert Before menuName: $B_COLOR$INSERT_BEFORE$NC"
-                    printf "\nEnter menuName $B_COLOR<#TAG#>$NC to insert WR Menu before [${B_COLOR}E=Exit$NC]: "
+                    printf "\nEnter menuName $B_COLOR<#ETAG#>$NC to insert WR Menu before [${B_COLOR}E=Exit$NC]: "
                     read -r choice
                     case "$choice" in e|E) break ;; z|Z) goodbye ;;  esac
                     if [ -n "$choice" ]; then
