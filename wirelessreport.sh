@@ -313,6 +313,7 @@ menu_time_color() {
         USA1) DU="${BL}USA$NC";  CT="$DATE_USA1" ;;
     esac
 
+    get_hex_to_ansi
     B_COLOR=${B_COLOR:-$BL}
     for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
 	for i in E R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
