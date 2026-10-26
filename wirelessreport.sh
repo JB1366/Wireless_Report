@@ -1478,13 +1478,13 @@ go_developer() {
         printm "  $N5 View menuTree - /tmp/menuTree.js"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm "  $N6 View CONGIG - /jffs/addons/wireless_report/webui.conf"
-        printm "  $N7 View ALIAS'S - /jffs/configs/profile.add"
-        printm "  $N8 View syslog - /jffs/syslog.log"
-        printm "  $N9 View iocmon - $ROOT_PATH/iocmon.d/state/iocmon.log"
-        printm " $N10 View iptables - iptables -L -v -n --line-numbers"
-        printm " $N11 View services-start - /jffs/scripts/services-start"
-        printm " $N12 View service-event - /jffs/scripts/service-event"
-        printm " $N13 View firewall-start - /jffs/scripts/firewall-start"
+        printm "  $N7 View profile.add - /jffs/configs/profile.add"
+        printm "  $N8 View services-start - /jffs/scripts/services-start"
+        printm "  $N9 View service-event - /jffs/scripts/service-event"
+        printm " $N10 View firewall-start - /jffs/scripts/firewall-start"
+        printm " $N11 View iptables - iptables -L -v -n --line-numbers"
+        printm " $N12 View syslog - /jffs/syslog.log"
+        printm " $N13 View iocmon - $ROOT_PATH/iocmon.d/state/iocmon.log"
         printm ""
         printm "  $LZ Power Exit from any Menu"
         printm ""
@@ -1548,25 +1548,25 @@ go_developer() {
                     file_viewer "profile.add" "$PROFILE_ADD"
                     ;;
                 8)
-                    file_viewer "syslog.log" "/jffs/syslog.log" log_tail
+                    file_viewer "services-start" "$SS_FILE"
                     ;;
                 9)
-                    get_usb
-                    file_viewer "iocmon.log" "$ROOT_PATH/iocmon.d/state/iocmon.log" log_tail
+                    file_viewer "service-event" "$SE_FILE"
                     ;;
                 10)
+                    file_viewer "firewall-start" "/jffs/scripts/firewall-start"
+                    ;;
+                11)
                     LOG="/tmp/iptables_view.log"
                     iptables -L -v -n --line-numbers > "$LOG" 2>&1
                     file_viewer "iptables" "$LOG"
                     ;;
-                11)
-                    file_viewer "services-start" "/jffs/scripts/services-start"
-                    ;;
                 12)
-                    file_viewer "service-event" "/jffs/scripts/service-event"
+                    file_viewer "syslog.log" "/jffs/syslog.log" log_tail
                     ;;
                 13)
-                    file_viewer "firewall-start" "/jffs/scripts/firewall-start"
+                    get_usb
+                    file_viewer "iocmon.log" "$ROOT_PATH/iocmon.d/state/iocmon.log" log_tail
                     ;;
                 e|E)
                     return 0 ;;
