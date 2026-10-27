@@ -77,10 +77,12 @@ install_menu() {
         printm "  $N1  Install/Update"
         printm "  $N2  Uninstall"
 		printm "  $N3  Set Date/Time ($DU) ($CT)"
-		printm "  $N4  Set Nicknames & Node Display Order"
+		printm "  $N4  Set Nicknames"
         printm "  $N5  Set Device $COLORS"
-        printm "  $N6  Set Theme ($TM_STAT)"
-        printm "  $N7  Set Options"
+        printm "  $N6  Sort Node Display Order"
+        printm "  $N7  Set Report Theme ($TM_STAT)"
+        printm "  $N8  Set Report Options"
+        printm "  $N9  Set Header/Menu Border Color"
 		printm ""
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
@@ -88,15 +90,17 @@ install_menu() {
 			selection
 			case "$choice" in
 				1) do_install; break ;;
-				2|3|4|5|6|7)
+				2|3|4|5|6|7|8|9)
                     froze || continue
 					case "$choice" in
 						2) do_uninstall ;;
 						3) set_date_time ;;
 						4) set_device_nicknames ;;
 						5) set_device_colors ;;
-						6) set_theme ;;
-                        7) set_options ;;
+						6) do_node_sorting ;;
+                        7) set_theme ;;
+                        8) set_options ;;
+                        9) set_border_color ;;
 					esac
 					break ;;
 				e|E) goodbye ;;
@@ -672,14 +676,12 @@ set_device_nicknames() {
     while true; do
         show_header
         printb "╔═════════════════════════════════════════════════════════════╗"
-        printm "             Set Nicknames & Node Display Order"
+        printm "                       Set Nicknames"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
 		printm "  $N1 Reset to Default Nicknames"
 		printm "  $N2 Location-Based Nicknames"
 		printm "  $N3 Manual Custom Nicknames"
-		printm ""
-        printm "  $N4 Sort Node Display Order"
         printm ""
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
@@ -806,90 +808,6 @@ set_device_nicknames() {
                     done
                     printf "\n$GR[+] Manual nicknames saved (max 25 chars).$NC\n"
                     ;;
-                4)
-                    echo -e "\n$BL[*] Manual Node Sorting$NC\n"
-                    echo -e "Current order:\n"
-                    node_idx=1
-                    for node in $MESH_NODES; do
-                        MODEL="${node%%|*}"
-                        IP="${node#*|}"
-                        CLEAN_IP="${IP//./_}"
-                        eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
-                        HEX_CLR=$(get_node_color "$node_idx")
-                        NODE_CLR=$(get_hex_to_ansi "$HEX_CLR")
-
-                        echo -e "  $B_COLOR($node_idx) ${NODE_CLR}Node $IP -> ${SAVED_NICK:-$MODEL}$NC"
-
-                        node_idx=$((node_idx + 1))
-                    done
-                    orig_count=$((node_idx - 1))
-                    echo -e "                                           "
-                    echo -e "  $LR Reset to default, sort by IP."
-                    echo -e "  $LE Exit with no changes.      \n"
-                    while true; do
-                        printf " Enter new order by index (e.g., ${B_COLOR}2 1 3$NC): "
-                        read -r new_order
-                        [ -z "$new_order" ] && { freeze; continue; }
-                        case "$new_order" in
-                            e|E)
-                                break 2 ;;
-                            r|R)
-                                sed -i '/^AIMESH_NODES=/d' "$CONFIG"
-                                printf "\n$GR[+] Reset node order to default.$NC\n"
-                                AIMESH_NODES=""; MESH_NODES=""
-                                get_mesh_nodes
-                                pause
-                                break 2
-                                ;;
-                            z|Z) goodbye ;;
-                        esac
-                        valid="true"
-                        entered_count=0
-                        for idx in $new_order; do
-                            entered_count=$((entered_count + 1))
-                            case "$idx" in
-                                *[!0-9]*|'')
-                                    valid="false"
-                                    ;;
-                                *)
-                                    if [ "$idx" -lt 1 ] || [ "$idx" -gt "$orig_count" ]; then
-                                        valid="false"
-                                    fi
-                                    ;;
-                            esac
-                        done
-
-                        if [ "$entered_count" -ne "$orig_count" ]; then
-                            valid="false"
-                        fi
-                        if [ "$valid" = "true" ]; then
-                            unique_check=$(for idx in $new_order; do echo "$idx"; done | sort -n | uniq | wc -l | tr -d ' ')
-                            if [ "$unique_check" -ne "$orig_count" ]; then
-                                freeze
-                                continue
-                            fi
-                            new_mesh_nodes=""
-                            for idx in $new_order; do
-                                current_idx=1
-                                for node in $MESH_NODES; do
-                                    if [ "$current_idx" -eq "$idx" ]; then
-                                        new_mesh_nodes="$new_mesh_nodes $node"
-                                        break
-                                    fi
-                                    current_idx=$((current_idx + 1))
-                                done
-                            done
-                            break
-                        else
-                            freeze
-                            continue
-                        fi
-                    done
-                    sed -i '/^AIMESH_NODES=/d' "$CONFIG"
-                    echo "AIMESH_NODES=\"$new_mesh_nodes\"" >> "$CONFIG"
-                    MESH_NODES="$new_mesh_nodes"
-                    printf "\n$GR[+] Node order successfully updated!$NC\n"
-                    ;;
                 e|E)
                      return 0 ;;
                 *)
@@ -900,6 +818,106 @@ set_device_nicknames() {
             break
         done
         run_report
+    done
+}
+
+do_node_sorting() {
+    while true; do
+        show_header
+        printb "╔═════════════════════════════════════════════════════════════╗"
+        printm "                     Manual Node Sorting"
+        printb "╠═════════════════════════════════════════════════════════════╣"
+        printm ""
+        printm "  Current order:"
+        printm ""
+
+        get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
+        node_idx=1
+        for node in $MESH_NODES; do
+            MODEL="${node%%|*}"
+            IP="${node#*|}"
+            CLEAN_IP="${IP//./_}"
+            eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
+            HEX_CLR=$(get_node_color "$node_idx")
+            NODE_CLR=$(get_hex_to_ansi "$HEX_CLR")
+
+            printm "  $B_COLOR($node_idx) ${NODE_CLR}Node $IP -> ${SAVED_NICK:-$MODEL}$NC"
+
+            node_idx=$((node_idx + 1))
+        done
+        orig_count=$((node_idx - 1))
+
+        printm ""
+        printm "  $LR Reset to default, sort by IP."
+        printm "  $LE Exit with no changes."
+        printm ""
+        printb "╚═════════════════════════════════════════════════════════════╝"
+        printf "%b" "$menu_buffer"
+        while true; do
+            printf "\n Enter new order by index (e.g., ${B_COLOR}2 1 3$NC): "
+            read -r new_order
+            [ -z "$new_order" ] && { freeze 2; continue; }
+            case "$new_order" in
+                e|E)
+                    return 0 ;;
+                 r|R)
+                    sed -i '/^AIMESH_NODES=/d' "$CONFIG"
+                    printf "\n$B_COLOR[+] Reset node order to default.$NC\n"
+                    AIMESH_NODES=""; MESH_NODES=""
+                    get_mesh_nodes
+                    pause
+                    continue 2
+                    ;;
+                z|Z)
+                    goodbye ;;
+            esac
+            valid="true"
+            entered_count=0
+            for idx in $new_order; do
+                entered_count=$((entered_count + 1))
+                case "$idx" in
+                    *[!0-9]*|'')
+                        valid="false"
+                        ;;
+                    *)
+                        if [ "$idx" -lt 1 ] || [ "$idx" -gt "$orig_count" ]; then
+                            valid="false"
+                        fi
+                        ;;
+                esac
+            done
+
+            if [ "$entered_count" -ne "$orig_count" ]; then
+                valid="false"
+            fi
+            if [ "$valid" = "true" ]; then
+                unique_check=$(for idx in $new_order; do echo "$idx"; done | sort -n | uniq | wc -l | tr -d ' ')
+                if [ "$unique_check" -ne "$orig_count" ]; then
+                    freeze 2
+                    continue
+                fi
+                new_mesh_nodes=""
+                for idx in $new_order; do
+                    current_idx=1
+                    for node in $MESH_NODES; do
+                        if [ "$current_idx" -eq "$idx" ]; then
+                            new_mesh_nodes="$new_mesh_nodes $node"
+                            break
+                        fi
+                        current_idx=$((current_idx + 1))
+                    done
+                done
+                break
+            else
+                freeze 2
+                continue
+            fi
+        done
+        sed -i '/^AIMESH_NODES=/d' "$CONFIG"
+        echo "AIMESH_NODES=\"$new_mesh_nodes\"" >> "$CONFIG"
+        MESH_NODES="$new_mesh_nodes"
+        printf "\n$B_COLOR[+] Node order successfully updated!$NC\n"
+        pause
     done
 }
 
@@ -1169,7 +1187,6 @@ set_options() {
         printm "  $N4  Toggle IP Column Padding: ($PD_STAT)"
         printm "  $N5  Toggle Node Hostname Display: ($HN_STAT)"
         printm "  $N6  Config RSSI Tooltip History ($CH)"
-        printm "  $N7  Change Logo/Menu Border Color"
         printm ""
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
@@ -1219,17 +1236,6 @@ set_options() {
                     ;;
                 6)
                     set_rssi_tooltip ;;
-                7)
-                    echo -e "\n$B_COLOR Select Logo/Menu Border Color:"
-                    get_hex_to_ansi
-                    get_hex_ansi_selection
-                    B_COLOR="$selected_ansi"
-                    if [ -f "$CONFIG" ]; then sed -i '/^B_COLOR=/d' "$CONFIG"; fi
-                    echo "B_COLOR=\"$B_COLOR\"" >> "$CONFIG"
-                    echo -e "\n$B_COLOR[+] Logo/Menu Border Color changed.$NC"
-                    menu_time_color
-                    pause
-                    ;;
                 e|E)
                     return 0 ;;
                 *)
@@ -1417,6 +1423,18 @@ set_rssi_tooltip() {
             break
         done
     done
+}
+
+set_border_color() {
+    echo -e "\n$B_COLOR Select Logo/Menu Border Color:"
+    get_hex_to_ansi
+    get_hex_ansi_selection
+    B_COLOR="$selected_ansi"
+    if [ -f "$CONFIG" ]; then sed -i '/^B_COLOR=/d' "$CONFIG"; fi
+    echo "B_COLOR=\"$B_COLOR\"" >> "$CONFIG"
+    printf "\n$B_COLOR[+] Logo/Menu Border Color changed.$NC"
+    menu_time_color
+    pause
 }
 
 set_github_branch() {
@@ -5713,12 +5731,19 @@ async function loadWirelessReport() {
         } else {
             memHtml.push("<span style='color:" + color + ";'>--" + "</span>");
         }
-        var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
+       var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
         if (firmware) {
             firmware = String(firmware);
             var dashIndex = firmware.indexOf('-');
             if (dashIndex !== -1) {
                 firmware = firmware.substring(0, dashIndex);
+            }
+
+            // Split the version string by dots (e.g. ["3", "0", "0", "6", "102_40497"])
+            var parts = firmware.split('.');
+            if (parts.length >= 5) {
+                // Combine the first 4 parts ("3006") and keep the dot before the build number ("102_40497")
+                firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
             }
         }
         var details = "<span style='color:" + color + ";'>" + wrEscape(name) + "</span>";
