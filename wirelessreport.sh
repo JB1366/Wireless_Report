@@ -40,7 +40,6 @@ SE_FILE="/jffs/scripts/service-event"
 PROFILE_ADD="/jffs/configs/profile.add"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-export LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8"
 unset LD_LIBRARY_PATH
 
 show_header() {
@@ -826,7 +825,7 @@ do_node_sorting() {
     while true; do
         show_header
         printb "╔═════════════════════════════════════════════════════════════╗"
-        printm "                     Manual Node Sorting"
+        printm "                     Node Display Order"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
         printm "  Current order:"
@@ -1187,7 +1186,7 @@ set_options() {
         printm "  $N3  Configure Uptime Alert Pulse: ($UP_STAT)"
         printm "  $N4  Toggle IP Column Padding: ($PD_STAT)"
         printm "  $N5  Toggle Node Hostname Display: ($HN_STAT)"
-        printm "  $N6  Config RSSI Tooltip History ($CH)"
+        printm "  $N6  Config RSSI Tooltip History: ($CH)"
         printm ""
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
@@ -5739,11 +5738,8 @@ async function loadWirelessReport() {
             if (dashIndex !== -1) {
                 firmware = firmware.substring(0, dashIndex);
             }
-
-            // Split the version string by dots (e.g. ["3", "0", "0", "6", "102_40497"])
             var parts = firmware.split('.');
             if (parts.length >= 5) {
-                // Combine the first 4 parts ("3006") and keep the dot before the build number ("102_40497")
                 firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
             }
         }
