@@ -40,6 +40,7 @@ SE_FILE="/jffs/scripts/service-event"
 PROFILE_ADD="/jffs/configs/profile.add"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 export PATH="/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+export LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8"
 unset LD_LIBRARY_PATH
 
 show_header() {
