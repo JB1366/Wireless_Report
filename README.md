@@ -98,7 +98,7 @@ $\color{green}{\text{Option (9):}}$ Set Header/Menu Border Color: Customize the 
 ![Instructions5](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions5.png)<br>
 \
 \
-$\color{blue}{\Large\text{Viwing The Report}}$<br>
+$\color{blue}{\Large\text{Viewing The Report}}$<br>
 To access your data, navigate to Advanced Settings > Wireless in the ASUS WebGUI and select the Wireless Report tab on the far right.<br>
 \
 \
