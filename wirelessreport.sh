@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.1"
+SCRIPT_VERSION="3.5.2"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -860,7 +860,7 @@ do_node_sorting() {
             case "$new_order" in
                 e|E)
                     return 0 ;;
-                 r|R)
+                r|R)
                     sed -i '/^AIMESH_NODES=/d' "$CONFIG"
                     printf "\n$B_COLOR[+] Reset node order to default.$NC\n"
                     AIMESH_NODES=""; MESH_NODES=""
@@ -5707,9 +5707,14 @@ async function loadWirelessReport() {
     }
     var mainFw = window._cachedMainFw || '';
 
-    var mainDiag = "<span class='main-color'>" + wrEscape(mainNameText) + "</span>";
-    if (mainIp) mainDiag += " <span style='color:white;'>•</span> <span style='color:white;'>" + wrEscape(mainIp) + "</span>";
-    if (mainFw) mainDiag += " <span style='color:white;'>•</span> <span class='main-color'>FW</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>";
+    var mainNameStr = (mainNameText || '').padEnd(16, '\u00A0');
+    var mainIpStr   = (mainIp || '').padEnd(15, '\u00A0');
+    var mainDiag = "<span class='main-color' style='font-family:monospace; white-space:pre;'>" +
+                '\u00A0\u00A0\u00A0\u00A0' +     // ← compensate for the 2-char shift
+                wrEscape(mainNameStr) +
+                "<span style='color:white;'>" + wrEscape(mainIpStr) + "</span>" +
+                (mainFw ? "<span class='main-color'>FW</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>" : "") +
+                "</span>";
 
     nodes.forEach(function(node, index) {
         var mac = wrNormMac(node.mac || node.mac_addr);
@@ -5743,9 +5748,15 @@ async function loadWirelessReport() {
                 firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
             }
         }
-        var details = "<span style='color:" + color + ";'>" + wrEscape(name) + "</span>";
-        if (ip) details += " <span style='color:white;'>•</span> <span style='color:white;'>" + wrEscape(ip) + "</span>";
-        if (firmware) details += " <span style='color:white;'>•</span> <span style='color:" + color + ";'>FW</span> <span style='color:white;'>" + wrEscape(firmware) + "</span>";
+
+        var nameStr = (name || '').padEnd(16, '\u00A0');  // non-breaking spaces
+        var ipStr   = (ip   || '').padEnd(15, '\u00A0');
+        var fwStr   = firmware ? 'FW ' + firmware : '';
+        var details = "<span style='color:" + color + "; font-family:monospace; white-space:pre;'>" +
+                    wrEscape(nameStr) +
+                    "<span style='color:white;'>" + wrEscape(ipStr) + "</span>" +
+                    (fwStr ? "<span style='color:" + color + ";'>FW</span> <span style='color:white;'>" + wrEscape(firmware) + "</span>" : "") +
+                    "</span>";
         nodeDiagParts.push(details);
     });
 
