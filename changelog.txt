@@ -2,6 +2,8 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.5.2-update node sorting.
+      -update FW footers.
 v3.5.1-install menu updates.
 v3.5.0-install menu updates.
 v3.4.9-install menu updates.

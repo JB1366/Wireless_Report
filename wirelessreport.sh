@@ -210,8 +210,8 @@ printb() {
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     if [ "$RR" = "1" ]; then RR=""; run_report; fi
-
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
+
     menu_buffer=""; MB="61"; echo -e "$B_COLOR"
 
     ON="${GR}ON$NC"; OFF="${RD}OFF$NC"
