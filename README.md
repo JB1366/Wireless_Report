@@ -67,12 +67,17 @@ $\color{green}{\text{Option (5):}}$ Set Device Colors: Customize individual devi
 ![Instructions12](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions12.png)<br>
 \
 \
-$\color{green}{\text{Option (6):}}$ Set Theme: Switch between Original, Darkmode, and Asus WebUI theme styles.
+$\color{green}{\text{Option (6):}}$ Sort Node Display Order: Adjust Node Display order.<br>
 
 ![Instructions13](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions13.png)<br>
 \
 \
-$\color{green}{\text{Option (7):}}$ Set Options
+$\color{green}{\text{Option (7):}}$ Set Theme: Switch between Original, Darkmode, and Asus WebUI theme styles.
+
+![Instructions9](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions9.png)<br>
+\
+\
+$\color{green}{\text{Option (8):}}$ Set Report Options
  * $\color{blue}{\text{Toggle Runtime Tracking:}}$ Measures and displays the total duration of script scans across your router and nodes. Toggling this setting will also reset the execution counter.
  * $\color{blue}{\text{Toggle Wireless Backhaul:}}$ Toggles the visibility of dedicated node-to-router wireless backhaul links within the report tables.
  * $\color{blue}{\text{Configure Uptime Alert Pulse:}}$ Sets the frequency interval (Default: 15 mins, Max: 1440 mins) for checking and reporting system uptime fluctuations or heartbeat alerts.<br>
@@ -83,10 +88,14 @@ $\color{green}{\text{Option (7):}}$ Set Options
  * $\color{blue}{\text{Toggle Node Hostname Display:}}$ Gives you full control over how mesh node identifiers look, allowing for an incredibly clean, unified text layout or distinct color-coded node tracking.<br>
    * $\color{green}{\text{Numbered Hostnames (Default):}}$ Hostnames remain a uniform, clean white while their tracking superscripts (sup) are color-coded to match their respective nodes.
    * $\color{green}{\text{Colored Hostnames:}}$ The entire hostname text dynamically takes on the color of its connected node. The tracking superscripts are seamlessly hidden using invisible styling, preserving your right-click table sorting perfectly without breaking the visual layout.<br>
- * $\color{blue}{\text{Toggle RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).<br>
- * $\color{blue}{\text{Change Install Menu colors:}}$ Change Logo/Menu Border Color.
+ * $\color{blue}{\text{Toggle RSSI Tooltips:}}$ Hover over any RSSI value to display a trend indicator with your configured history (up to 20 readings).
 
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
+\
+\
+$\color{green}{\text{Option (9):}}$ Set Header/Menu Border Color: Change Logo/Menu Border Color.<br>
+
+![Instructions5](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions5.png)<br>
 \
 \
 $\color{blue}{\Large\text{Viwing The Report}}$<br>
