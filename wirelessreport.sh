@@ -849,12 +849,11 @@ do_node_sorting() {
 
         printm ""
         printm "  $LR Reset to default, sort by IP."
-        printm "  $LE Exit with no changes."
         printm ""
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
         while true; do
-            printf "\n Enter new order by index (e.g., ${B_COLOR}2 1 3$NC): "
+            printf "\n Enter new order by index [${B_COLOR}E=Exit$NC] (e.g., ${B_COLOR}2 1 3$NC): "
             read -r new_order
             [ -z "$new_order" ] && { freeze 2; continue; }
             case "$new_order" in
@@ -866,6 +865,7 @@ do_node_sorting() {
                     AIMESH_NODES=""; MESH_NODES=""
                     get_mesh_nodes
                     pause
+                    run_report
                     continue 2
                     ;;
                 z|Z)
@@ -918,6 +918,7 @@ do_node_sorting() {
         MESH_NODES="$new_mesh_nodes"
         printf "\n$B_COLOR[+] Node order successfully updated!$NC\n"
         pause
+        run_report
     done
 }
 
