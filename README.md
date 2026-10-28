@@ -67,14 +67,14 @@ $\color{green}{\text{Option (5):}}$ Set Device Colors: Customize individual devi
 ![Instructions12](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions12.png)<br>
 \
 \
-$\color{green}{\text{Option (6):}}$ Sort Node Display Order: Adjust Node Display order.<br>
+$\color{green}{\text{Option (6):}}$ Sort Node Display Order: Customize how AiMesh nodes are arranged in the interface.<br>
 
-![Instructions13](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions13.png)<br>
+![Instructions9](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions9.png)<br>
 \
 \
 $\color{green}{\text{Option (7):}}$ Set Theme: Switch between Original, Darkmode, and Asus WebUI theme styles.
 
-![Instructions9](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions9.png)<br>
+![Instructions13](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions13.png)<br>
 \
 \
 $\color{green}{\text{Option (8):}}$ Set Report Options
@@ -93,7 +93,7 @@ $\color{green}{\text{Option (8):}}$ Set Report Options
 ![Instructions4](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions4.png)<br>
 \
 \
-$\color{green}{\text{Option (9):}}$ Set Header/Menu Border Color: Change Logo/Menu Border Color.<br>
+$\color{green}{\text{Option (9):}}$ Set Header/Menu Border Color: Customize the color of the UI logo and menu borders.<br>
 
 ![Instructions5](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions5.png)<br>
 \
