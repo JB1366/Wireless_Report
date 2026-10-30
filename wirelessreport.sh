@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.2"
+SCRIPT_VERSION="3.5.3"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -5699,19 +5699,38 @@ async function loadWirelessReport() {
         var firmver = String(base.firmver || '').trim();
         var buildno = String(base.buildno || '').trim();
         var extendno = String(base.extendno || '').trim();
+        //var buildno = "102.10"; // <--- Hardcoded for testing
+        //var extendno = "2"; // <--- Hardcoded for testing
 
         if (firmver && buildno) {
             var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
-            if (extendno && extendno !== '0') detectedFw += '_' + extendno;
-            window._cachedMainFw = detectedFw.split('-')[0];
+            var extVal = extendno || '0';
+
+            if (buildno.length === 5) {
+                if (extVal.length > 1) {
+                    detectedFw += '_' + extVal.slice(0, 3);
+                } else {
+                    detectedFw += '_' + extVal + '  ';
+                }
+            } else if (buildno.length === 6) {
+                if (extVal.length > 1) {
+                    detectedFw += '_' + extVal.slice(0, 2);
+                } else {
+                    detectedFw += '_' + extVal + ' ';
+                }
+            } else {
+                detectedFw += '_' + extVal;
+            }
+
+            window._cachedMainFw = detectedFw;
         }
     }
+    var mainFw = window._cachedMainFw || '';
     var mainFw = window._cachedMainFw || '';
 
     var mainNameStr = (mainNameText || '').padEnd(16, '\u00A0');
     var mainIpStr   = (mainIp || '').padEnd(15, '\u00A0');
     var mainDiag = "<span class='main-color' style='font-family:monospace; white-space:pre;'>" +
-                '\u00A0\u00A0\u00A0\u00A0' +     // ← compensate for the 2-char shift
                 wrEscape(mainNameStr) +
                 "<span style='color:white;'>" + wrEscape(mainIpStr) + "</span>" +
                 (mainFw ? "<span class='main-color'>FW</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>" : "") +
