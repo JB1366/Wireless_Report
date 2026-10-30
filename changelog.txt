@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.5.4-update FW footers.
 v3.5.3-update FW footers.
 v3.5.2-update node sorting.
       -update FW footers.
