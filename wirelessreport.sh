@@ -5710,13 +5710,13 @@ async function loadWirelessReport() {
                 if (extVal.length > 1) {
                     detectedFw += '_' + extVal.slice(0, 3);
                 } else {
-                    detectedFw += '_' + extVal + '  ';
+                    detectedFw += '_' + extVal + '    ';
                 }
             } else if (buildno.length === 6) {
                 if (extVal.length > 1) {
                     detectedFw += '_' + extVal.slice(0, 2);
                 } else {
-                    detectedFw += '_' + extVal + ' ';
+                    detectedFw += '_' + extVal + '   ';
                 }
             } else {
                 detectedFw += '_' + extVal;
@@ -5756,26 +5756,53 @@ async function loadWirelessReport() {
         } else {
             memHtml.push("<span style='color:" + color + ";'>--" + "</span>");
         }
-       var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
+
+        var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
         if (firmware) {
             firmware = String(firmware);
-            var dashIndex = firmware.indexOf('-');
-            if (dashIndex !== -1) {
-                firmware = firmware.substring(0, dashIndex);
-            }
-            var parts = firmware.split('.');
-            if (parts.length >= 5) {
-                firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
+
+            // Merlin buildno contains a decimal (e.g., 102.9), whereas Stock Asus is an integer (102)
+            var isMerlin = /_\d+\./.test(firmware);
+
+            if (!isMerlin) {
+                // --- STOCK ASUS LOGIC (Untouched & Working) ---
+                var dashIndex = firmware.indexOf('-');
+                if (dashIndex !== -1) {
+                    firmware = firmware.substring(0, dashIndex);
+                }
+                var parts = firmware.split('.');
+                if (parts.length >= 5) {
+                    firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
+                }
+            } else {
+                // --- MERLIN / FORK LOGIC ---
+                var dashIndex = firmware.indexOf('-');
+                var baseFw = dashIndex !== -1 ? firmware.substring(0, dashIndex) : firmware;
+                var parts = baseFw.split('.');
+
+                if (parts.length >= 5) {
+                    baseFw = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
+                }
+
+                firmware = baseFw;
             }
         }
 
-        var nameStr = (name || '').padEnd(16, '\u00A0');  // non-breaking spaces
+        // --- OUTPUT BLOCK WITH FIXED-WIDTH PADDING FOR ALIGNMENT ---
+        var nameStr = (name || '').padEnd(16, '\u00A0');
         var ipStr   = (ip   || '').padEnd(15, '\u00A0');
+
+        // Pad the firmware string to a fixed width (e.g., 16 characters) using non-breaking spaces
+        // Adjust the number 16 up or down if you need to fine-tune the left/right shift
+        if (firmware) {
+            firmware = firmware.padEnd(16, '\u00A0');
+        }
+
         var fwStr   = firmware ? 'FW ' + firmware : '';
         var details = "<span style='color:" + color + "; font-family:monospace; white-space:pre;'>" +
                     wrEscape(nameStr) +
                     "<span style='color:white;'>" + wrEscape(ipStr) + "</span>" +
-                    (fwStr ? "<span style='color:" + color + ";'>FW</span> <span style='color:white;'>" + wrEscape(firmware) + "</span>" : "") +
+                    (fwStr ? "<span style='color:" + color + ";'>FW</span> <span style='color:white;'>" + firmware + "</span>" : "") +
                     "</span>";
         nodeDiagParts.push(details);
     });
