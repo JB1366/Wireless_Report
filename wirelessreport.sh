@@ -5699,8 +5699,6 @@ async function loadWirelessReport() {
         var firmver = String(base.firmver || '').trim();
         var buildno = String(base.buildno || '').trim();
         var extendno = String(base.extendno || '').trim();
-        //var buildno = "102.10"; // <--- Hardcoded for testing
-        //var extendno = "2"; // <--- Hardcoded for testing
 
         if (firmver && buildno) {
             var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
@@ -5708,13 +5706,13 @@ async function loadWirelessReport() {
 
             if (buildno.length === 5) {
                 if (extVal.length > 1) {
-                    detectedFw += '_' + extVal.slice(0, 3);
+                    detectedFw += '_' + extVal.slice(0, 5);
                 } else {
                     detectedFw += '_' + extVal + '    ';
                 }
             } else if (buildno.length === 6) {
                 if (extVal.length > 1) {
-                    detectedFw += '_' + extVal.slice(0, 2);
+                    detectedFw += '_' + extVal.slice(0, 4);
                 } else {
                     detectedFw += '_' + extVal + '   ';
                 }
@@ -5764,7 +5762,7 @@ async function loadWirelessReport() {
             var isMerlin = /_\d+\./.test(firmware);
 
             if (!isMerlin) {
-                // --- STOCK ASUS LOGIC (Untouched & Working) ---
+                // --- STOCK ASUS
                 var dashIndex = firmware.indexOf('-');
                 if (dashIndex !== -1) {
                     firmware = firmware.substring(0, dashIndex);
@@ -5774,7 +5772,7 @@ async function loadWirelessReport() {
                     firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
                 }
             } else {
-                // --- MERLIN / FORK LOGIC ---
+                // --- MERLIN
                 var dashIndex = firmware.indexOf('-');
                 var baseFw = dashIndex !== -1 ? firmware.substring(0, dashIndex) : firmware;
                 var parts = baseFw.split('.');
@@ -5786,12 +5784,9 @@ async function loadWirelessReport() {
             }
         }
 
-        // --- OUTPUT BLOCK WITH FIXED-WIDTH PADDING FOR ALIGNMENT ---
         var nameStr = (name || '').padEnd(16, '\u00A0');
         var ipStr   = (ip   || '').padEnd(15, '\u00A0');
 
-        // Pad the firmware string to a fixed width (e.g., 16 characters) using non-breaking spaces
-        // Adjust the number 16 up or down if you need to fine-tune the left/right shift
         if (firmware) {
             firmware = firmware.padEnd(16, '\u00A0');
         }
