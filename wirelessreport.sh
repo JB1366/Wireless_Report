@@ -5721,7 +5721,6 @@ async function loadWirelessReport() {
             } else {
                 detectedFw += '_' + extVal;
             }
-
             window._cachedMainFw = detectedFw;
         }
     }
@@ -5783,7 +5782,6 @@ async function loadWirelessReport() {
                 if (parts.length >= 5) {
                     baseFw = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
                 }
-
                 firmware = baseFw;
             }
         }
