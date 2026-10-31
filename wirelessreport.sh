@@ -5762,41 +5762,36 @@ async function loadWirelessReport() {
 
         var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
         if (firmware) {
-            firmware = String(firmware);
+            firmware = String(firmware).trim();
+            firmware = firmware.replace(/^3\.0\.0\./, '300');
+            var parts = firmware.split('.');
+            var isMerlin = parts.length >= 3;
 
-            // Merlin buildno contains a decimal (e.g., 102.9), whereas Stock Asus is an integer (102)
-            var isMerlin = /_\d+\./.test(firmware);
-
-            if (!isMerlin) {
-                // --- STOCK ASUS
-                var dashIndex = firmware.indexOf('-');
-                if (dashIndex !== -1) {
-                    firmware = firmware.substring(0, dashIndex);
+            if (isMerlin) {
+                var underscoreIdx = firmware.lastIndexOf('_');
+                if (underscoreIdx !== -1) {
+                    var basePart = firmware.substring(0, underscoreIdx);
+                    var extVal = firmware.substring(underscoreIdx + 1);
+                    var firstHyphen = extVal.indexOf('-');
+                    if (firstHyphen !== -1) {
+                        extVal = extVal.substring(0, firstHyphen);
+                    }
+                    if (extVal.length > 1) {
+                        firmware = basePart + '_' + extVal.slice(0, 4);
+                    }
                 }
-                var parts = firmware.split('.');
-                if (parts.length >= 5) {
-                    firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
-                }
-            } else {
-                // --- MERLIN
-                var dashIndex = firmware.indexOf('-');
-                var baseFw = dashIndex !== -1 ? firmware.substring(0, dashIndex) : firmware;
-                var parts = baseFw.split('.');
-
-                if (parts.length >= 5) {
-                    baseFw = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
-                }
-                firmware = baseFw;
+            }
+            var dashIdx = firmware.indexOf('-');
+            if (dashIdx !== -1) {
+                firmware = firmware.substring(0, dashIdx);
             }
         }
 
         var nameStr = (name || '').padEnd(16, '\u00A0');
         var ipStr   = (ip   || '').padEnd(16, '\u00A0');
-
         if (firmware) {
             firmware = firmware.padEnd(16, '\u00A0');
         }
-
         var fwStr   = firmware ? 'FW ' + firmware : '';
         var details = "<span style='color:" + color + "; font-family:monospace; white-space:pre;'>" +
                     wrEscape(nameStr) +
