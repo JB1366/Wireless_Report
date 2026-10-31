@@ -1039,6 +1039,9 @@ set_device_colors() {
         local row_text="${main_display_color}${formatted_main2}$NC"
         printm "$row_text"
 
+        # Initialize cache list
+        node_display_names=""
+
         local idx=1
         for node in $MESH_NODES; do
             local node_ip="${node#*|}"
@@ -1046,6 +1049,10 @@ set_device_colors() {
             local active_color=$(echo "$working_colors" | awk -v col="$idx" '{print $col}')
             local node_display_name=$(get_node_nick "$node_ip")
             node_display_name="${node_display_name:-$default_nick}"
+
+            # Save the resolved name into our index-matched list
+            node_display_names="${node_display_names}${node_display_names:+ }$node_display_name"
+
             local display_color=$(get_hex_to_ansi "$active_color")
             local formatted_ip=$(printf "(%s)" "$node_ip")
 
@@ -1096,12 +1103,11 @@ set_device_colors() {
                 target_name="${MAIN_NICK:-$main_name}"
                 target_hex="$m_color_hex"
             else
-                local target_node=$(printf '%s\n' "$MESH_NODES" | awk -v n="$node_choice" 'NR == n { print; exit }')
-                local target_ip=$(printf '%s\n' "$target_node" | cut -d'|' -f2)
-                target_name=$(get_node_nick "$target_ip")
-                target_name="${target_name:-$(printf '%s\n' "$target_node" | cut -d'|' -f1)}"
+                # Pull the exact name already successfully displayed at the top
+                target_name=$(echo "$node_display_names" | awk -v n="$node_choice" '{print $n}')
                 target_hex=$(echo "$working_colors" | awk -v col="$node_choice" '{print $col}')
             fi
+
             local selected_hex=""
             local target_prompt_color=$(get_hex_to_ansi "$target_hex")
             echo -e "\n$NC Select a new color for ${target_prompt_color}[${target_name}]:$NC"
