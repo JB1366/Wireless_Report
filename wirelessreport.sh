@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.6"
+SCRIPT_VERSION="3.5.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -329,6 +329,174 @@ menu_time_color() {
     JB1366="$B_COLOR${UL}https://github.com/JB1366/Wireless_Report$NC"
 }
 
+device_default_colors() {
+    MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
+    NODE_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
+}
+
+get_mesh_nodes() {
+	local ASUS_DEVICE_LIST MAIN_IP
+	MAIN_IP=$(nvram get lan_ipaddr)
+	ASUS_DEVICE_LIST=$(nvram get asus_device_list)
+	MESH_NODES=$(printf '%s\n' "$ASUS_DEVICE_LIST" |
+        sed 's/</\n/g' |
+		awk -F '>' -v main_ip="$MAIN_IP" '
+			NF >= 4 && $2 != "" && $3 != "" && $3 != main_ip && $NF == "2" && !seen[$3]++ {
+				print $2 "|" $3
+			}
+		' |
+        sort -t . -k 4,4n)
+
+    if [ -f "$CONFIG" ]; then
+        local saved_mesh_nodes=""
+        saved_mesh_nodes=$(grep '^AIMESH_NODES=' "$CONFIG" 2>/dev/null | cut -d'"' -f2)
+        if [ -n "$saved_mesh_nodes" ]; then
+            local live_count=0
+            for node in $MESH_NODES; do
+                live_count=$((live_count + 1))
+            done
+            local saved_count=0
+            for node in $saved_mesh_nodes; do
+                saved_count=$((saved_count + 1))
+            done
+            if [ "$live_count" -ne "$saved_count" ]; then
+                sed -i '/^AIMESH_NODES=/d' "$CONFIG"
+                AIMESH_NODES=""; RR="1"
+            else
+                MESH_NODES="$saved_mesh_nodes"
+            fi
+        fi
+    fi
+}
+
+get_hex_to_ansi() {
+    PK='\033[38;5;211m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
+    RD='\033[38;5;196m'; NB='\033[38;5;39m'; OR='\033[38;5;208m'
+    YW='\033[38;5;226m'; SB='\033[38;5;75m'; BK='\033[30m'
+    WT='\033[38;5;231m'; MT='\033[38;5;86m'; DG='\033[0;90m'
+    case "$1" in
+        "#0096ff") echo -e "$NB" ;;
+        "#30d158") echo -e "$LG" ;;
+        "#bf40bf") echo -e "$MP" ;;
+        "#ffd60a") echo -e "$YW" ;;
+        "#64d2ff") echo -e "$SB" ;;
+        "#ff9500") echo -e "$OR" ;;
+        "#ff453a") echo -e "$RD" ;;
+        "#ffffff") echo -e "$WT" ;;
+        "#555555") echo -e "$DG" ;;
+        "#ff70a6") echo -e "$PK" ;;
+        "#64ffda") echo -e "$MT" ;;
+        "#000000") echo -e "$DG" ;;
+        *)         echo -e "$NC" ;;
+    esac
+}
+
+get_hex_ansi_selection() {
+    menu_buffer=""; MB=30
+    printb "╔══════════════════════════════╗"
+    printm "      Hex Color Pallete"
+    printb "╠══════════════════════════════╣"
+    printm ""
+    printm " $NB (1)  Neon-Blue (#0096ff)"
+    printm " $LG (2)  Lime-Green (#30d158)"
+    printm " $MP (3)  Med-Purple (#bf40bf)"
+    printm " $YW (4)  Yellow (#ffd60a)"
+    printm " $SB (5)  SkyBlue (#64d2ff)"
+    printm " $OR (6)  Orange (#ff9500)"
+    printm " $RD (7)  Red (#ff453a)"
+    printm " $WT (8)  White (#ffffff)"
+    printm " $DG (9)  Dark Gray (#555555)"
+    printm " $PK (10) Light-Pink (#ff70a6)"
+    printm " $MT (11) Mint-Green (#64ffda)"
+    printm " $DG (12) Black (#000000)"
+    printm ""
+    printb "╚══════════════════════════════╝"
+    printf "%b" "$menu_buffer"
+    while true; do
+        selection
+        case "$choice" in
+            1)  selected_hex="#0096ff"; selected_ansi="$NB" ;;
+            2)  selected_hex="#30d158"; selected_ansi="$LG" ;;
+            3)  selected_hex="#bf40bf"; selected_ansi="$MP" ;;
+            4)  selected_hex="#ffd60a"; selected_ansi="$YW" ;;
+            5)  selected_hex="#64d2ff"; selected_ansi="$SB" ;;
+            6)  selected_hex="#ff9500"; selected_ansi="$OR" ;;
+            7)  selected_hex="#ff453a"; selected_ansi="$RD" ;;
+            8)  selected_hex="#ffffff"; selected_ansi="$WT" ;;
+            9)  selected_hex="#555555"; selected_ansi="$DG" ;;
+            10) selected_hex="#ff70a6"; selected_ansi="$PK" ;;
+            11) selected_hex="#64ffda"; selected_ansi="$MT" ;;
+            12) selected_hex="#000000"; selected_ansi="$DG" ;;
+            e|E) break 2 ;;
+            *) freeze 2; continue ;;
+        esac
+        break
+    done
+}
+
+get_node_nick() {
+    local node_ip="$1" key
+    key="NODE_NICK_$(printf '%s' "$node_ip" | tr '.' '_')"
+    [ -f "$CONFIG" ] || return 0
+    awk -v key="$key" '
+        index($0, key "=\"") == 1 {
+            value = substr($0, length(key) + 3)
+            sub(/\"$/, "", value)
+            print value
+            exit
+        }
+    ' "$CONFIG" 2>/dev/null
+}
+
+get_usb() {
+    mountpoint="$(awk '$1 ~ /^\/dev\/sd/ && $2 ~ /^\/tmp\/mnt\// {print $2}' /proc/mounts | sort -u)"
+    ROOT_PATH="$(echo "$mountpoint" | head -n 1)"
+}
+
+do_hash_check() {
+    local file="$1" hash=""
+    [ -f "$file" ] || return 1
+    if command -v sha256sum >/dev/null 2>&1; then
+        hash=$(sha256sum "$file" 2>/dev/null | awk '{print $1}')
+    elif command -v busybox >/dev/null 2>&1 && busybox sha256sum "$file" >/dev/null 2>&1; then
+        hash=$(busybox sha256sum "$file" 2>/dev/null | awk '{print $1}')
+    elif command -v openssl >/dev/null 2>&1; then
+        hash=$(openssl dgst -sha256 "$file" 2>/dev/null | awk '{print $NF}')
+    fi
+    [ "${#hash}" -eq 64 ] || return 1
+    printf '%s\n' "$hash"
+}
+
+check_github() {
+    case "$BRANCH" in
+        1) GIT="JB1366"; BRANCH_NAME="Development"; DEV="D" ;;
+        2) GIT="ExtremeFiretop"; BRANCH_NAME="Development"; DEV="E" ;;
+        *) GIT="JB1366"; BRANCH_NAME="main"; DEV="" ;;
+    esac
+    GITHUB="https://raw.githubusercontent.com/$GIT/Wireless_Report/$BRANCH_NAME/wirelessreport.sh"
+    REMOTE_TMP="/tmp/wr_remote.tmp"; LOCAL_HASH=""; REMOTE_HASH=""
+    if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
+        REMOTE_VERSION=$(grep "SCRIPT_VERSION=" "$REMOTE_TMP" | head -n 1 | cut -d'"' -f2 | tr -cd '0-9.')
+        LOCAL_HASH=$(do_hash_check "$REPORT_SCRIPT" 2>/dev/null)
+        REMOTE_HASH=$(do_hash_check "$REMOTE_TMP" 2>/dev/null)
+        if [ -z "$LOCAL_HASH" ] || [ -z "$REMOTE_HASH" ]; then
+            if [ -f "$REPORT_SCRIPT" ]; then
+                if cmp -s "$REPORT_SCRIPT" "$REMOTE_TMP"; then
+                    LOCAL_HASH="same"
+                    REMOTE_HASH="same"
+                else
+                    LOCAL_HASH="local"
+                    REMOTE_HASH="remote"
+                fi
+            fi
+        fi
+    else
+        REMOTE_VERSION=""
+        REMOTE_HASH=""
+    fi
+    rm -f "$REMOTE_TMP"
+}
+
 do_install() {
 	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
         echo -e "\n$RD[!] ERROR: JFFS custom scripts not enabled.$NC"
@@ -429,90 +597,6 @@ ScriptUpdateFromAMTM() {
         return 0
     fi
     return 1
-}
-
-get_usb() {
-    mountpoint="$(awk '$1 ~ /^\/dev\/sd/ && $2 ~ /^\/tmp\/mnt\// {print $2}' /proc/mounts | sort -u)"
-    ROOT_PATH="$(echo "$mountpoint" | head -n 1)"
-}
-
-do_hash_check() {
-    local file="$1" hash=""
-    [ -f "$file" ] || return 1
-    if command -v sha256sum >/dev/null 2>&1; then
-        hash=$(sha256sum "$file" 2>/dev/null | awk '{print $1}')
-    elif command -v busybox >/dev/null 2>&1 && busybox sha256sum "$file" >/dev/null 2>&1; then
-        hash=$(busybox sha256sum "$file" 2>/dev/null | awk '{print $1}')
-    elif command -v openssl >/dev/null 2>&1; then
-        hash=$(openssl dgst -sha256 "$file" 2>/dev/null | awk '{print $NF}')
-    fi
-    [ "${#hash}" -eq 64 ] || return 1
-    printf '%s\n' "$hash"
-}
-
-check_github() {
-    case "$BRANCH" in
-        1) GIT="JB1366"; BRANCH_NAME="Development"; DEV="D" ;;
-        2) GIT="ExtremeFiretop"; BRANCH_NAME="Development"; DEV="E" ;;
-        *) GIT="JB1366"; BRANCH_NAME="main"; DEV="" ;;
-    esac
-    GITHUB="https://raw.githubusercontent.com/$GIT/Wireless_Report/$BRANCH_NAME/wirelessreport.sh"
-    REMOTE_TMP="/tmp/wr_remote.tmp"; LOCAL_HASH=""; REMOTE_HASH=""
-    if curl -sfL --retry 3 "$GITHUB" -o "$REMOTE_TMP" 2>/dev/null && [ -s "$REMOTE_TMP" ]; then
-        REMOTE_VERSION=$(grep "SCRIPT_VERSION=" "$REMOTE_TMP" | head -n 1 | cut -d'"' -f2 | tr -cd '0-9.')
-        LOCAL_HASH=$(do_hash_check "$REPORT_SCRIPT" 2>/dev/null)
-        REMOTE_HASH=$(do_hash_check "$REMOTE_TMP" 2>/dev/null)
-        if [ -z "$LOCAL_HASH" ] || [ -z "$REMOTE_HASH" ]; then
-            if [ -f "$REPORT_SCRIPT" ]; then
-                if cmp -s "$REPORT_SCRIPT" "$REMOTE_TMP"; then
-                    LOCAL_HASH="same"
-                    REMOTE_HASH="same"
-                else
-                    LOCAL_HASH="local"
-                    REMOTE_HASH="remote"
-                fi
-            fi
-        fi
-    else
-        REMOTE_VERSION=""
-        REMOTE_HASH=""
-    fi
-    rm -f "$REMOTE_TMP"
-}
-
-get_mesh_nodes() {
-	local ASUS_DEVICE_LIST MAIN_IP
-	MAIN_IP=$(nvram get lan_ipaddr)
-	ASUS_DEVICE_LIST=$(nvram get asus_device_list)
-	MESH_NODES=$(printf '%s\n' "$ASUS_DEVICE_LIST" |
-        sed 's/</\n/g' |
-		awk -F '>' -v main_ip="$MAIN_IP" '
-			NF >= 4 && $2 != "" && $3 != "" && $3 != main_ip && $NF == "2" && !seen[$3]++ {
-				print $2 "|" $3
-			}
-		' |
-        sort -t . -k 4,4n)
-
-    if [ -f "$CONFIG" ]; then
-        local saved_mesh_nodes=""
-        saved_mesh_nodes=$(grep '^AIMESH_NODES=' "$CONFIG" 2>/dev/null | cut -d'"' -f2)
-        if [ -n "$saved_mesh_nodes" ]; then
-            local live_count=0
-            for node in $MESH_NODES; do
-                live_count=$((live_count + 1))
-            done
-            local saved_count=0
-            for node in $saved_mesh_nodes; do
-                saved_count=$((saved_count + 1))
-            done
-            if [ "$live_count" -ne "$saved_count" ]; then
-                sed -i '/^AIMESH_NODES=/d' "$CONFIG"
-                AIMESH_NODES=""; RR="1"
-            else
-                MESH_NODES="$saved_mesh_nodes"
-            fi
-        fi
-    fi
 }
 
 inject_menu() {
@@ -667,11 +751,6 @@ set_date_time() {
     done
 }
 
-device_default_colors() {
-    MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
-    NODE_COLORS="${NODE_COLORS:-#30d158 #bf40bf #ffd60a #64d2ff #ff9500 #ff453a #ffffff #ff70a6 #64ffda}"
-}
-
 set_device_nicknames() {
     while true; do
         show_header
@@ -821,186 +900,6 @@ set_device_nicknames() {
     done
 }
 
-do_node_sorting() {
-    while true; do
-        show_header
-        printb "╔═════════════════════════════════════════════════════════════╗"
-        printm "                     Node Display Order"
-        printb "╠═════════════════════════════════════════════════════════════╣"
-        printm ""
-        printm "  Current order:"
-        printm ""
-
-        get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
-        node_idx=1
-        for node in $MESH_NODES; do
-            MODEL="${node%%|*}"
-            IP="${node#*|}"
-            CLEAN_IP="${IP//./_}"
-            eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
-            HEX_CLR=$(get_node_color "$node_idx")
-            NODE_CLR=$(get_hex_to_ansi "$HEX_CLR")
-
-            printm "  $B_COLOR($node_idx) ${NODE_CLR}Node $IP -> ${SAVED_NICK:-$MODEL}$NC"
-
-            node_idx=$((node_idx + 1))
-        done
-        orig_count=$((node_idx - 1))
-
-        printm ""
-        printm "  $LR Reset to default, sort by IP."
-        printm ""
-        printb "╚═════════════════════════════════════════════════════════════╝"
-        printf "%b" "$menu_buffer"
-        while true; do
-            printf "\n Enter new order by index [${B_COLOR}E=Exit$NC] (e.g., ${B_COLOR}2 1 3$NC): "
-            read -r new_order
-            [ -z "$new_order" ] && { freeze 2; continue; }
-            case "$new_order" in
-                e|E)
-                    return 0 ;;
-                r|R)
-                    sed -i '/^AIMESH_NODES=/d' "$CONFIG"
-                    printf "\n$B_COLOR[+] Reset node order to default.$NC\n"
-                    AIMESH_NODES=""; MESH_NODES=""
-                    get_mesh_nodes
-                    pause
-                    run_report
-                    continue 2
-                    ;;
-                z|Z)
-                    goodbye ;;
-            esac
-            valid="true"
-            entered_count=0
-            for idx in $new_order; do
-                entered_count=$((entered_count + 1))
-                case "$idx" in
-                    *[!0-9]*|'')
-                        valid="false"
-                        ;;
-                    *)
-                        if [ "$idx" -lt 1 ] || [ "$idx" -gt "$orig_count" ]; then
-                            valid="false"
-                        fi
-                        ;;
-                esac
-            done
-
-            if [ "$entered_count" -ne "$orig_count" ]; then
-                valid="false"
-            fi
-            if [ "$valid" = "true" ]; then
-                unique_check=$(for idx in $new_order; do echo "$idx"; done | sort -n | uniq | wc -l | tr -d ' ')
-                if [ "$unique_check" -ne "$orig_count" ]; then
-                    freeze 2
-                    continue
-                fi
-                new_mesh_nodes=""
-                for idx in $new_order; do
-                    current_idx=1
-                    for node in $MESH_NODES; do
-                        if [ "$current_idx" -eq "$idx" ]; then
-                            new_mesh_nodes="$new_mesh_nodes $node"
-                            break
-                        fi
-                        current_idx=$((current_idx + 1))
-                    done
-                done
-                break
-            else
-                freeze 2
-                continue
-            fi
-        done
-        sed -i '/^AIMESH_NODES=/d' "$CONFIG"
-        echo "AIMESH_NODES=\"$new_mesh_nodes\"" >> "$CONFIG"
-        MESH_NODES="$new_mesh_nodes"
-        printf "\n$B_COLOR[+] Node order successfully updated!$NC\n"
-        pause
-        run_report
-    done
-}
-
-get_hex_to_ansi() {
-    PK='\033[38;5;211m'; LG='\033[38;5;82m'; MP='\033[38;5;133m'
-    RD='\033[38;5;196m'; NB='\033[38;5;39m'; OR='\033[38;5;208m'
-    YW='\033[38;5;226m'; SB='\033[38;5;75m'; BK='\033[30m'
-    WT='\033[38;5;231m'; MT='\033[38;5;86m'; DG='\033[0;90m'
-    case "$1" in
-        "#0096ff") echo -e "$NB" ;;
-        "#30d158") echo -e "$LG" ;;
-        "#bf40bf") echo -e "$MP" ;;
-        "#ffd60a") echo -e "$YW" ;;
-        "#64d2ff") echo -e "$SB" ;;
-        "#ff9500") echo -e "$OR" ;;
-        "#ff453a") echo -e "$RD" ;;
-        "#ffffff") echo -e "$WT" ;;
-        "#555555") echo -e "$DG" ;;
-        "#ff70a6") echo -e "$PK" ;;
-        "#64ffda") echo -e "$MT" ;;
-        "#000000") echo -e "$DG" ;;
-        *)         echo -e "$NC" ;;
-    esac
-}
-
-get_hex_ansi_selection() {
-    menu_buffer=""; MB=30
-    printb "╔══════════════════════════════╗"
-    printm "      Hex Color Pallete"
-    printb "╠══════════════════════════════╣"
-    printm ""
-    printm " $NB (1)  Neon-Blue (#0096ff)"
-    printm " $LG (2)  Lime-Green (#30d158)"
-    printm " $MP (3)  Med-Purple (#bf40bf)"
-    printm " $YW (4)  Yellow (#ffd60a)"
-    printm " $SB (5)  SkyBlue (#64d2ff)"
-    printm " $OR (6)  Orange (#ff9500)"
-    printm " $RD (7)  Red (#ff453a)"
-    printm " $WT (8)  White (#ffffff)"
-    printm " $DG (9)  Dark Gray (#555555)"
-    printm " $PK (10) Light-Pink (#ff70a6)"
-    printm " $MT (11) Mint-Green (#64ffda)"
-    printm " $DG (12) Black (#000000)"
-    printm ""
-    printb "╚══════════════════════════════╝"
-    printf "%b" "$menu_buffer"
-    while true; do
-        selection
-        case "$choice" in
-            1)  selected_hex="#0096ff"; selected_ansi="$NB" ;;
-            2)  selected_hex="#30d158"; selected_ansi="$LG" ;;
-            3)  selected_hex="#bf40bf"; selected_ansi="$MP" ;;
-            4)  selected_hex="#ffd60a"; selected_ansi="$YW" ;;
-            5)  selected_hex="#64d2ff"; selected_ansi="$SB" ;;
-            6)  selected_hex="#ff9500"; selected_ansi="$OR" ;;
-            7)  selected_hex="#ff453a"; selected_ansi="$RD" ;;
-            8)  selected_hex="#ffffff"; selected_ansi="$WT" ;;
-            9)  selected_hex="#555555"; selected_ansi="$DG" ;;
-            10) selected_hex="#ff70a6"; selected_ansi="$PK" ;;
-            11) selected_hex="#64ffda"; selected_ansi="$MT" ;;
-            12) selected_hex="#000000"; selected_ansi="$DG" ;;
-            e|E) break 2 ;;
-            *) freeze 2; continue ;;
-        esac
-        break
-    done
-}
-
-get_node_nick() {
-    local node_ip="$1" key
-    key="NODE_NICK_$(printf '%s' "$node_ip" | tr '.' '_')"
-    [ -f "$CONFIG" ] || return 0
-    awk -v key="$key" '
-        index($0, key "=\"") == 1 {
-            value = substr($0, length(key) + 3)
-            sub(/\"$/, "", value)
-            print value
-            exit
-        }
-    ' "$CONFIG" 2>/dev/null
-}
-
 set_device_colors() {
     local main_name=$(nvram get productid)
     local main_ip=$(nvram get lan_ipaddr)
@@ -1146,6 +1045,107 @@ set_device_colors() {
     echo -e "$BL\n[+] Device colors successfully saved to CONFIG.$NC"
     run_report
     pause
+}
+
+do_node_sorting() {
+    while true; do
+        show_header
+        printb "╔═════════════════════════════════════════════════════════════╗"
+        printm "                     Node Display Order"
+        printb "╠═════════════════════════════════════════════════════════════╣"
+        printm ""
+        printm "  Current order:"
+        printm ""
+
+        get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
+        node_idx=1
+        for node in $MESH_NODES; do
+            MODEL="${node%%|*}"
+            IP="${node#*|}"
+            CLEAN_IP="${IP//./_}"
+            eval SAVED_NICK=\$NODE_NICK_$CLEAN_IP
+            HEX_CLR=$(get_node_color "$node_idx")
+            NODE_CLR=$(get_hex_to_ansi "$HEX_CLR")
+
+            printm "  $B_COLOR($node_idx) ${NODE_CLR}Node $IP -> ${SAVED_NICK:-$MODEL}$NC"
+
+            node_idx=$((node_idx + 1))
+        done
+        orig_count=$((node_idx - 1))
+
+        printm ""
+        printm "  $LR Reset to default, sort by IP."
+        printm ""
+        printb "╚═════════════════════════════════════════════════════════════╝"
+        printf "%b" "$menu_buffer"
+        while true; do
+            printf "\n Enter new order by index [${B_COLOR}E=Exit$NC] (e.g., ${B_COLOR}2 1 3$NC): "
+            read -r new_order
+            [ -z "$new_order" ] && { freeze 2; continue; }
+            case "$new_order" in
+                e|E)
+                    return 0 ;;
+                r|R)
+                    sed -i '/^AIMESH_NODES=/d' "$CONFIG"
+                    printf "\n$B_COLOR[+] Reset node order to default.$NC\n"
+                    AIMESH_NODES=""; MESH_NODES=""
+                    get_mesh_nodes
+                    pause
+                    run_report
+                    continue 2
+                    ;;
+                z|Z)
+                    goodbye ;;
+            esac
+            valid="true"
+            entered_count=0
+            for idx in $new_order; do
+                entered_count=$((entered_count + 1))
+                case "$idx" in
+                    *[!0-9]*|'')
+                        valid="false"
+                        ;;
+                    *)
+                        if [ "$idx" -lt 1 ] || [ "$idx" -gt "$orig_count" ]; then
+                            valid="false"
+                        fi
+                        ;;
+                esac
+            done
+
+            if [ "$entered_count" -ne "$orig_count" ]; then
+                valid="false"
+            fi
+            if [ "$valid" = "true" ]; then
+                unique_check=$(for idx in $new_order; do echo "$idx"; done | sort -n | uniq | wc -l | tr -d ' ')
+                if [ "$unique_check" -ne "$orig_count" ]; then
+                    freeze 2
+                    continue
+                fi
+                new_mesh_nodes=""
+                for idx in $new_order; do
+                    current_idx=1
+                    for node in $MESH_NODES; do
+                        if [ "$current_idx" -eq "$idx" ]; then
+                            new_mesh_nodes="$new_mesh_nodes $node"
+                            break
+                        fi
+                        current_idx=$((current_idx + 1))
+                    done
+                done
+                break
+            else
+                freeze 2
+                continue
+            fi
+        done
+        sed -i '/^AIMESH_NODES=/d' "$CONFIG"
+        echo "AIMESH_NODES=\"$new_mesh_nodes\"" >> "$CONFIG"
+        MESH_NODES="$new_mesh_nodes"
+        printf "\n$B_COLOR[+] Node order successfully updated!$NC\n"
+        pause
+        run_report
+    done
 }
 
 set_theme() {
