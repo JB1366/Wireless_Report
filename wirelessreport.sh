@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.5"
+SCRIPT_VERSION="3.5.6"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -5699,13 +5699,15 @@ async function loadWirelessReport() {
 
     // BUILD MAIN ROUTER DIAGNOSTIC DETAILS
     var mainNameText = mainNameEl ? mainNameEl.textContent.trim() : (base.productid || 'Main Router');
+    if (mainNameText.length > 15) mainNameText = mainNameText.slice(0, 15);
     var mainIp = String(wrFirst(base, ['lan_ipaddr', 'lan_ip', 'ip']) || window.location.hostname || '');
 
     if (!window._cachedMainFw) {
         var firmver = String(base.firmver || '').trim();
         var buildno = String(base.buildno || '').trim();
         var extendno = String(base.extendno || '').trim();
-
+        //var buildno = "102.9"
+        //var extendno = "2"
         if (firmver && buildno) {
             var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
             var extVal = extendno || '0';
@@ -5729,20 +5731,19 @@ async function loadWirelessReport() {
         }
     }
     var mainFw = window._cachedMainFw || '';
-    var mainFw = window._cachedMainFw || '';
-
     var mainNameStr = (mainNameText || '').padEnd(16, '\u00A0');
-    var mainIpStr   = (mainIp || '').padEnd(15, '\u00A0');
+    var mainIpStr   = (mainIp || '').padEnd(16, '\u00A0');
     var mainDiag = "<span class='main-color' style='font-family:monospace; white-space:pre;'>" +
                 wrEscape(mainNameStr) +
                 "<span style='color:white;'>" + wrEscape(mainIpStr) + "</span>" +
-                (mainFw ? "<span class='main-color'>FW</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>" : "") +
+                (mainFw ? "<span class='main-color'>FW:</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>" : "") +
                 "</span>";
 
     nodes.forEach(function(node, index) {
         var mac = wrNormMac(node.mac || node.mac_addr);
         var ip = String(wrFirst(node, ['ip', 'ip_addr', 'ipAddr']) || '');
         var name = wrNodeDisplayName(node);
+        if (name.length > 15) name = name.slice(0, 15);
         var color = wrNodeColor(index, node);
         var marker = (WR_CONFIG.hostColor === 0 && nodes.length > 1) ? '<sup>' + (index + 1) + '</sup>' : '';
         var diag = diagByMac.get(mac);
@@ -5791,7 +5792,7 @@ async function loadWirelessReport() {
         }
 
         var nameStr = (name || '').padEnd(16, '\u00A0');
-        var ipStr   = (ip   || '').padEnd(15, '\u00A0');
+        var ipStr   = (ip   || '').padEnd(16, '\u00A0');
 
         if (firmware) {
             firmware = firmware.padEnd(16, '\u00A0');
@@ -5801,7 +5802,7 @@ async function loadWirelessReport() {
         var details = "<span style='color:" + color + "; font-family:monospace; white-space:pre;'>" +
                     wrEscape(nameStr) +
                     "<span style='color:white;'>" + wrEscape(ipStr) + "</span>" +
-                    (fwStr ? "<span style='color:" + color + ";'>FW</span> <span style='color:white;'>" + firmware + "</span>" : "") +
+                    (fwStr ? "<span style='color:" + color + ";'>FW:</span> <span style='color:white;'>" + firmware + "</span>" : "") +
                     "</span>";
         nodeDiagParts.push(details);
     });
