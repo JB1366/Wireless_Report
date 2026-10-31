@@ -5706,8 +5706,7 @@ async function loadWirelessReport() {
         var firmver = String(base.firmver || '').trim();
         var buildno = String(base.buildno || '').trim();
         var extendno = String(base.extendno || '').trim();
-        //var buildno = "102.9"
-        //var extendno = "2"
+
         if (firmver && buildno) {
             var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
             var extVal = extendno || '0';
