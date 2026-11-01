@@ -87,7 +87,7 @@ install_menu() {
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
 		while true; do
-			selection
+			selection no-e no-z
 			case "$choice" in
 				1) do_install; break ;;
 				2|3|4|5|6|7|8|9)
@@ -103,7 +103,6 @@ install_menu() {
                         9) set_border_color ;;
 					esac
 					break ;;
-				e|E) goodbye ;;
 				*) freeze 2; continue ;;
 			esac
 		done
@@ -413,7 +412,7 @@ get_hex_ansi_selection() {
     printb "╚══════════════════════════════╝"
     printf "%b" "$menu_buffer"
     while true; do
-        selection
+        selection no-exit
         case "$choice" in
             1)  selected_hex="#0096ff"; selected_ansi="$NB" ;;
             2)  selected_hex="#30d158"; selected_ansi="$LG" ;;
@@ -738,7 +737,6 @@ set_date_time() {
                 4) NEW_UNIT="USA1" ;;
                 5) NEW_UNIT="INTL1" ;;
                 6) NEW_UNIT="ISO1" ;;
-                e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
             sed -i '/REPORT_UNIT=/d' "$CONFIG"
@@ -887,8 +885,6 @@ set_device_nicknames() {
                     done
                     printf "\n$GR[+] Manual nicknames saved (max 25 chars).$NC\n"
                     ;;
-                e|E)
-                     return 0 ;;
                 *)
                     freeze 2
                     continue ;;
@@ -1171,7 +1167,6 @@ set_theme() {
                 1) TM="ORIGINAL" ;;
                 2) TM="DARKMODE" ;;
                 3) TM="ASUS_WEBUI" ;;
-                e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
             if grep -q "^THEME=" "$CONFIG"; then
@@ -1247,8 +1242,6 @@ set_options() {
                     ;;
                 6)
                     set_rssi_tooltip ;;
-                e|E)
-                    return 0 ;;
                 *)
                     freeze 2
                     continue ;;
@@ -1324,8 +1317,6 @@ set_runtime_tracking() {
                         fi
                     fi
                     ;;
-                e|E)
-                    return 0 ;;
                 *)
                     freeze 2
                     continue ;;
@@ -1355,7 +1346,6 @@ set_ip_padding() {
                 1) NEW_PAD="0" ;;
                 2) NEW_PAD="1" ;;
                 3) NEW_PAD="2" ;;
-                e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
             break
@@ -1385,7 +1375,7 @@ set_rssi_tooltip() {
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
         while true; do
-            selection
+            selection no-exit
             case "$choice" in
                 1)
                     case "$CUR_RS_HIST" in 1) CUR_RS_HIST="0" ;; *) CUR_RS_HIST="1" ;; esac
@@ -1469,7 +1459,6 @@ set_github_branch() {
                 1) BRANCH="0" ;;
                 2) BRANCH="1" ;;
                 3) BRANCH="2" ;;
-                e|E) return 0 ;;
                 *) freeze 2; continue ;;
             esac
             break
@@ -1495,28 +1484,28 @@ set_github_branch() {
 
 go_developer() {
      while true; do
-        show_header
+        show_header; get_usb
         printb "╔═════════════════════════════════════════════════════════════╗"
         printm "                      Developers Menu"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
-        printm "  $N1 Inject WR TAB  --> menu_wireless"
-        printm "  $N2 Inject WR TAB  --> menu_addons"
-        printm "  $N3 Inject WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
-        printm "  $N4 Insert WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
-        printm "  $N5 View menuTree - /tmp/menuTree.js"
+        printm "  $N1  Inject WR TAB  --> menu_wireless"
+        printm "  $N2  Inject WR TAB  --> menu_addons"
+        printm "  $N3  Inject WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
+        printm "  $N4  Insert WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
+        printm "  $N5  View menuTree - /tmp/menuTree.js"
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "  $N6 View CONGIG - /jffs/addons/wireless_report/webui.conf"
-        printm "  $N7 View profile.add - /jffs/configs/profile.add"
-        printm "  $N8 View services-start - /jffs/scripts/services-start"
-        printm "  $N9 View service-event - /jffs/scripts/service-event"
-        printm " $N10 View firewall-start - /jffs/scripts/firewall-start"
-        printm " $N11 View iptables - iptables -L -v -n --line-numbers"
-        printm " $N12 View syslog - /jffs/syslog.log"
-        printm " $N13 View iocmon - $ROOT_PATH/iocmon.d/state/iocmon.log"
+        printm "  $N6  View CONGIG - webui-ssh.conf"
+        printm "  $N7  View profile.add - /jffs/configs/profile.add"
+        printm "  $N8  View services-start - /jffs/scripts/services-start"
+        printm "  $N9  View service-event - /jffs/scripts/service-event"
+        printm "  $N10 View firewall-start - /jffs/scripts/firewall-start"
+        printm "  $N11 View iptables - iptables -L -v -n --line-numbers"
+        printm "  $N12 View syslog - /jffs/syslog.log"
+        printm "  $N13 View iocmon - $ROOT_PATH/iocmon.d/iocmon.log"
         printm ""
-        printm "  $LQ Power Exit from any Selection Prompt"
-        printm "  $LZ Return to 'Main Menu' from anywhere"
+        printm "  $LQ  Power Exit from any Selection Prompt"
+        printm "  $LZ  Return to 'Main Menu' from anywhere"
         printm ""
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
@@ -1595,11 +1584,8 @@ go_developer() {
                     file_viewer "syslog.log" "/jffs/syslog.log" log_tail
                     ;;
                 13)
-                    get_usb
                     file_viewer "iocmon.log" "$ROOT_PATH/iocmon.d/state/iocmon.log" log_tail
                     ;;
-                e|E)
-                    return 0 ;;
                 *)
                     freeze 2
                     continue ;;
@@ -1726,10 +1712,23 @@ pause() { printf "\nPress $B_COLOR[Enter]$NC to return..."; read -r discard; }
 
 restart_httpd() { service restart_httpd >/dev/null 2>&1; killall -HUP httpd >/dev/null 2>&1; }
 
-selection() { printf "\n$NC Selection [${B_COLOR}E=Exit$NC]: "; read -r choice; \
-case "$choice" in dev) set_github_branch; break ;; secret) go_developer; break ;; q|Q) goodbye ;; z|Z) install_menu ;; esac; }
-
 sys_log() { logger -p user.info -t "Wireless_Report" "$1"; }
+
+selection() {
+    local use_exit=true use_z=true use_e=true
+    if [[ "$1" == "no-exit" ]]; then use_exit=false; fi
+    if [[ "$1" == "no-e" ]]; then use_e=false; fi
+    if [[ "$2" == "no-z" ]]; then use_z=false; fi
+    printf "\n$NC Selection [${B_COLOR}E=Exit$NC]: "
+    read -r choice
+    case "$choice" in
+        secret) go_developer; break ;;
+        dev) set_github_branch; break ;;
+        e|E) if [ "$use_e" = false ]; then goodbye; elif [ "$use_exit" = true ]; then break 2; fi ;;
+        q|Q) goodbye ;;
+        z|Z) if [ "$use_z" = true ]; then install_menu; fi ;;
+    esac
+}
 
 runtime_syslog() {
     [ "$2" = "start" ] || return 0
