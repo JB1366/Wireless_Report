@@ -1495,7 +1495,7 @@ go_developer() {
         printm "  $N4  Insert WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
         printm "  $N5  View menuTree - /tmp/menuTree.js"
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "  $N6  View CONGIG - webui-ssh.conf"
+        printm "  $N6  View CONGIG - webui.conf"
         printm "  $N7  View profile.add - /jffs/configs/profile.add"
         printm "  $N8  View services-start - /jffs/scripts/services-start"
         printm "  $N9  View service-event - /jffs/scripts/service-event"
