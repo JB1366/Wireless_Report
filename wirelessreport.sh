@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.6"
+SCRIPT_VERSION="3.5.7"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -320,7 +320,7 @@ menu_time_color() {
     get_hex_to_ansi
     B_COLOR=${B_COLOR:-$BL}
     for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
-	for i in E R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
+	for i in E Q R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
 
     MODELID="${MODEL_PAD}${B_COLOR}Router: ${NC}${CACHED_PRODID}${B_COLOR}   FW:${NC} ${CACHED_FW}"
     COLORS="${MP}C${NB}o${LG}l${YW}o${SB}r${OR}s"
@@ -991,8 +991,10 @@ set_device_colors() {
                     break 2 ;;
                 e|E)
                     return 0 ;;
-                z|Z)
+                q|Q)
                     goodbye ;;
+                z|Z)
+                    install_menu ;;
             esac
             case "$node_choice" in ""|*[!0-9]*) freeze 2; continue ;; esac
             if [ "$node_choice" -gt "$total_nodes" ]; then freeze 2; continue; fi
@@ -1094,8 +1096,10 @@ do_node_sorting() {
                     run_report
                     continue 2
                     ;;
-                z|Z)
+                q|Q)
                     goodbye ;;
+                z|Z)
+                    install_menu ;;
             esac
             valid="true"
             entered_count=0
@@ -1547,7 +1551,7 @@ go_developer() {
                     echo -e "\nCurrent Insert Before menuName: $B_COLOR$INSERT_BEFORE$NC"
                     printf "\nEnter menuName $B_COLOR<#ETAG#>$NC to insert WR Menu before [${B_COLOR}E=Exit$NC]: "
                     read -r choice
-                    case "$choice" in e|E) break ;; z|Z) goodbye ;;  esac
+                    case "$choice" in e|E) break ;; q|Q) goodbye ;; z|Z) install_menu ;; esac
                     if [ -n "$choice" ]; then
                         INSERT_BEFORE="$choice"
                         echo -e "\nUpdated to: $B_COLOR$INSERT_BEFORE$NC"
@@ -1721,7 +1725,8 @@ pause() { printf "\nPress $B_COLOR[Enter]$NC to return..."; read -r discard; }
 
 restart_httpd() { service restart_httpd >/dev/null 2>&1; killall -HUP httpd >/dev/null 2>&1; }
 
-selection() { printf "\n$NC Selection [${B_COLOR}E=Exit$NC]: "; read -r choice; case "$choice" in z|Z) goodbye ;; dev) set_github_branch; break ;; secret) go_developer; break ;; esac; }
+selection() { printf "\n$NC Selection [${B_COLOR}E=Exit$NC]: "; read -r choice; \
+case "$choice" in dev) set_github_branch; break ;; secret) go_developer; break ;; q|Q) goodbye ;; z|Z) install_menu ;; esac; }
 
 sys_log() { logger -p user.info -t "Wireless_Report" "$1"; }
 
