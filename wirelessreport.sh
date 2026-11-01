@@ -1716,9 +1716,9 @@ sys_log() { logger -p user.info -t "Wireless_Report" "$1"; }
 
 selection() {
     local use_exit=true use_z=true use_e=true
-    if [[ "$1" == "no-exit" ]]; then use_exit=false; fi
-    if [[ "$1" == "no-e" ]]; then use_e=false; fi
-    if [[ "$2" == "no-z" ]]; then use_z=false; fi
+    if [ "$1" = "no-exit" ]; then use_exit=false; fi
+    if [ "$1" = "no-e" ]; then use_e=false; fi
+    if [ "$2" = "no-z" ]; then use_z=false; fi
     printf "\n$NC Selection [${B_COLOR}E=Exit$NC]: "
     read -r choice
     case "$choice" in
