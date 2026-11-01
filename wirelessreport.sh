@@ -5699,7 +5699,6 @@ async function loadWirelessReport() {
 
     // BUILD MAIN ROUTER DIAGNOSTIC DETAILS
     var mainNameText = mainNameEl ? mainNameEl.textContent.trim() : (base.productid || 'Main Router');
-    if (mainNameText.length > 15) mainNameText = mainNameText.slice(0, 15);
     var mainIp = String(wrFirst(base, ['lan_ipaddr', 'lan_ip', 'ip']) || window.location.hostname || '');
 
     if (!window._cachedMainFw) {
@@ -5709,40 +5708,21 @@ async function loadWirelessReport() {
 
         if (firmver && buildno) {
             var detectedFw = firmver.replace(/\./g, '') + '.' + buildno;
-            var extVal = extendno || '0';
-
-            if (buildno.length === 5) {
-                if (extVal.length > 1) {
-                    detectedFw += '_' + extVal.slice(0, 5);
-                } else {
-                    detectedFw += '_' + extVal + '    ';
-                }
-            } else if (buildno.length === 6) {
-                if (extVal.length > 1) {
-                    detectedFw += '_' + extVal.slice(0, 4);
-                } else {
-                    detectedFw += '_' + extVal + '   ';
-                }
-            } else {
-                detectedFw += '_' + extVal;
-            }
-            window._cachedMainFw = detectedFw;
+            if (extendno && extendno !== '0') detectedFw += '_' + extendno;
+            window._cachedMainFw = detectedFw.split('-')[0];
         }
     }
     var mainFw = window._cachedMainFw || '';
-    var mainNameStr = (mainNameText || '').padEnd(16, '\u00A0');
-    var mainIpStr   = (mainIp || '').padEnd(16, '\u00A0');
-    var mainDiag = "<span class='main-color' style='font-family:monospace; white-space:pre;'>" +
-                wrEscape(mainNameStr) +
-                "<span style='color:white;'>" + wrEscape(mainIpStr) + "</span>" +
-                (mainFw ? "<span class='main-color'>FW:</span> <span style='color:white;'>" + wrEscape(mainFw) + "</span>" : "") +
-                "</span>";
+
+    var mainDiag = "<span class='main-color'>" + wrEscape(mainNameText);
+    if (mainIp) { mainDiag += " <span style='color:white;'>•</span> " + wrEscape(mainIp); }
+    if (mainFw) { mainDiag += " <span style='color:white;'>•</span> FW: " + wrEscape(mainFw); }
+    mainDiag += "</span>";
 
     nodes.forEach(function(node, index) {
         var mac = wrNormMac(node.mac || node.mac_addr);
         var ip = String(wrFirst(node, ['ip', 'ip_addr', 'ipAddr']) || '');
         var name = wrNodeDisplayName(node);
-        if (name.length > 15) name = name.slice(0, 15);
         var color = wrNodeColor(index, node);
         var marker = (WR_CONFIG.hostColor === 0 && nodes.length > 1) ? '<sup>' + (index + 1) + '</sup>' : '';
         var diag = diagByMac.get(mac);
@@ -5762,42 +5742,20 @@ async function loadWirelessReport() {
 
         var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
         if (firmware) {
-            firmware = String(firmware).trim();
-            firmware = firmware.replace(/^3\.0\.0\./, '300');
+            firmware = String(firmware);
+            var dashIndex = firmware.indexOf('-');
+            if (dashIndex !== -1) {
+                firmware = firmware.substring(0, dashIndex);
+            }
             var parts = firmware.split('.');
-            var isMerlin = parts.length >= 3;
-
-            if (isMerlin) {
-                var underscoreIdx = firmware.lastIndexOf('_');
-                if (underscoreIdx !== -1) {
-                    var basePart = firmware.substring(0, underscoreIdx);
-                    var extVal = firmware.substring(underscoreIdx + 1);
-                    var firstHyphen = extVal.indexOf('-');
-                    if (firstHyphen !== -1) {
-                        extVal = extVal.substring(0, firstHyphen);
-                    }
-                    if (extVal.length > 1) {
-                        firmware = basePart + '_' + extVal.slice(0, 4);
-                    }
-                }
-            }
-            var dashIdx = firmware.indexOf('-');
-            if (dashIdx !== -1) {
-                firmware = firmware.substring(0, dashIdx);
+            if (parts.length >= 5) {
+                firmware = parts[0] + parts[1] + parts[2] + parts[3] + '.' + parts.slice(4).join('.');
             }
         }
-
-        var nameStr = (name || '').padEnd(16, '\u00A0');
-        var ipStr   = (ip   || '').padEnd(16, '\u00A0');
-        if (firmware) {
-            firmware = firmware.padEnd(16, '\u00A0');
-        }
-        var fwStr   = firmware ? 'FW ' + firmware : '';
-        var details = "<span style='color:" + color + "; font-family:monospace; white-space:pre;'>" +
-                    wrEscape(nameStr) +
-                    "<span style='color:white;'>" + wrEscape(ipStr) + "</span>" +
-                    (fwStr ? "<span style='color:" + color + ";'>FW:</span> <span style='color:white;'>" + firmware + "</span>" : "") +
-                    "</span>";
+        var details = "<span style='color:" + color + ";'>" +  wrEscape(name);
+        if (ip) { details += " <span style='color:white;'>•</span> " + wrEscape(ip); }
+        if (firmware) { details += " <span style='color:white;'>•</span> FW: " + wrEscape(firmware); }
+        details += "</span>";
         nodeDiagParts.push(details);
     });
 
