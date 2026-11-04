@@ -6379,6 +6379,7 @@ case "$1" in
         ;;
 	update)
         check_version web_check && exit 0
+        sleep 3
         do_update
         ;;
     *)
