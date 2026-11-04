@@ -5954,7 +5954,7 @@ function triggerUpdate(btn) {
                     setTimeout(() => { btn.innerText = "Update"; }, 5000);
                 }
             }
-        }, 3000);
+        }, 5000);
     });
 }
 
