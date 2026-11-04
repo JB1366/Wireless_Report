@@ -2895,6 +2895,7 @@ cat <<HTML >> "$WEB_PAGE"
                                             <td colspan="7" class="uptime-footer-row">
                                                 Uptime: <span id='wr-main-uptime' class='main-color'>--</span>
                                                 Reboot: <span id='wr-main-reboot' class='main-color'>--</span>
+                                                <span id='wr-main-footer' class='main-color' style='display: block; margin-top: 4px;'>--</span>
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -5713,6 +5714,8 @@ async function loadWirelessReport() {
     if (mainIp) { mainDiag += " <span style='color:white;'>•</span> " + wrEscape(mainIp); }
     if (mainFw) { mainDiag += " <span style='color:white;'>•</span> FW: " + wrEscape(mainFw); }
     mainDiag += "</span>";
+
+    wrSetHtml('wr-main-footer', mainDiag ? mainDiag : 'No node diagnostic telemetry available.');
 
     nodes.forEach(function(node, index) {
         var mac = wrNormMac(node.mac || node.mac_addr);
