@@ -73,10 +73,11 @@ install_menu() {
         printb "╔═════════════════════════════════════════════════════════════╗"
         check_version
         printb "╠═════════════════════════════════════════════════════════════╣"
+        printm "$MM" "center"
         printm ""
         printm "  $N1  Install/Update"
         printm "  $N2  Uninstall"
-		printm "  $N3  Set Date/Time ($DU) ($CT)"
+		printm "  $N3  Set Date/Time ($DU)"
 		printm "  $N4  Set Nicknames"
         printm "  $N5  Set Device $COLORS"
         printm "  $N6  Sort Node Display Order"
@@ -133,14 +134,14 @@ check_version() {
     case "$mode" in
         header_box)
             case "$STATE" in
-                OFFLINE)       HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Github Offline or Unreachable"
-                               VERSION_HASH="$DEV [Offline]"; HEADER_TITLE="header-title" ;;
-                OUTDATED)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> New Version v$REMOTE_VERSION available"
-                               VERSION_HASH="$DEV [$REMOTE_VERSION]"; HEADER_TITLE="header-title2" ;;
-                HASH_DIFF)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Hash Update available"
-                               VERSION_HASH="$DEV [Hash]"; HEADER_TITLE="header-title2" ;;
-                UP_TO_DATE|*)  HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV"
-                               VERSION_HASH="$DEV"; HEADER_TITLE="header-title" ;;
+                OFFLINE)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Github Offline or Unreachable <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV [Offline]"; HEADER_TITLE="header-title" ;;
+                OUTDATED)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> New Version v$REMOTE_VERSION available <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV [$REMOTE_VERSION]"; HEADER_TITLE="header-title2" ;;
+                HASH_DIFF)    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Hash Update available <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV [Hash]"; HEADER_TITLE="header-title2" ;;
+                UP_TO_DATE|*) HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV"; HEADER_TITLE="header-title" ;;
             esac
             ;;
         do_install)
@@ -189,6 +190,7 @@ menu_vars() {
 
     menu_buffer=""; MB="61"; echo -e "$B_COLOR"
     SELECTION="\n$NC Selection [${B_COLOR}E=Exit$NC]: "
+    MM="$B_COLOR$CM$NC"
 
     ON="${GR}ON$NC"; OFF="${RD}OFF$NC"
     STATUS="$NC STATUS:"
@@ -246,15 +248,29 @@ menu_vars() {
 printm() {
     local box_color="$B_COLOR"
     local text="$1"
-    local target="${2:-$MB}"
+    local align="${2:-left}"
     local esc=$(printf '\033')
     local plain=$(printf "%b" "$text" | sed "s/${esc}\[[0-9;]*m//g")
     local len=${#plain}
-    local pad=$((target - len))
+    local pad=$((MB - len))
     [ "$pad" -lt 0 ] && pad=0
-    local line="${box_color}║$NC${text}"
+    local lpad=0
+    local rpad=0
+    if [ "$align" = "center" ]; then
+        lpad=$((pad / 2))
+        rpad=$((pad - lpad))
+    else
+        rpad="$pad"
+    fi
+    local line="${box_color}║$NC"
     local i=0
-    while [ "$i" -lt "$pad" ]; do
+    while [ "$i" -lt "$lpad" ]; do
+        line="${line} "
+        i=$((i + 1))
+    done
+    line="${line}${text}"
+    i=0
+    while [ "$i" -lt "$rpad" ]; do
         line="${line} "
         i=$((i + 1))
     done
@@ -312,22 +328,24 @@ menu_time_color() {
     BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
 
-    DATE_ISO="$GR$(date +"%Y-%m-%d %H:%M:%S")$NC"
-    DATE_INTL="$GR$(date +"%-d-%b %-H:%M:%S")$NC"
-    DATE_USA="$GR$(date +"%b-%-d %-H:%M:%S")$NC"
-    DATE_ISO1="$BL$(date +"%Y-%m-%d %I:%M:%S %p")$NC"
-    DATE_INTL1="$BL$(date +"%d-%b %I:%M:%S %p")$NC"
-    DATE_USA1="$BL$(date +"%b-%d %I:%M:%S %p")$NC"
+    DATE_ISO="$(date +"%Y-%m-%d %H:%M:%S")"
+    DATE_INTL="$(date +"%-d-%b %-H:%M:%S")"
+    DATE_USA="$(date +"%b-%-d %-H:%M:%S")"
+    DATE_ISO1="$(date +"%Y-%m-%d %I:%M:%S %p")"
+    DATE_INTL1="$(date +"%d-%b %I:%M:%S %p")"
+    DATE_USA1="$(date +"%b-%d %I:%M:%S %p")"
 
     REPORT_UNIT=${REPORT_UNIT:-USA}
     case "$REPORT_UNIT" in
-        ISO)  DU="${GR}ISO$NC";  CT="$DATE_ISO" ;;
-        INTL) DU="${GR}INTL$NC"; CT="$DATE_INTL" ;;
-        USA)  DU="${GR}USA$NC";  CT="$DATE_USA" ;;
-        ISO1) DU="${BL}ISO$NC";  CT="$DATE_ISO1" ;;
-        INTL1)DU="${BL}INTL$NC"; CT="$DATE_INTL1" ;;
-        USA1) DU="${BL}USA$NC";  CT="$DATE_USA1" ;;
+        ISO)  DU="${GR}ISO$NC";  CT="$GR$DATE_ISO$NC"; CM="$DATE_ISO" ;;
+        INTL) DU="${GR}INTL$NC"; CT="$GR$DATE_INTL$NC"; CM="$DATE_INTL" ;;
+        USA)  DU="${GR}USA$NC";  CT="$GR$DATE_USA$NC"; CM="$DATE_USA" ;;
+        ISO1) DU="${BL}ISO$NC";  CT="$BL$DATE_ISO1$NC"; CM="$DATE_ISO1" ;;
+        INTL1)DU="${BL}INTL$NC"; CT="$BL$DATE_INTL1$NC"; CM="$DATE_INTL1" ;;
+        USA1) DU="${BL}USA$NC";  CT="$BL$DATE_USA1$NC"; CM="$DATE_USA1" ;;
     esac
+
+    CUR_TIME="$CM"
 
     get_hex_to_ansi
     B_COLOR=${B_COLOR:-$BL}
@@ -569,6 +587,7 @@ do_update() {
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" 2>/dev/null && [ -s "$TEMP_SCRIPT" ]; then
         mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
         chmod +x "$REPORT_SCRIPT" 2>/dev/null
+        last_update
         inject_menu
         return 0
     else
@@ -591,6 +610,16 @@ do_update() {
             echo -e "\n$YL[!] GitHub unreachable and script is already in place.$NC"
             pause; return 1
         fi
+    fi
+}
+
+last_update() {
+    menu_time_color
+    UPDATE_TIME="$CUR_TIME"
+    if grep -q "UPDATE_TIME=" "$CONFIG"; then
+        sed -i "s|^UPDATE_TIME=.*|UPDATE_TIME=\"$UPDATE_TIME\"|" "$CONFIG"
+    else
+        echo "UPDATE_TIME=\"$UPDATE_TIME\"" >> "$CONFIG"
     fi
 }
 
@@ -729,14 +758,14 @@ set_date_time() {
         printm "  Format: $DU                Current: $CT"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm "                                        [MILITARY]"
-        printm "   $N1  USA                          ($DATE_USA)"
-        printm "   $N2  INTL                         ($DATE_INTL)"
-        printm "   $N3  ISO                        ($DATE_ISO)"
+        printm "   $N1  USA                          ($GR$DATE_USA$NC)"
+        printm "   $N2  INTL                         ($GR$DATE_INTL$NC)"
+        printm "   $N3  ISO                        ($GR$DATE_ISO$NC)"
         printm ""
         printm "                                       [12-HR AM/PM]"
-        printm "   $N4  USA                        ($DATE_USA1)"
-        printm "   $N5  INTL                       ($DATE_INTL1)"
-        printm "   $N6  ISO                      ($DATE_ISO1)"
+        printm "   $N4  USA                        ($BL$DATE_USA1$NC)"
+        printm "   $N5  INTL                       ($BL$DATE_INTL1$NC)"
+        printm "   $N6  ISO                      ($BL$DATE_ISO1$NC)"
         printm ""
 		printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
@@ -1720,6 +1749,15 @@ selection() {
     esac
 }
 
+check_updateSE() {
+    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
+    if ! grep -q "restart:update_report" "$SE_FILE"; then
+        echo 'case "$1:$2" in restart:update_report) '"$REPORT_SCRIPT"' update & ;; esac # WR SSH' >> "$SE_FILE"
+    fi
+    chmod +x "$SE_FILE"
+    return 0
+}
+
 runtime_syslog() {
     [ "$2" = "start" ] || return 0
     [ "${RTIME:-1}" = "1" ] || return 0
@@ -1751,6 +1789,7 @@ runtime_syslog() {
 
 if [ "$1" = "service_event" ]; then runtime_syslog "$@"; exit 0; fi
 
+check_updateSE
 get_mesh_nodes
 check_github
 device_default_colors
@@ -1799,7 +1838,9 @@ for node in $MESH_NODES; do
     node_color_idx=$((node_color_idx + 1))
 done
 
-get_theme; check_version header_box
+get_theme
+check_version header_box
+UP_DIFF="${DIFF1:-5.00}"
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
@@ -2864,6 +2905,7 @@ cat <<HTML >> "$WEB_PAGE"
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
                             <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
+                            <button class="button-tables" onclick="triggerUpdate(this)">Update</button>
                         </div>
                     </div>
                     <div class="grid-container">
@@ -5879,6 +5921,24 @@ function wrLogRuntimeToSyslog(currentSec, avgSec, lowSec, highSec, count) {
     });
 }
 
+function triggerUpdate(btn) {
+    if (btn) {
+        btn.innerText = "Updating...";
+        btn.classList.add('refresh-pulse');
+    }
+
+    var expires = new Date(Date.now() + 30000).toUTCString();
+    document.cookie = "report_done1=true; expires=" + expires + "; path=/";
+    fetch('/apply.cgi', {
+        method: 'POST',
+        body: 'action_mode=apply&rc_service=restart_update_report&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+    });
+
+    var scanTime = parseFloat("$UP_DIFF") || 5.0;
+    var delay = Math.max(2500, Math.ceil((scanTime * 1000) + 1500));
+    setTimeout(function() { window.location.reload(); }, delay);
+}
+
 async function triggerRefresh() {
     if (isRefreshing) return;
     isRefreshing = true;
@@ -6300,7 +6360,10 @@ case "$1" in
         ScriptUpdateFromAMTM "$@"
         exit "$?"
         ;;
-	*)
+	update)
+        do_update
+        ;;
+    *)
 		run_report
         ;;
 esac
