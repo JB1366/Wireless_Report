@@ -576,7 +576,7 @@ do_install() {
 
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
-    echo 'case "$1:$2" in restart:update_report) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
+    echo 'case "$1:$2" in restart:update_report1) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
     chmod +x "$SE_FILE"
 
     SCRIPT_VERSION="$REMOTE_VERSION"
@@ -1756,8 +1756,8 @@ selection() {
 
 check_updateSE() {
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
-    if ! grep -q "restart:update_report" "$SE_FILE"; then
-        echo 'case "$1:$2" in restart:update_report) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
+    if ! grep -q "restart:update_report1" "$SE_FILE"; then
+        echo 'case "$1:$2" in restart:update_report1) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
     fi
     chmod +x "$SE_FILE"
     return 0
@@ -5936,7 +5936,7 @@ function triggerUpdate(btn) {
     document.cookie = "report_done1=true; expires=" + expires + "; path=/";
     fetch('/apply.cgi', {
         method: 'POST',
-        body: 'action_mode=apply&rc_service=restart_update_report&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
     });
 
     var scanTime = parseFloat("$UP_DIFF") || 5.0;
