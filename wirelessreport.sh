@@ -1851,7 +1851,6 @@ done
 
 get_theme
 check_version header_box
-UP_DIFF="${DIFF1:-5.00}"
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
@@ -5944,6 +5943,7 @@ function triggerUpdate(btn) {
         body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
     })
     .then(response => {
+        // Drop the heavy artificial delay down to a quick check window (e.g., 1 second)
         setTimeout(function() {
             if (window._updateWasPerformed) {
                 window.location.reload();
@@ -5954,8 +5954,8 @@ function triggerUpdate(btn) {
                     setTimeout(() => { btn.innerText = "Update"; }, 5000);
                 }
             }
-        }, delay);
-    })
+        }, 1000);
+    });
 }
 
 async function triggerRefresh() {
