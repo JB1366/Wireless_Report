@@ -5944,8 +5944,6 @@ function triggerUpdate(btn) {
         body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
     })
     .then(response => {
-        var scanTime = parseFloat("$UP_DIFF") || 5.0;
-        var delay = Math.max(2500, Math.ceil((scanTime * 1000) + 1500));
         setTimeout(function() {
             if (window._updateWasPerformed) {
                 window.location.reload();
