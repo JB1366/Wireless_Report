@@ -156,6 +156,12 @@ check_version() {
                                UP="reinstall/overwrite anyway?" ;;
             esac
             ;;
+        web_check)
+            case "$STATE" in
+                OUTDATED|HASH_DIFF) ;;
+                OFFLINE|UP_TO_DATE|*) return 0 ;;
+            esac
+            ;;
         *)
             case "$STATE" in
                 OFFLINE)       printm " $STATUS $RD[Offline]                     [GitHub Unreachable]" ;;
@@ -6366,6 +6372,7 @@ case "$1" in
         exit "$?"
         ;;
 	update)
+        check_version web_check && exit 0
         do_update
         ;;
     *)
