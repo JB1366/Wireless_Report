@@ -2895,7 +2895,8 @@ cat <<HTML >> "$WEB_PAGE"
                                             <td colspan="7" class="uptime-footer-row">
                                                 Uptime: <span id='wr-main-uptime' class='main-color'>--</span>
                                                 Reboot: <span id='wr-main-reboot' class='main-color'>--</span>
-                                                <span id='wr-main-footer' class='main-color' style='display: block; margin-top: 4px;'>--</span>
+                                                <span id='wr-main-footer' style='display: block; margin-top: 4px; \
+                                                color: white;'>Controller telemetry pending...</span>
                                             </td>
                                         </tr>
                                     </tfoot>
