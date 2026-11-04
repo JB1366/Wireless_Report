@@ -5934,20 +5934,36 @@ function wrLogRuntimeToSyslog(currentSec, avgSec, lowSec, highSec, count) {
 
 function triggerUpdate(btn) {
     if (btn) {
-        btn.innerText = "Updating...";
+        btn.innerText = "Checking...";
         btn.classList.add('refresh-pulse');
     }
-
     var expires = new Date(Date.now() + 30000).toUTCString();
     document.cookie = "report_done1=true; expires=" + expires + "; path=/";
     fetch('/apply.cgi', {
         method: 'POST',
         body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+    })
+    .then(response => {
+        var scanTime = parseFloat("$UP_DIFF") || 5.0;
+        var delay = Math.max(2500, Math.ceil((scanTime * 1000) + 1500));
+        setTimeout(function() {
+            if (window._updateWasPerformed) {
+                window.location.reload();
+            } else {
+                if (btn) {
+                    btn.innerText = "Up to Date";
+                    btn.classList.remove('refresh-pulse');
+                    setTimeout(() => { btn.innerText = "Update"; }, 6000);
+                }
+            }
+        }, delay);
+    })
+    .catch(err => {
+        if (btn) {
+            btn.innerText = "Update Failed";
+            btn.classList.remove('refresh-pulse');
+        }
     });
-
-    var scanTime = parseFloat("$UP_DIFF") || 5.0;
-    var delay = Math.max(2500, Math.ceil((scanTime * 1000) + 1500));
-    setTimeout(function() { window.location.reload(); }, delay);
 }
 
 async function triggerRefresh() {
