@@ -5937,13 +5937,11 @@ function triggerUpdate(btn) {
         btn.classList.add('refresh-pulse');
     }
     var expires = new Date(Date.now() + 30000).toUTCString();
-    document.cookie = "report_done1=true; expires=" + expires + "; path=/";
     fetch('/apply.cgi', {
         method: 'POST',
         body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
     })
     .then(response => {
-        // Drop the heavy artificial delay down to a quick check window (e.g., 1 second)
         setTimeout(function() {
             if (window._updateWasPerformed) {
                 window.location.reload();
