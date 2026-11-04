@@ -158,7 +158,7 @@ check_version() {
             ;;
         web_check)
             case "$STATE" in
-                OUTDATED|HASH_DIFF) ;;
+                OUTDATED|HASH_DIFF) return 1 ;;
                 OFFLINE|UP_TO_DATE|*) return 0 ;;
             esac
             ;;
