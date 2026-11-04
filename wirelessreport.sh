@@ -574,6 +574,11 @@ do_install() {
     echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
     chmod +x "$SS_FILE"
 
+    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
+    sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
+    echo 'case "$1:$2" in restart:update_report) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
+    chmod +x "$SE_FILE"
+
     SCRIPT_VERSION="$REMOTE_VERSION"
     sys_log "(v$SCRIPT_VERSION) successfully installed."
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
@@ -1752,7 +1757,7 @@ selection() {
 check_updateSE() {
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     if ! grep -q "restart:update_report" "$SE_FILE"; then
-        echo 'case "$1:$2" in restart:update_report) '"$REPORT_SCRIPT"' update & ;; esac # WR SSH' >> "$SE_FILE"
+        echo 'case "$1:$2" in restart:update_report) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
     fi
     chmod +x "$SE_FILE"
     return 0
