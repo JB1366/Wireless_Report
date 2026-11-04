@@ -5953,17 +5953,11 @@ function triggerUpdate(btn) {
                 if (btn) {
                     btn.innerText = "Up to Date";
                     btn.classList.remove('refresh-pulse');
-                    setTimeout(() => { btn.innerText = "Update"; }, 6000);
+                    setTimeout(() => { btn.innerText = "Update"; }, 5000);
                 }
             }
         }, delay);
     })
-    .catch(err => {
-        if (btn) {
-            btn.innerText = "Update Failed";
-            btn.classList.remove('refresh-pulse');
-        }
-    });
 }
 
 async function triggerRefresh() {
