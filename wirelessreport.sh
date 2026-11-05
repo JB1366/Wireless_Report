@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.7"
+SCRIPT_VERSION="3.5.8"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -158,8 +158,8 @@ check_version() {
             ;;
         web_check)
             case "$STATE" in
-                OUTDATED|HASH_DIFF) return 1 ;;
-                OFFLINE|UP_TO_DATE|*) return 0 ;;
+                OUTDATED|HASH_DIFF)  STATUS="UPDATED"; return 1 ;;
+                OFFLINE|UP_TO_DATE|*)  STATUS="$STATE"; return 0 ;;
             esac
             ;;
         *)
@@ -6369,8 +6369,13 @@ case "$1" in
         exit "$?"
         ;;
 	update)
-        check_version web_check && exit 0
+        if check_version web_check; then
+            sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATUS"
+            exit 0
+        fi
         sleep 3
+        STATUS2="TO: v$REMOTE_VERSION"
+        sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATUS $STATUS2"
         do_update
         ;;
     *)
