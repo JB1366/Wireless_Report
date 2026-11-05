@@ -1305,7 +1305,7 @@ set_runtime_tracking() {
                     case "$RTIME" in
                         1)
                             NEW_RTIME="0"
-                            sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
+                            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
                             ;;
                         *)
                             NEW_RTIME="1" ;;
@@ -1327,12 +1327,12 @@ set_runtime_tracking() {
                     case "$RTIME_LOG" in
                         1)
                             NEW_LOG="0"
-                            sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
+                            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
                             ;;
                         *)
                             NEW_LOG="1"
                             [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
-                            sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
+                            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
                             printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
                             chmod +x "$SE_FILE"
                             ;;
