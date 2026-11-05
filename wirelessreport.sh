@@ -1604,6 +1604,7 @@ go_developer() {
                     LOG="/tmp/iptables_view.log"
                     iptables -L -v -n --line-numbers > "$LOG" 2>&1
                     file_viewer "iptables" "$LOG"
+                    rm -f "$LOG" 2>/dev/null
                     ;;
                 12)
                     file_viewer "syslog.log" "/jffs/syslog.log" log_tail
@@ -6373,7 +6374,7 @@ case "$1" in
             sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATE"
             exit 0
         fi
-        sleep 3
+        sleep 1
         sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: Updated To: v$REMOTE_VERSION"
         do_update
         ;;
