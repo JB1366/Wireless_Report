@@ -158,8 +158,8 @@ check_version() {
             ;;
         web_check)
             case "$STATE" in
-                OUTDATED|HASH_DIFF)  STATUS="UPDATED"; return 1 ;;
-                OFFLINE|UP_TO_DATE|*)  STATUS="$STATE"; return 0 ;;
+                OUTDATED|HASH_DIFF) return 1 ;;
+                OFFLINE|UP_TO_DATE|*) return 0 ;;
             esac
             ;;
         *)
@@ -6370,12 +6370,11 @@ case "$1" in
         ;;
 	update)
         if check_version web_check; then
-            sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATUS"
+            sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATE"
             exit 0
         fi
         sleep 3
-        STATUS2="TO: v$REMOTE_VERSION"
-        sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATUS $STATUS2"
+        sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: Updated To: v$REMOTE_VERSION"
         do_update
         ;;
     *)
