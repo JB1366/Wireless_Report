@@ -350,7 +350,6 @@ menu_time_color() {
         INTL1)DU="${BL}INTL$NC"; CT="$BL$DATE_INTL1$NC"; CM="$DATE_INTL1" ;;
         USA1) DU="${BL}USA$NC";  CT="$BL$DATE_USA1$NC"; CM="$DATE_USA1" ;;
     esac
-
     CUR_TIME="$CM"
 
     get_hex_to_ansi
@@ -556,13 +555,6 @@ do_install() {
     echo -e "\n$GR[+] Downloading latest version (${WH}v$REMOTE_VERSION$GR)$NC"
     do_update || return 1
 
-    mkdir -p "$(dirname "$PROFILE_ADD")"
-    [ ! -f "$PROFILE_ADD" ] && touch "$PROFILE_ADD"
-    if ! grep -q "alias wr=" "$PROFILE_ADD" 2>/dev/null; then
-        echo "alias wr=\"$REPORT_SCRIPT install\" # added by Wireless Report" >> "$PROFILE_ADD"
-        echo -e "\n$GR[+] Adding alias 'wr' to $PROFILE_ADD$NC"
-    fi
-
     if [ "$is_update" = "1" ]; then
         echo -e "\n$BL[✓] Wireless Report successfully installed.$NC"
 		printf "\nPress $BL[Enter]$NC to apply changes & restart script..."
@@ -574,6 +566,13 @@ do_install() {
 
     echo -e "\n$GR[+] Mounting Tab Wireless Report$NC\n"
     echo -e "$GR[+] Processing Wireless Report Files...$NC\n"
+
+    mkdir -p "$(dirname "$PROFILE_ADD")"
+    [ ! -f "$PROFILE_ADD" ] && touch "$PROFILE_ADD"
+    if ! grep -q "alias wr=" "$PROFILE_ADD" 2>/dev/null; then
+        echo "alias wr=\"$REPORT_SCRIPT install\" # added by Wireless Report" >> "$PROFILE_ADD"
+        echo -e "\n$GR[+] Adding alias 'wr' to $PROFILE_ADD$NC"
+    fi
 
     if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
@@ -977,7 +976,6 @@ set_device_colors() {
         printm ""
         printm "  Current Device Configuration:"
         printm ""
-        #═════════════════════════════════════════════════════════════════════#
         local main_display_name="${MAIN_NICK:-$main_name}"
         local main_display_color=$(get_hex_to_ansi "$m_color_hex")
         local formatted_main_ip=$(printf "(%s)" "$main_ip")
@@ -1004,7 +1002,6 @@ set_device_colors() {
 
             idx=$((idx + 1))
         done
-        #═════════════════════════════════════════════════════════════════════#
         printm ""
         printm "  $LR Restore Default Colors"
         printm "  $LS Save Changes & Exit"
@@ -1093,7 +1090,6 @@ do_node_sorting() {
         printm ""
         printm "  Current order:"
         printm ""
-
         get_node_color() { idx="$1"; echo "$NODE_COLORS" | awk -v i="$idx" '{print $i}'; }
         node_idx=1
         for node in $MESH_NODES; do
@@ -1109,7 +1105,6 @@ do_node_sorting() {
             node_idx=$((node_idx + 1))
         done
         orig_count=$((node_idx - 1))
-
         printm ""
         printm "  $LR Reset to default, sort by IP."
         printm ""
