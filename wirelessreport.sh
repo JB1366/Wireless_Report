@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.9"
+SCRIPT_VERSION="3.6.0"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1847,7 +1847,6 @@ done
 
 get_theme
 check_version header_box
-SHOW_DAY=1
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
@@ -3066,7 +3065,8 @@ var WR_CONFIG = {
     rssiHistoryDate: Number("${RS_HIST_DATE:-0}") || 0,
     rssiHistoryEntries: Number("${RS_HIST_ENTRIES:-5}") || 5,
     runtimeLog: Number("${RTIME_LOG:-0}") || 0,
-    runtimeTracking: Number("${RTIME:-1}") || 0
+    runtimeTracking: Number("${RTIME:-1}") || 0,
+    showDay: Number("${SHOW_DAY:-1}") || 0
 };
 
 var WR_PAGE_GENERATION = "$WR_GENERATION";
@@ -3190,7 +3190,6 @@ function formatDateTimeStamp(d, includeSeconds) {
     }
 }
 
-const SHOW_DAY = ${SHOW_DAY:-0};
 function updateLiveClock() {
 	const el = document.getElementById('liveClock');
 	if (!el) return;
@@ -3198,10 +3197,7 @@ function updateLiveClock() {
 	const now = new Date();
 	let timeStr = formatDateTimeStamp(now, true);
 
-	// Accept both number 1 and string "1"
-	const showDay = (typeof SHOW_DAY !== 'undefined' && (SHOW_DAY == 1 || SHOW_DAY === '1'));
-
-	if (showDay) {
+	if (WR_CONFIG.showDay === 1) {
 		const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 		timeStr = days[now.getDay()] + ', ' + timeStr;
 	}
