@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.5.8"
+SCRIPT_VERSION="3.5.9"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1847,6 +1847,7 @@ done
 
 get_theme
 check_version header_box
+SHOW_DAY=1
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
@@ -1940,13 +1941,22 @@ cat <<HTML >> "$WEB_PAGE"
         margin: 0 0 12px 0;
     }
 
+    .live-time {
+        text-align: center;
+        color: #f2f2f7;
+        margin-top: 6px;
+	    margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
     .total-count {
         text-align: center;
         color: #f2f2f7;
+        margin-top: 10px;
         margin-bottom: 12px;
-        font-size: 13px;
+        font-size: 16px;
         font-weight: bold;
-        letter-spacing: 0.5px;
     }
 
     .count-highlight {
@@ -2881,6 +2891,7 @@ cat <<HTML >> "$WEB_PAGE"
                 <div id="wifiReportContainer">
                     <div class="top-header">
                         <h1 class="$HEADER_TITLE">WIRELESS REPORT</h1>
+                        <span id="liveClock" class="live-time"></span>
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
                         <div class="top-buttons">
                             <div class="button-refresh">
@@ -3178,6 +3189,28 @@ function formatDateTimeStamp(d, includeSeconds) {
         return month + '-' + day + ' ' + timeStr;
     }
 }
+
+const SHOW_DAY = ${SHOW_DAY:-0};
+function updateLiveClock() {
+	const el = document.getElementById('liveClock');
+	if (!el) return;
+
+	const now = new Date();
+	let timeStr = formatDateTimeStamp(now, true);
+
+	// Accept both number 1 and string "1"
+	const showDay = (typeof SHOW_DAY !== 'undefined' && (SHOW_DAY == 1 || SHOW_DAY === '1'));
+
+	if (showDay) {
+		const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+		timeStr = days[now.getDay()] + ', ' + timeStr;
+	}
+
+	el.textContent = timeStr;
+}
+
+updateLiveClock();
+setInterval(updateLiveClock, 1000);
 
 function update_time() {
     const now = new Date();
