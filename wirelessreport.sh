@@ -195,12 +195,12 @@ menu_vars() {
     if [ "$RR" = "1" ]; then RR=""; run_report; fi
 
     menu_buffer=""; MB="61"; echo -e "$B_COLOR"
-    SELECTION="\n$NC Selection [${B_COLOR}E=Exit$NC]: "
     MM="$B_COLOR$CM$NC"
-
     ON="${GR}ON$NC"; OFF="${RD}OFF$NC"
+
     STATUS="$NC STATUS:"
     CURRENT="$NC CURRENT:$GR v$SCRIPT_VERSION$DEV$NC"
+    SELECTION="\n$NC Selection [${B_COLOR}E=Exit$NC]: "
 
     THEME=${THEME:-ORIGINAL}
     TM_STAT="$BL$THEME$NC"
