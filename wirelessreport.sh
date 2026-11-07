@@ -354,7 +354,7 @@ menu_time_color() {
 
     get_hex_to_ansi
     B_COLOR=${B_COLOR:-$BL}
-    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
+    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
 	for i in E Q R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
 
     MODELID="${MODEL_PAD}${B_COLOR}Router: ${NC}${CACHED_PRODID}${B_COLOR}   FW:${NC} ${CACHED_FW}"
@@ -576,7 +576,7 @@ do_install() {
 
     if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
-    echo "$REPORT_SCRIPT inject & # Inject Wireless Report" >> "$SS_FILE"
+    echo "$REPORT_SCRIPT inject & # Mount Wireless Report" >> "$SS_FILE"
     chmod +x "$SS_FILE"
 
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
@@ -1514,20 +1514,21 @@ go_developer() {
         printm "                      Developers Menu"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
-        printm "  $N1  Inject WR TAB  --> menu_wireless"
-        printm "  $N2  Inject WR TAB  --> menu_addons"
-        printm "  $N3  Inject WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
-        printm "  $N4  Insert WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
-        printm "  $N5  View menuTree - /tmp/menuTree.js"
+        printm "  $N1  Mount WR TAB  --> menu_wireless"
+        printm "  $N2  Mount WR TAB  --> menu_addons"
+        printm "  $N3  Mount WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
+        printm "  $N4  Mount WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
+        printm "  $N5  Unmount WR TAB/Menu  --> $B_COLOR$INSTALLED_PAGE$NC"
+        printm "  $N6  View menuTree - /tmp/menuTree.js"
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "  $N6  View CONGIG - webui.conf"
-        printm "  $N7  View profile.add - /jffs/configs/profile.add"
-        printm "  $N8  View services-start - /jffs/scripts/services-start"
-        printm "  $N9  View service-event - /jffs/scripts/service-event"
-        printm "  $N10 View firewall-start - /jffs/scripts/firewall-start"
-        printm "  $N11 View iptables - iptables -L -v -n --line-numbers"
-        printm "  $N12 View syslog - /jffs/syslog.log"
-        printm "  $N13 View iocmon - $ROOT_PATH/iocmon.d/iocmon.log"
+        printm "  $N7  View CONGIG - webui.conf"
+        printm "  $N8  View profile.add - /jffs/configs/profile.add"
+        printm "  $N9  View services-start - /jffs/scripts/services-start"
+        printm "  $N10 View service-event - /jffs/scripts/service-event"
+        printm "  $N11 View firewall-start - /jffs/scripts/firewall-start"
+        printm "  $N12 View iptables - iptables -L -v -n --line-numbers"
+        printm "  $N13 View syslog - /jffs/syslog.log"
+        printm "  $N14 View iocmon - $ROOT_PATH/iocmon.d/iocmon.log"
         printm ""
         printm "  $LQ  Power Exit from any Selection Prompt"
         printm "  $LZ  Return to 'Main Menu' from anywhere"
@@ -1582,34 +1583,52 @@ go_developer() {
                     fi
                     ;;
                 5)
-                    file_viewer "menuTree.js" "$TEMP_MENU"
+                    if [ ! -f "$CONFIG" ] || ! grep -q "^INSTALLED_PAGE=" "$CONFIG"; then
+                        echo -e "\n$YL[!] No page exists to unmount.$NC"
+                        pause
+                        break
+                    fi
+                    printf "\n$B_COLOR[!]$NC Unmounting $B_COLOR$INSTALLED_PAGE$NC..."
+                    umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
+                    rm -f "/www/user/$INSTALLED_PAGE" 2>/dev/null
+                    rm -f "$WEB_PAGE" 2>/dev/null
+                    sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
+                    sleep 2
+                    echo -e "\n\n$B_COLOR[!] $INSTALLED_PAGE$NC unmount complete."
+                    sys_log "$INSTALLED_PAGE successfully unmounted."
+                    INSTALLED_PAGE=""
+                    pause
+                    break
                     ;;
                 6)
+                    file_viewer "menuTree.js" "$TEMP_MENU"
+                    ;;
+                7)
                     sort -u -o "$CONFIG" "$CONFIG"
                     file_viewer "CONFIG" "$CONFIG"
                     ;;
-                7)
+                8)
                     file_viewer "profile.add" "$PROFILE_ADD"
                     ;;
-                8)
+                9)
                     file_viewer "services-start" "$SS_FILE"
                     ;;
-                9)
+                10)
                     file_viewer "service-event" "$SE_FILE"
                     ;;
-                10)
+                11)
                     file_viewer "firewall-start" "/jffs/scripts/firewall-start"
                     ;;
-                11)
+                12)
                     LOG="/tmp/iptables_view.log"
                     iptables -L -v -n --line-numbers > "$LOG" 2>&1
                     file_viewer "iptables" "$LOG"
                     rm -f "$LOG" 2>/dev/null
                     ;;
-                12)
+                13)
                     file_viewer "syslog.log" "/jffs/syslog.log" log_tail
                     ;;
-                13)
+                14)
                     file_viewer "iocmon.log" "$ROOT_PATH/iocmon.d/state/iocmon.log" log_tail
                     ;;
                 *)
