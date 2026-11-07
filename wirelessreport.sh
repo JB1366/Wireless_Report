@@ -354,7 +354,7 @@ menu_time_color() {
 
     get_hex_to_ansi
     B_COLOR=${B_COLOR:-$BL}
-    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
+    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
 	for i in E Q R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
 
     MODELID="${MODEL_PAD}${B_COLOR}Router: ${NC}${CACHED_PRODID}${B_COLOR}   FW:${NC} ${CACHED_FW}"
@@ -1529,6 +1529,7 @@ go_developer() {
         printm "  $N12 View iptables - iptables -L -v -n --line-numbers"
         printm "  $N13 View syslog - /jffs/syslog.log"
         printm "  $N14 View iocmon - $ROOT_PATH/iocmon.d/iocmon.log"
+        printm "  $N15 View Cron Jobs - cru l(ist)"
         printm ""
         printm "  $LQ  Power Exit from any Selection Prompt"
         printm "  $LZ  Return to 'Main Menu' from anywhere"
@@ -1630,6 +1631,22 @@ go_developer() {
                     ;;
                 14)
                     file_viewer "iocmon.log" "$ROOT_PATH/iocmon.d/state/iocmon.log" log_tail
+                    ;;
+                15)
+                    {
+                        if [ -z "$(cru l)" ]; then
+                            printf " (there are no cron jobs set at the moment)\n"
+                        else
+                            printf " .---------------- minute       (0 - 59)\n |  .------------- hour         (0 - 23)\n |  |  .---------- day of month (1 - 31)\n"
+                            printf " |  |  |  .------- month        (1 - 12) OR Jan,Feb,mar ...\n |  |  |  |  .---- day of week  (0 - 6) Sunday = 0 or 7, OR Sun,mon,Tue ...\n"
+                            printf " |  |  |  |  |\n *  *  *  *  *  command to be executed  #job_name#  ( * = every ... )\n\n"
+                            cru l | sed 's/^/ /'
+                        fi
+                    } > /tmp/wireless_cron.txt
+                    file_viewer "Cron Jobs" "/tmp/wireless_cron.txt"
+                    rm -f /tmp/wireless_cron.txt 2>/dev/null
+                    pause
+                    break
                     ;;
                 *)
                     freeze 2
@@ -1752,6 +1769,8 @@ goodbye() { clear; hasta_la_vista; exit 0; }
 log2() { awk -v bc="$B_COLOR" -v nc="$NC" '{printf "%s[%02d]%s  %s\n", bc, NR, nc, $0}' "$LOG" | more; }
 
 log_tail() { tail -n 200 "$LOG" | awk -v bc="$B_COLOR" -v nc="$NC" '{printf "%s[%02d]%s  %s\n", bc, NR, nc, $0}' | more; }
+
+not_found() { echo -e "$YL[!] File not found.$NC"; }
 
 pause() { printf "\nPress $B_COLOR[Enter]$NC to return..."; read -r discard; }
 
