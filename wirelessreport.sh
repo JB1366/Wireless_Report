@@ -3055,6 +3055,7 @@ var WR_CONFIG = {
     backHaul: Number("${BACKHAUL:-0}") || 0,
     hostColor: Number("${HOST_COLOR:-0}") || 0,
     ipPad: Number("${IPPAD:-1}") || 0,
+    liveclockShowday: Number("${SHOW_DAY:-1}") || 0,
     mainColor: "$MAIN_COLOR",
     mainNick: "${MAIN_NICK:-}",
     meshNodes: "${AIMESH_NODES:-}",
@@ -3065,8 +3066,7 @@ var WR_CONFIG = {
     rssiHistoryDate: Number("${RS_HIST_DATE:-0}") || 0,
     rssiHistoryEntries: Number("${RS_HIST_ENTRIES:-5}") || 5,
     runtimeLog: Number("${RTIME_LOG:-0}") || 0,
-    runtimeTracking: Number("${RTIME:-1}") || 0,
-    showDay: Number("${SHOW_DAY:-1}") || 0
+    runtimeTracking: Number("${RTIME:-1}") || 0
 };
 
 var WR_PAGE_GENERATION = "$WR_GENERATION";
@@ -3197,7 +3197,7 @@ function updateLiveClock() {
 	const now = new Date();
 	let timeStr = formatDateTimeStamp(now, true);
 
-	if (WR_CONFIG.showDay === 1) {
+	if (WR_CONFIG.liveclockShowday === 1) {
 		const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 		timeStr = days[now.getDay()] + ', ' + timeStr;
 	}
