@@ -1894,7 +1894,12 @@ for node in $MESH_NODES; do
 done
 
 get_theme
+
 check_version header_box
+case "$STATE" in
+    OUTDATED|HASH_DIFF) TRIGGER="triggerUpdate(this, 'Updating...')" ;;
+    *)                  TRIGGER="triggerUpdate(this, 'Checking...')" ;;
+esac
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
@@ -2963,7 +2968,7 @@ cat <<HTML >> "$WEB_PAGE"
                             <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
                             <div class="update-tooltip" style="display:inline-block; position:relative;">
-                                <button class="button-tables" onclick="triggerUpdate(this)">Update</button>
+                                <button class="button-tables" onclick="$TRIGGER">Update</button>
                                 <span class="update-box">$HOVER_TEXT</span>
                             </div>
                         </div>
@@ -6000,12 +6005,11 @@ function wrLogRuntimeToSyslog(currentSec, avgSec, lowSec, highSec, count) {
     });
 }
 
-function triggerUpdate(btn) {
+function triggerUpdate(btn, actionText) {
     if (btn) {
-        btn.innerText = "Checking...";
+        btn.innerText = actionText || "Checking...";
         btn.classList.add('refresh-pulse');
     }
-    var expires = new Date(Date.now() + 30000).toUTCString();
     fetch('/apply.cgi', {
         method: 'POST',
         body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
