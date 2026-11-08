@@ -633,6 +633,16 @@ last_update() {
     fi
 }
 
+do_webcheck() {
+    if check_version web_check; then
+        sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATE"
+        exit 0
+    fi
+    sleep 1
+    sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: Updated To: v$REMOTE_VERSION"
+    do_update
+}
+
 ScriptUpdateFromAMTM() {
     doScriptUpdateFromAMTM=true
     if [ "$doScriptUpdateFromAMTM" != "true" ]; then
@@ -6437,13 +6447,7 @@ case "$1" in
         exit "$?"
         ;;
 	update)
-        if check_version web_check; then
-            sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATE"
-            exit 0
-        fi
-        sleep 1
-        sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: Updated To: v$REMOTE_VERSION"
-        do_update
+        do_webcheck
         ;;
     *)
 		run_report
