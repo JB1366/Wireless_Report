@@ -194,7 +194,6 @@ menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     if [ "$RR" = "1" ]; then RR=""; run_report; fi
     menu_buffer=""; MB="61"; echo -e "$B_COLOR"
-
     MM="$B_COLOR$CM$NC"
     ON="${GR}ON$NC"; OFF="${RD}OFF$NC"
 
