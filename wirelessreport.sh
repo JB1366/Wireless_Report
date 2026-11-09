@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.1"
+SCRIPT_VERSION="3.6.2"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1850,8 +1850,6 @@ runtime_syslog() {
             ;;
     esac
 }
-
-if [ "$1" = "service_event" ]; then runtime_syslog "$@"; exit 0; fi
 
 check_updateSE
 get_mesh_nodes
@@ -6451,7 +6449,7 @@ case "$1" in
         menu_time_color
         install_menu
         ;;
-    inject|inject2)
+    inject)
         inject_menu
         ;;
     amtmupdate)
@@ -6461,6 +6459,9 @@ case "$1" in
         ;;
 	update)
         do_webcheck
+        ;;
+    service_event)
+        runtime_syslog "$@"
         ;;
     *)
 		run_report
