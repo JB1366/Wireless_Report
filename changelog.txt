@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.6.1-minor changes to update button.
 v3.6.0-minor changes to update button.
 v3.5.9-add live time.
 v3.5.8-minor updates.
