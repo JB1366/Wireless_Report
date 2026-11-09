@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.2"
+SCRIPT_VERSION="3.6.3"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -6099,6 +6099,25 @@ document.addEventListener("DOMContentLoaded", function() {
             if (btn) btn.style.setProperty('--highlow-text', '"High: ' + stats.max.toFixed(2) + 's   Low: ' + stats.min.toFixed(2) + 's"');
             if (btn) btn.innerHTML = 'Refresh ' + stats.max.toFixed(2) + 's';
         }
+    }
+
+    // Right-click listener to reset runtime stats in localStorage
+    var triggerBtn = document.querySelector('.button-trigger');
+    if (triggerBtn) {
+        triggerBtn.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+
+            if (confirm("Are you sure you want to reset stats?")) {
+                triggerBtn.innerText = "Resetting...";
+                triggerBtn.classList.add('refresh-pulse');
+
+                localStorage.removeItem('wirelessReportRuntimeStats');
+
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
+            }
+        });
     }
 });
 
