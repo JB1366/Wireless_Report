@@ -581,7 +581,7 @@ do_install() {
 
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
-    echo 'case "$1:$2" in start:report1*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
+    echo 'case "$1:$2" in start:wireless*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
     chmod +x "$SE_FILE"
 
     SCRIPT_VERSION="$REMOTE_VERSION"
@@ -595,8 +595,8 @@ do_install() {
 check_updateSE() {
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     sed -i "\|restart:update_report1\b|d" "$SE_FILE" 2>/dev/null
-    if ! grep -q "start:report1" "$SE_FILE"; then
-        echo 'case "$1:$2" in start:report1*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
+    if ! grep -q "start:wireless" "$SE_FILE"; then
+        echo 'case "$1:$2" in start:wireless*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
     fi
     chmod +x "$SE_FILE"
     return 0
@@ -6020,7 +6020,7 @@ function triggerUpdate(btn, actionText) {
     }
     fetch('/apply.cgi', {
         method: 'POST',
-        body: 'action_mode=apply&rc_service=start_report1_update&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        body: 'action_mode=apply&rc_service=start_wireless_update&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
     })
     .then(response => {
         setTimeout(function() {
@@ -6458,7 +6458,7 @@ case "$1" in
         ScriptUpdateFromAMTM "$@"
         exit "$?"
         ;;
-	update)
+	*update)
         do_webcheck
         ;;
     service_event)
