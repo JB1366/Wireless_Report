@@ -729,7 +729,6 @@ inject_menu() {
 	mount -o bind "$WEB_PAGE" "/www/user/$am_webui_page"
 
     flock -u "$FD"
-    restart_httpd
 
     "$REPORT_SCRIPT" >/dev/null 2>&1 &
 }
