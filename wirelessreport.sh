@@ -1527,7 +1527,7 @@ go_developer() {
         printm "  $N2  Mount WR TAB  --> menu_addons"
         printm "  $N3  Mount WR Menu --> before $B_COLOR$INSERT_BEFORE$NC"
         printm "  $N4  Mount WR Menu before $B_COLOR<#ETAG#>$NC --> menuTree"
-        printm "  $N5  Unmount WR TAB/Menu  --> $B_COLOR$INSTALLED_PAGE$NC"
+        printm "  $N5  Unmount/Remove WR TAB/Menu  --> $B_COLOR$INSTALLED_PAGE$NC"
         printm "  $N6  View menuTree - /tmp/menuTree.js"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm "  $N7  View CONGIG - webui.conf"
@@ -1569,8 +1569,9 @@ go_developer() {
                         echo "INJECT=\"$INJECT\"" >> "$CONFIG"
                     fi
                     echo -e "\n$B_COLOR[!]$NC $MESSAGE"
-                    pause
                     inject_menu
+                    restart_httpd
+                    pause
                     break
                     ;;
                 4)
@@ -1599,14 +1600,24 @@ go_developer() {
                         break
                     fi
                     printf "\n$B_COLOR[!]$NC Unmounting $B_COLOR$INSTALLED_PAGE$NC..."
-                    umount -l "/www/user/$INSTALLED_PAGE" 2>/dev/null
-                    rm -f "/www/user/$INSTALLED_PAGE" 2>/dev/null
-                    rm -f "$WEB_PAGE" 2>/dev/null
+                    if mount | grep -q "menuTree.js"; then
+                        umount -l "$SYSTEM_MENU" >/dev/null 2>&1
+                        sed -i 'N; /menuName: "Wireless Report"/ { N; N; N; N; N; N; d; }; P; D' "$TEMP_MENU" 2>/dev/null
+                        sed -i '/tabName:[[:space:]]*"Wireless Report"/d' "$TEMP_MENU" 2>/dev/null
+                        mount --bind "$TEMP_MENU" "$SYSTEM_MENU"
+                        sys_log "Unmounting Wireless Report page."
+                    fi
+                    if [ -n "$INSTALLED_PAGE" ]; then
+                        umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+                        rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
+                        rm -f "$WEB_PAGE" /dev/null 2>&1
+                    fi
                     sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
-                    sleep 2
-                    echo -e "\n\n$B_COLOR[!] $INSTALLED_PAGE$NC unmount complete."
-                    sys_log "$INSTALLED_PAGE successfully unmounted."
                     INSTALLED_PAGE=""
+                    restart_httpd
+                    sleep 2
+                    echo -e "\n\n$B_COLOR[!] Wireless Report successfully removed."
+                    sys_log "Wireless Report successfully removed."
                     pause
                     break
                     ;;
