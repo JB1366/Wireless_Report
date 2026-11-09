@@ -581,7 +581,7 @@ do_install() {
 
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
-    echo 'case "$1:$2" in restart:update_report1) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
+    echo 'case "$1:$2" in start:report1*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
     chmod +x "$SE_FILE"
 
     SCRIPT_VERSION="$REMOTE_VERSION"
@@ -590,6 +590,16 @@ do_install() {
     echo -e "$YL[i] To access Report, navigate to Advanced Settings > Wireless "
     echo -e "$YL    in the ASUS WebGUI and select the Wireless Report tab on the far right.$NC\n"
     pause
+}
+
+check_updateSE() {
+    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
+    sed -i "\|restart:update_report1\b|d" "$SE_FILE" 2>/dev/null
+    if ! grep -q "start:report1" "$SE_FILE"; then
+        echo 'case "$1:$2" in start:report1*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
+    fi
+    chmod +x "$SE_FILE"
+    return 0
 }
 
 do_update() {
@@ -1811,15 +1821,6 @@ selection() {
         q|Q) goodbye ;;
         z|Z) if [ "$use_z" = true ]; then install_menu; fi ;;
     esac
-}
-
-check_updateSE() {
-    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
-    if ! grep -q "restart:update_report1" "$SE_FILE"; then
-        echo 'case "$1:$2" in restart:update_report1) '"$REPORT_SCRIPT"' update & ;; esac # Wireless Report' >> "$SE_FILE"
-    fi
-    chmod +x "$SE_FILE"
-    return 0
 }
 
 runtime_syslog() {
@@ -6019,7 +6020,7 @@ function triggerUpdate(btn, actionText) {
     }
     fetch('/apply.cgi', {
         method: 'POST',
-        body: 'action_mode=apply&rc_service=restart_update_report1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        body: 'action_mode=apply&rc_service=start_report1_update&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
     })
     .then(response => {
         setTimeout(function() {
