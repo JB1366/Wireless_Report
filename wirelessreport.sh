@@ -6100,7 +6100,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (btn) btn.innerHTML = 'Refresh ' + stats.max.toFixed(2) + 's';
         }
 
-        // Right-click listener to reset runtime stats in localStorage (API version)
+        // Right-click listener to reset runtime stats in localStorage
         var triggerBtn = document.querySelector('.button-trigger');
         if (triggerBtn) {
             triggerBtn.addEventListener('contextmenu', function(e) {
