@@ -6094,7 +6094,7 @@ function toggleOptionsRow() {
             secondaryRow.style.display = "none";
             optionsBtn.classList.remove('active');
             optionsTimeout = null;
-        }, 15000);
+        }, 30000);
     } else {
         secondaryRow.style.display = "none";
         optionsBtn.classList.remove('active');
