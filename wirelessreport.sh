@@ -2989,7 +2989,7 @@ cat <<HTML >> "$WEB_PAGE"
                         <h1 class="$HEADER_TITLE">WIRELESS REPORT</h1>
                         <span id="liveClock" class="live-time"></span>
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
-                        <div class="top-buttons"> <!-- Row 1 (Existing) -->
+                        <div class="top-buttons">
                             <div class="button-refresh">
                                 <button class="button-trigger button-tables" onclick="triggerRefresh()">Refresh</button>
                                 <div class="button-auto-refresh">
@@ -3007,18 +3007,18 @@ cat <<HTML >> "$WEB_PAGE"
                                     <span id="refresh-countdown"></span>
                                 </div>
                             </div>
-                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main View</button>
-                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
+                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main View ★</button>
+                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices ❖</button>
                             <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">Options ⚙</button>
                             </div>
-                            <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;"> <!-- Row 2 (Hidden by default -->
-                                <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes</button>
+                            <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
+                                <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes ⟳</button>
                                 <!-- <button class="button-tables" onclick="alert('Extra Button 2 clicked!')">Extra Option 2</button> -->
                                 <!-- <button class="button-tables" onclick="alert('Extra Button 3 clicked!')">Extra Option 3</button> -->
                                 <div class="update-tooltip" style="display:inline-block; position:relative;">
-                                    <button class="button-tables" onclick="triggerUpdate(this)">Update</button>
+                                    <button class="button-tables" onclick="triggerUpdate(this)">Update ↻</button>
                                     <span class="update-box">$HOVER_TEXT</span>
                                 </div>
                             </div>
