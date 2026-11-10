@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.3"
+SCRIPT_VERSION="3.6.4"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -1526,6 +1526,22 @@ set_github_branch() {
     done
 }
 
+do_rotate_theme() {
+    if grep -q 'THEME="ORIGINAL"' "$CONFIG"; then
+        TM="DARKMODE"
+    elif grep -q 'THEME="DARKMODE"' "$CONFIG"; then
+        TM="ASUS_WEBUI"
+    else
+        TM="ORIGINAL"
+    fi
+    if grep -q "^THEME=" "$CONFIG"; then
+        sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
+    else
+        echo "THEME=\"$TM\"" >> "$CONFIG"
+    fi
+    menu_vars
+}
+
 go_developer() {
      while true; do
         show_header; get_usb
@@ -1993,14 +2009,6 @@ cat <<HTML >> "$WEB_PAGE"
         }
     }
 
-    .top-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 7px;
-        width: 100%;
-        margin: 0 0 12px 0;
-    }
-
     .live-time {
         text-align: center;
         color: #f2f2f7;
@@ -2351,6 +2359,34 @@ cat <<HTML >> "$WEB_PAGE"
     #refresh-countdown {
         color: #0096ff;
         font-weight: bold;
+    }
+
+    .top-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        margin-bottom: 12px;
+    }
+
+    .top-buttons-secondary {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        border-top: none;
+        padding-top: 0;
+    }
+
+    /* Active toggle state for the Options button */
+    #btnOptionsToggle.active {
+        background-color: #0055ff;
+        border-color: #3377ff;
     }
 
     ${THEME_CSS}
@@ -2953,7 +2989,7 @@ cat <<HTML >> "$WEB_PAGE"
                         <h1 class="$HEADER_TITLE">WIRELESS REPORT</h1>
                         <span id="liveClock" class="live-time"></span>
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
-                        <div class="top-buttons">
+                        <div class="top-buttons"> <!-- Row 1 (Existing) -->
                             <div class="button-refresh">
                                 <button class="button-trigger button-tables" onclick="triggerRefresh()">Refresh</button>
                                 <div class="button-auto-refresh">
@@ -2975,11 +3011,17 @@ cat <<HTML >> "$WEB_PAGE"
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices</button>
                             <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
-                            <div class="update-tooltip" style="display:inline-block; position:relative;">
-                                <button class="button-tables" onclick="$TRIGGER">Update</button>
-                                <span class="update-box">$HOVER_TEXT</span>
+                            <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">Options ⚙</button>
                             </div>
-                        </div>
+                            <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;"> <!-- Row 2 (Hidden by default -->
+                                <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes</button>
+                                <!-- <button class="button-tables" onclick="alert('Extra Button 2 clicked!')">Extra Option 2</button> -->
+                                <!-- <button class="button-tables" onclick="alert('Extra Button 3 clicked!')">Extra Option 3</button> -->
+                                <div class="update-tooltip" style="display:inline-block; position:relative;">
+                                    <button class="button-tables" onclick="triggerUpdate(this)">Update</button>
+                                    <span class="update-box">$HOVER_TEXT</span>
+                                </div>
+                            </div>
                     </div>
                     <div class="grid-container">
                         <div id="splitView">
@@ -6037,6 +6079,43 @@ function triggerUpdate(btn, actionText) {
     });
 }
 
+function toggleOptionsRow() {
+    var secondaryRow = document.getElementById('secondaryButtonRow');
+    var optionsBtn = document.getElementById('btnOptionsToggle');
+
+    if (secondaryRow.style.display === "none" || secondaryRow.style.display === "") {
+        secondaryRow.style.display = "flex";
+        optionsBtn.classList.add('active');
+    } else {
+        secondaryRow.style.display = "none";
+        optionsBtn.classList.remove('active');
+    }
+}
+
+function rotateThemes(btn) {
+    if (btn) {
+        btn.innerText = "Switching...";
+        btn.classList.add('refresh-pulse');
+    }
+
+    fetch('/apply.cgi', {
+        method: 'POST',
+        body: 'action_mode=apply&rc_service=start_wireless_rotatetheme&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+    })
+    .then(function() {
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Theme rotation failed:", err);
+        if (btn) {
+            btn.innerText = "Rotate Themes";
+            btn.classList.remove('refresh-pulse');
+        }
+    });
+}
+
 async function triggerRefresh() {
     if (isRefreshing) return;
     isRefreshing = true;
@@ -6477,7 +6556,11 @@ case "$1" in
         ScriptUpdateFromAMTM "$@"
         exit "$?"
         ;;
-	*update)
+	*rotatetheme)
+        do_rotate_theme
+        run_report
+        ;;
+    *update)
         do_webcheck
         ;;
     service_event)
