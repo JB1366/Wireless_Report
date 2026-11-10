@@ -6079,6 +6079,7 @@ function triggerUpdate(btn, actionText) {
     });
 }
 
+let optionsTimeout = null;
 function toggleOptionsRow() {
     var secondaryRow = document.getElementById('secondaryButtonRow');
     var optionsBtn = document.getElementById('btnOptionsToggle');
