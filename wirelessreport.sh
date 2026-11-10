@@ -6100,24 +6100,39 @@ document.addEventListener("DOMContentLoaded", function() {
             if (btn) btn.innerHTML = 'Refresh ' + stats.max.toFixed(2) + 's';
         }
     }
+});
 
-    // Right-click listener to reset runtime stats in localStorage
-    var triggerBtn = document.querySelector('.button-trigger');
-    if (triggerBtn) {
-        triggerBtn.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
+// Right-click listener to reset runtime stats in localStorage
+document.addEventListener("DOMContentLoaded", function() {
+    if (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.runtimeTracking) {
+        var stats = wrLoadJson('wirelessReportRuntimeStats', { total: 0, count: 0, min: null, max: 0 });
+        if (stats.count > 0) {
+            var avg = stats.total / stats.count;
+            var wrapper = document.querySelector('.button-refresh');
+            var btn = document.querySelector('.button-trigger');
+            if (wrapper) wrapper.style.setProperty('--avg-text', '"Avg: ' + avg.toFixed(2) + 's over ' + stats.count + ' scans"');
+            if (btn) btn.style.setProperty('--highlow-text', '"High: ' + stats.max.toFixed(2) + 's   Low: ' + stats.min.toFixed(2) + 's"');
+            if (btn) btn.innerHTML = 'Refresh ' + stats.max.toFixed(2) + 's';
+        }
 
-            if (confirm("Are you sure you want to reset stats?")) {
-                triggerBtn.innerText = "Resetting...";
-                triggerBtn.classList.add('refresh-pulse');
+        // Right-click listener to reset runtime stats in localStorage (API version)
+        var triggerBtn = document.querySelector('.button-trigger');
+        if (triggerBtn) {
+            triggerBtn.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
 
-                localStorage.removeItem('wirelessReportRuntimeStats');
+                if (confirm("Are you sure you want to reset stats?")) {
+                    triggerBtn.innerText = "Resetting...";
+                    triggerBtn.classList.add('refresh-pulse');
 
-                setTimeout(function() {
-                    window.location.reload();
-                }, 1000);
-            }
-        });
+                    localStorage.removeItem('wirelessReportRuntimeStats');
+
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                }
+            });
+        }
     }
 });
 
