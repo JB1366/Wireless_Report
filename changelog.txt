@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.6.3-add right-click refresh button, reset runtime stats in webui.
 v3.6.2-update rc_service.
 v3.6.1-minor changes to update button.
 v3.6.0-minor changes to update button.
