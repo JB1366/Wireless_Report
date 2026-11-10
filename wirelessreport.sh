@@ -6072,7 +6072,7 @@ function triggerUpdate(btn, actionText) {
                 if (btn) {
                     btn.innerText = "Up to Date";
                     btn.classList.remove('refresh-pulse');
-                    setTimeout(() => { btn.innerText = "Update"; }, 5000);
+                    setTimeout(() => { btn.innerText = "Update ↻"; }, 5000);
                 }
             }
         }, 2000);
@@ -6110,7 +6110,7 @@ function rotateThemes(btn) {
     .catch(function(err) {
         console.error("Theme rotation failed:", err);
         if (btn) {
-            btn.innerText = "Rotate Themes";
+            btn.innerText = "Rotate Themes ⟳";
             btn.classList.remove('refresh-pulse');
         }
     });
