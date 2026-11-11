@@ -1298,13 +1298,7 @@ set_options() {
                 4)
                     set_ip_padding ;;
                 5)
-                    if grep -q "HOST_COLOR=" "$CONFIG"; then
-                        case "$HOST_COLOR" in 1) NEW_HC="0" ;; *) NEW_HC="1" ;; esac
-                        sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
-                    else
-                        echo 'HOST_COLOR="1"' >> "$CONFIG"
-                    fi
-                    ;;
+                    do_host_color ;;
                 6)
                     set_rssi_tooltip ;;
                 *)
@@ -1426,6 +1420,15 @@ set_ip_padding() {
         fi
         run_report
     done
+}
+
+do_host_color() {
+    if grep -q "HOST_COLOR=" "$CONFIG"; then
+        case "$HOST_COLOR" in 1) NEW_HC="0" ;; *) NEW_HC="1" ;; esac
+        sed -i "s/HOST_COLOR=.*/HOST_COLOR=\"$NEW_HC\"/" "$CONFIG"
+    else
+        echo 'HOST_COLOR="1"' >> "$CONFIG"
+    fi
 }
 
 set_rssi_tooltip() {
@@ -3035,6 +3038,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime Tracking ☰</button>
                                 <button class="button-tables" onclick="rotateThemes(this)">Theme Change ⟳</button>
                                 <button class="button-tables" onclick="rssiHistory(this)">RSSI Tooltips ⇵</button>
+                                <button class="button-tables" onclick="hostColor(this)">Hostname ▤</button>
                                 <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             </div>
                         </div>
@@ -6207,6 +6211,34 @@ function runtimeTrackingweb(btn) {
     });
 }
 
+function hostColor(btn) {
+    if (btn) {
+        btn.innerText = "Colored⇄Numbered...";
+        btn.classList.add('refresh-pulse');
+    }
+
+    fetch('/apply.cgi', {
+        method: 'POST',
+        body: 'action_mode=apply&rc_service=start_wireless_hostcolor&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+    })
+    .then(function() {
+        setTimeout(function() {
+            window.location.reload();
+            if (btn) {
+                btn.innerText = "Hostname ▤";
+                btn.classList.remove('refresh-pulse');
+            }
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Hostname coloring failed:", err);
+        if (btn) {
+            btn.innerText = "Hostname ▤";
+            btn.classList.remove('refresh-pulse');
+        }
+    });
+}
+
 async function triggerRefresh() {
     if (isRefreshing) return;
     isRefreshing = true;
@@ -6650,7 +6682,11 @@ case "$1" in
     service_event)
         runtime_syslog "$@"
         ;;
-	*rotatetheme)
+	*hostcolor)
+        do_host_color
+        run_report
+        ;;
+    *rotatetheme)
         do_rotate_theme
         run_report
         ;;
