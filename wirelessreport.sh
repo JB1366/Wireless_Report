@@ -3033,8 +3033,8 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
                                 <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime Tracking ☰</button>
-                                <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes ⟳</button>
-                                <button class="button-tables" onclick="rssiHistory(this)">RSSI History ⇵</button>
+                                <button class="button-tables" onclick="rotateThemes(this)">Theme Change ⟳</button>
+                                <button class="button-tables" onclick="rssiHistory(this)">RSSI Tooltips ⇵</button>
                                 <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             </div>
                         </div>
@@ -6134,7 +6134,7 @@ function rotateThemes(btn) {
     .catch(function(err) {
         console.error("Theme rotation failed:", err);
         if (btn) {
-            btn.innerText = "Rotate Themes ⟳";
+            btn.innerText = "Theme Change ⟳";
             btn.classList.remove('refresh-pulse');
         }
     });
@@ -6162,9 +6162,9 @@ function rssiHistory(btn) {
         }, 1000);
     })
     .catch(function(err) {
-        console.error("RSSI history failed:", err);
+        console.error("RSSI Tooltips failed:", err);
         if (btn) {
-            btn.innerText = "RSSI History ⇵";
+            btn.innerText = "RSSI Tooltips ⇵";
             btn.classList.remove('refresh-pulse');
         }
     });
