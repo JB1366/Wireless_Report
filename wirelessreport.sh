@@ -3022,8 +3022,8 @@ cat <<HTML >> "$WEB_PAGE"
                                     <span id="refresh-countdown"></span>
                                 </div>
                             </div>
-                            <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main View ★</button>
-                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices ❖</button>
+                            <button id="btnSplit" class="button-tables active" onclick="switchTab('split')">Split View ★</button>
+                            <button id="btnAll" class="button-tables" onclick="switchTab('all')">All View ❖</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
                             <div class="update-tooltip" style="display:inline-block; position:relative;">
                                 <button class="button-tables $UPDATE_TITLE" onclick="triggerUpdate(this)">Update ↻</button>
@@ -6322,7 +6322,7 @@ function switchTab(view) {
     localStorage.setItem('wifiReportView', view);
     var split = document.getElementById('splitView');
     var all = document.getElementById('allCol');
-    var btnMain = document.getElementById('btnMain');
+    var btnSplit = document.getElementById('btnSplit');
     var btnAll = document.getElementById('btnAll');
 	var allBar = document.getElementById('allDevicesQualityBar');
     if(view === 'all') {
@@ -6330,12 +6330,12 @@ function switchTab(view) {
         if (all) all.style.display = 'flex';
 		if (allBar) allBar.style.display = 'flex';
         if (btnAll) btnAll.classList.add('active');
-        if (btnMain) btnMain.classList.remove('active');
+        if (btnSplit) btnSplit.classList.remove('active');
     } else {
         if (split) split.style.display = 'flex';
         if (all) all.style.display = 'none';
 		if (allBar) allBar.style.display = 'none';
-        if (btnMain) btnMain.classList.add('active');
+        if (btnSplit) btnSplit.classList.add('active');
         if (btnAll) btnAll.classList.remove('active');
     }
 }
