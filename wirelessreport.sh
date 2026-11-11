@@ -3037,7 +3037,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 <button class="button-tables" onclick="rssiHistory(this)">RSSI History ⇵</button>
                                 <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             </div>
-                    </div>
+                        </div>
                     <div class="grid-container">
                         <div id="splitView">
                             <div id="mainCol" class="report-column">
