@@ -1539,7 +1539,6 @@ do_rotate_theme() {
     else
         echo "THEME=\"$TM\"" >> "$CONFIG"
     fi
-    menu_vars
 }
 
 do_rssi_history() {
@@ -1553,6 +1552,55 @@ do_rssi_history() {
         sed -i "s|^RS_HIST=.*|RS_HIST=\"$RS_HIST\"|" "$CONFIG"
     else
         echo "RS_HIST=\"$RS_HIST\"" >> "$CONFIG"
+    fi
+}
+
+do_runtime_tracking() {
+    local current_state="${RTIME:-1}"
+    if [ "$current_state" = "1" ]; then
+        NEW_RTIME="0"
+        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+    else
+        NEW_RTIME="1"
+    fi
+    if grep -q "^RTIME=" "$CONFIG"; then
+        sed -i "s|^RTIME=.*|RTIME=\"$NEW_RTIME\"|" "$CONFIG"
+    else
+        echo "RTIME=\"$NEW_RTIME\"" >> "$CONFIG"
+    fi
+    if [ "$NEW_RTIME" = "0" ]; then
+        if grep -q "^RTIME_LOG=" "$CONFIG"; then
+            sed -i "s|^RTIME_LOG=.*|RTIME_LOG=\"0\"|" "$CONFIG"
+        else
+            echo "RTIME_LOG=\"0\"" >> "$CONFIG"
+        fi
+        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+    fi
+}
+
+do_runtime_logging() {
+    local current_log="${RTIME_LOG:-0}"
+    if [ "$current_log" = "1" ]; then
+        NEW_LOG="0"
+        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+    else
+        NEW_LOG="1"
+        [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
+        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+        printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
+        chmod +x "$SE_FILE"
+    fi
+    if grep -q "^RTIME_LOG=" "$CONFIG"; then
+        sed -i "s|^RTIME_LOG=.*|RTIME_LOG=\"$NEW_LOG\"|" "$CONFIG"
+    else
+        echo "RTIME_LOG=\"$NEW_LOG\"" >> "$CONFIG"
+    fi
+    if [ "$NEW_LOG" = "1" ] && [ "${RTIME:-1}" != "1" ]; then
+        if grep -q "^RTIME=" "$CONFIG"; then
+            sed -i "s|^RTIME=.*|RTIME=\"1\"|" "$CONFIG"
+        else
+            echo "RTIME=\"1\"" >> "$CONFIG"
+        fi
     fi
 }
 
@@ -3028,9 +3076,9 @@ cat <<HTML >> "$WEB_PAGE"
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">Options ⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
+                                <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime Tracking ☰</button>
                                 <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes ⟳</button>
                                 <button class="button-tables" onclick="rssiHistory(this)">RSSI History ⇵</button>
-                                <!-- <button class="button-tables" onclick="alert('Extra Button 3 clicked!')">Extra Option 3</button> -->
                                 <div class="update-tooltip" style="display:inline-block; position:relative;">
                                     <button class="button-tables" onclick="triggerUpdate(this)">Update ↻</button>
                                     <span class="update-box">$HOVER_TEXT</span>
@@ -6169,6 +6217,43 @@ function rssiHistory(btn) {
     });
 }
 
+function runtimeTrackingweb(btn) {
+    if (btn) {
+        btn.innerText = "Toggling On/Off...";
+        btn.classList.add('refresh-pulse');
+    }
+
+    fetch('/apply.cgi', {
+        method: 'POST',
+        body: 'action_mode=apply&rc_service=start_wireless_runtimetracking&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+    })
+    .then(function() {
+        localStorage.removeItem('wirelessReportRuntimeStats');
+        var wrapper = document.querySelector('.button-refresh');
+        var trgBtn = document.querySelector('.button-trigger');
+        if (wrapper) wrapper.style.removeProperty('--avg-text');
+        if (trgBtn) trgBtn.style.removeProperty('--highlow-text');
+        setTimeout(function() {
+            if (typeof triggerRefresh === 'function') {
+                triggerRefresh();
+            } else {
+                window.location.reload();
+            }
+            if (btn) {
+                btn.innerText = "Runtime Tracking ☰";
+                btn.classList.remove('refresh-pulse');
+            }
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Runtime tracking failed:", err);
+        if (btn) {
+            btn.innerText = "Runtime Tracking ☰";
+            btn.classList.remove('refresh-pulse');
+        }
+    });
+}
+
 async function triggerRefresh() {
     if (isRefreshing) return;
     isRefreshing = true;
@@ -6615,6 +6700,11 @@ case "$1" in
         ;;
     *rssihistory)
         do_rssi_history
+        run_report
+        ;;
+    *runtimetracking)
+        do_runtime_tracking
+        do_runtime_logging
         run_report
         ;;
     *update)
