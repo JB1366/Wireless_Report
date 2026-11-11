@@ -1228,6 +1228,21 @@ set_theme() {
     done
 }
 
+do_rotate_theme() {
+    if grep -q 'THEME="ORIGINAL"' "$CONFIG"; then
+        TM="DARKMODE"
+    elif grep -q 'THEME="DARKMODE"' "$CONFIG"; then
+        TM="ASUS_WEBUI"
+    else
+        TM="ORIGINAL"
+    fi
+    if grep -q "^THEME=" "$CONFIG"; then
+        sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
+    else
+        echo "THEME=\"$TM\"" >> "$CONFIG"
+    fi
+}
+
 set_options() {
     while true; do
         show_header
@@ -1315,64 +1330,68 @@ set_runtime_tracking() {
         while true; do
             selection
             case "$choice" in
-                1)
-                    case "$RTIME" in
-                        1)
-                            NEW_RTIME="0"
-                            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-                            ;;
-                        *)
-                            NEW_RTIME="1" ;;
-                    esac
-                    if grep -q "RTIME=" "$CONFIG"; then
-                        sed -i "s/RTIME=.*/RTIME=\"$NEW_RTIME\"/" "$CONFIG"
-                    else
-                        echo "RTIME=\"$NEW_RTIME\"" >> "$CONFIG"
-                    fi
-                    if [ "$NEW_RTIME" = "0" ]; then
-                        if grep -q "RTIME_LOG=" "$CONFIG"; then
-                            sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"0\"/" "$CONFIG"
-                        else
-                            echo "RTIME_LOG=\"0\"" >> "$CONFIG"
-                        fi
-                    fi
-                    ;;
-                2)
-                    case "$RTIME_LOG" in
-                        1)
-                            NEW_LOG="0"
-                            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-                            ;;
-                        *)
-                            NEW_LOG="1"
-                            [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
-                            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-                            printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
-                            chmod +x "$SE_FILE"
-                            ;;
-                    esac
-                    if grep -q "RTIME_LOG=" "$CONFIG"; then
-                        sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$NEW_LOG\"/" "$CONFIG"
-                    else
-                        echo "RTIME_LOG=\"$NEW_LOG\"" >> "$CONFIG"
-                    fi
-                    if [ "$RTIME" != "1" ]; then
-                        NEW_RTIME="1"
-                        if grep -q "RTIME=" "$CONFIG"; then
-                            sed -i "s/RTIME=.*/RTIME=\"1\"/" "$CONFIG"
-                        else
-                            echo "RTIME=\"1\"" >> "$CONFIG"
-                        fi
-                    fi
-                    ;;
-                *)
-                    freeze 2
-                    continue ;;
+                1) do_runtime_tracking ;;
+                2) do_runtime_logging;;
+                *) freeze 2; continue ;;
             esac
             break
         done
         run_report
     done
+}
+
+do_runtime_tracking() {
+    RTIME=${RTIME:-1}
+    case "$RTIME" in
+        1)
+            NEW_RTIME="0"
+            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+            ;;
+        *)
+            NEW_RTIME="1" ;;
+    esac
+    if grep -q "RTIME=" "$CONFIG"; then
+        sed -i "s/RTIME=.*/RTIME=\"$NEW_RTIME\"/" "$CONFIG"
+    else
+        echo "RTIME=\"$NEW_RTIME\"" >> "$CONFIG"
+    fi
+    if [ "$NEW_RTIME" = "0" ]; then
+        if grep -q "RTIME_LOG=" "$CONFIG"; then
+            sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"0\"/" "$CONFIG"
+        else
+            echo "RTIME_LOG=\"0\"" >> "$CONFIG"
+        fi
+    fi
+}
+
+do_runtime_logging() {
+    RTIME_LOG=${RTIME_LOG:-0}
+    case "$RTIME_LOG" in
+        1)
+            NEW_LOG="0"
+            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+            ;;
+        *)
+            NEW_LOG="1"
+            [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
+            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
+            printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
+            chmod +x "$SE_FILE"
+            ;;
+    esac
+    if grep -q "RTIME_LOG=" "$CONFIG"; then
+        sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$NEW_LOG\"/" "$CONFIG"
+    else
+        echo "RTIME_LOG=\"$NEW_LOG\"" >> "$CONFIG"
+    fi
+    if [ "$RTIME" != "1" ]; then
+        NEW_RTIME="1"
+        if grep -q "RTIME=" "$CONFIG"; then
+            sed -i "s/RTIME=.*/RTIME=\"1\"/" "$CONFIG"
+        else
+            echo "RTIME=\"1\"" >> "$CONFIG"
+        fi
+    fi
 }
 
 set_ip_padding() {
@@ -1470,6 +1489,20 @@ set_rssi_tooltip() {
     unset CUR_RS_HIST CUR_ENTRIES CUR_DATE
 }
 
+do_rssi_history() {
+    local current_state="${RS_HIST:-0}"
+    if [ "$current_state" = "1" ]; then
+        RS_HIST="0"
+    else
+        RS_HIST="1"
+    fi
+    if grep -q "^RS_HIST=" "$CONFIG"; then
+        sed -i "s|^RS_HIST=.*|RS_HIST=\"$RS_HIST\"|" "$CONFIG"
+    else
+        echo "RS_HIST=\"$RS_HIST\"" >> "$CONFIG"
+    fi
+}
+
 set_border_color() {
     echo -e "\n$B_COLOR Select Logo/Menu Border Color:"
     get_hex_to_ansi
@@ -1524,84 +1557,6 @@ set_github_branch() {
             pause
         fi
     done
-}
-
-do_rotate_theme() {
-    if grep -q 'THEME="ORIGINAL"' "$CONFIG"; then
-        TM="DARKMODE"
-    elif grep -q 'THEME="DARKMODE"' "$CONFIG"; then
-        TM="ASUS_WEBUI"
-    else
-        TM="ORIGINAL"
-    fi
-    if grep -q "^THEME=" "$CONFIG"; then
-        sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
-    else
-        echo "THEME=\"$TM\"" >> "$CONFIG"
-    fi
-}
-
-do_rssi_history() {
-    local current_state="${RS_HIST:-0}"
-    if [ "$current_state" = "1" ]; then
-        RS_HIST="0"
-    else
-        RS_HIST="1"
-    fi
-    if grep -q "^RS_HIST=" "$CONFIG"; then
-        sed -i "s|^RS_HIST=.*|RS_HIST=\"$RS_HIST\"|" "$CONFIG"
-    else
-        echo "RS_HIST=\"$RS_HIST\"" >> "$CONFIG"
-    fi
-}
-
-do_runtime_tracking() {
-    local current_state="${RTIME:-1}"
-    if [ "$current_state" = "1" ]; then
-        NEW_RTIME="0"
-        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-    else
-        NEW_RTIME="1"
-    fi
-    if grep -q "^RTIME=" "$CONFIG"; then
-        sed -i "s|^RTIME=.*|RTIME=\"$NEW_RTIME\"|" "$CONFIG"
-    else
-        echo "RTIME=\"$NEW_RTIME\"" >> "$CONFIG"
-    fi
-    if [ "$NEW_RTIME" = "0" ]; then
-        if grep -q "^RTIME_LOG=" "$CONFIG"; then
-            sed -i "s|^RTIME_LOG=.*|RTIME_LOG=\"0\"|" "$CONFIG"
-        else
-            echo "RTIME_LOG=\"0\"" >> "$CONFIG"
-        fi
-        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-    fi
-}
-
-do_runtime_logging() {
-    local current_log="${RTIME_LOG:-0}"
-    if [ "$current_log" = "1" ]; then
-        NEW_LOG="0"
-        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-    else
-        NEW_LOG="1"
-        [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
-        sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-        printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
-        chmod +x "$SE_FILE"
-    fi
-    if grep -q "^RTIME_LOG=" "$CONFIG"; then
-        sed -i "s|^RTIME_LOG=.*|RTIME_LOG=\"$NEW_LOG\"|" "$CONFIG"
-    else
-        echo "RTIME_LOG=\"$NEW_LOG\"" >> "$CONFIG"
-    fi
-    if [ "$NEW_LOG" = "1" ] && [ "${RTIME:-1}" != "1" ]; then
-        if grep -q "^RTIME=" "$CONFIG"; then
-            sed -i "s|^RTIME=.*|RTIME=\"1\"|" "$CONFIG"
-        else
-            echo "RTIME=\"1\"" >> "$CONFIG"
-        fi
-    fi
 }
 
 go_developer() {
@@ -6681,18 +6636,21 @@ nvram set wirelessreport_gen="$WR_GENERATION" >/dev/null 2>&1
 }
 
 case "$1" in
+    amtmupdate)
+		shift
+        ScriptUpdateFromAMTM "$@"
+        exit "$?"
+        ;;
+    inject)
+        inject_menu
+        ;;
     install)
         get_modelid_fw
         menu_time_color
         install_menu
         ;;
-    inject)
-        inject_menu
-        ;;
-    amtmupdate)
-		shift
-        ScriptUpdateFromAMTM "$@"
-        exit "$?"
+    service_event)
+        runtime_syslog "$@"
         ;;
 	*rotatetheme)
         do_rotate_theme
@@ -6709,9 +6667,6 @@ case "$1" in
         ;;
     *update)
         do_webcheck
-        ;;
-    service_event)
-        runtime_syslog "$@"
         ;;
     *)
 		run_report
