@@ -1542,6 +1542,20 @@ do_rotate_theme() {
     menu_vars
 }
 
+do_rssi_history() {
+    local current_state="${RS_HIST:-0}"
+    if [ "$current_state" = "1" ]; then
+        RS_HIST="0"
+    else
+        RS_HIST="1"
+    fi
+    if grep -q "^RS_HIST=" "$CONFIG"; then
+        sed -i "s|^RS_HIST=.*|RS_HIST=\"$RS_HIST\"|" "$CONFIG"
+    else
+        echo "RS_HIST=\"$RS_HIST\"" >> "$CONFIG"
+    fi
+}
+
 go_developer() {
      while true; do
         show_header; get_usb
@@ -3015,7 +3029,7 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
                                 <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes ⟳</button>
-                                <!-- <button class="button-tables" onclick="alert('Extra Button 2 clicked!')">Extra Option 2</button> -->
+                                <button class="button-tables" onclick="rssiHistory(this)">RSSI History ⇵</button>
                                 <!-- <button class="button-tables" onclick="alert('Extra Button 3 clicked!')">Extra Option 3</button> -->
                                 <div class="update-tooltip" style="display:inline-block; position:relative;">
                                     <button class="button-tables" onclick="triggerUpdate(this)">Update ↻</button>
@@ -6125,6 +6139,36 @@ function rotateThemes(btn) {
     });
 }
 
+function rssiHistory(btn) {
+    if (btn) {
+        btn.innerText = "Toggling On/Off...";
+        btn.classList.add('refresh-pulse');
+    }
+
+    fetch('/apply.cgi', {
+        method: 'POST',
+        body: 'action_mode=apply&rc_service=start_wireless_rssihistory&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+    })
+    .then(function() {
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+            var key = localStorage.key(i);
+            if (key && (key.toLowerCase().includes('rssi') || key.toLowerCase().includes('history'))) {
+                localStorage.removeItem(key);
+            }
+        }
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("RSSI history failed:", err);
+        if (btn) {
+            btn.innerText = "RSSI History ⇵";
+            btn.classList.remove('refresh-pulse');
+        }
+    });
+}
+
 async function triggerRefresh() {
     if (isRefreshing) return;
     isRefreshing = true;
@@ -6567,6 +6611,10 @@ case "$1" in
         ;;
 	*rotatetheme)
         do_rotate_theme
+        run_report
+        ;;
+    *rssihistory)
+        do_rssi_history
         run_report
         ;;
     *update)
