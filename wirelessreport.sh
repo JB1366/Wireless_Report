@@ -3029,7 +3029,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 <button class="button-tables $UPDATE_TITLE" onclick="triggerUpdate(this)">Update ↻</button>
                                 <span class="update-box">$HOVER_TEXT</span>
                             </div>
-                            <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">Options ⚙</button>
+                            <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
                                 <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime Tracking ☰</button>
