@@ -132,16 +132,18 @@ check_version() {
         fi
     fi
     case "$mode" in
-        header_box)
+        update_box)
+            GH="<span style='color: #0096ff;'>"
             case "$STATE" in
-                OFFLINE)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Github Offline or Unreachable <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV [Offline]"; HEADER_TITLE="header-title" ;;
-                OUTDATED)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> New Version v$REMOTE_VERSION available <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV [$REMOTE_VERSION]"; HEADER_TITLE="header-title2" ;;
-                HASH_DIFF)    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Hash Update available <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV [Hash]"; HEADER_TITLE="header-title2" ;;
+                OFFLINE)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable</span> <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV [Offline]"; UPDATE_TITLE="update-title" ;;
+                OUTDATED)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version</span> v$REMOTE_VERSION ${GH}available</span>
+                              <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV [$REMOTE_VERSION]"; UPDATE_TITLE="update-title2" ;;
+                HASH_DIFF)    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available</span> <br> Last Update: $UPDATE_TIME"
+                              VERSION_HASH="$DEV [Hash]"; UPDATE_TITLE="update-title2" ;;
                 UP_TO_DATE|*) HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV"; HEADER_TITLE="header-title" ;;
+                              VERSION_HASH="$DEV"; UPDATE_TITLE="update-title" ;;
             esac
             ;;
         do_install)
@@ -1936,7 +1938,7 @@ done
 
 get_theme
 
-check_version header_box
+check_version update_box
 case "$STATE" in
     OUTDATED|HASH_DIFF) TRIGGER="triggerUpdate(this, 'Updating...')" ;;
     *)                  TRIGGER="triggerUpdate(this, 'Checking...')" ;;
@@ -2002,16 +2004,12 @@ cat <<HTML >> "$WEB_PAGE"
         margin: 10px 0;
     }
 
-    .header-title2 {
-        display: inline-block;
-        text-align: center;
-        color: #0096ff;
-        margin: 0;
-        font-size: 24px;
+    .update-title {
         font-weight: bold;
-        position: static;
-        width: 100%;
-        margin: 10px 0;
+    }
+
+    .update-title2 {
+        font-weight: bold;
         animation: pulse-twice 1.2s ease-in-out 2;
     }
 
@@ -3003,7 +3001,7 @@ cat <<HTML >> "$WEB_PAGE"
                 <div id="tabMenu" class="submenuBlock"></div>
                 <div id="wifiReportContainer">
                     <div class="top-header">
-                        <h1 class="$HEADER_TITLE">WIRELESS REPORT</h1>
+                        <h1 class="header-title">WIRELESS REPORT</h1>
                         <span id="liveClock" class="live-time"></span>
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
                         <div class="top-buttons">
@@ -3026,18 +3024,18 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                             <button id="btnMain" class="button-tables active" onclick="switchTab('split')">Main View ★</button>
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All Devices ❖</button>
-                            <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
+                            <div class="update-tooltip" style="display:inline-block; position:relative;">
+                                <button class="button-tables $UPDATE_TITLE" onclick="triggerUpdate(this)">Update ↻</button>
+                                <span class="update-box">$HOVER_TEXT</span>
+                            </div>
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">Options ⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
                                 <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime Tracking ☰</button>
                                 <button class="button-tables" onclick="rotateThemes(this)">Rotate Themes ⟳</button>
                                 <button class="button-tables" onclick="rssiHistory(this)">RSSI History ⇵</button>
-                                <div class="update-tooltip" style="display:inline-block; position:relative;">
-                                    <button class="button-tables" onclick="triggerUpdate(this)">Update ↻</button>
-                                    <span class="update-box">$HOVER_TEXT</span>
-                                </div>
+                                <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
                             </div>
                     </div>
                     <div class="grid-container">
