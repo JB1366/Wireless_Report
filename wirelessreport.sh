@@ -6087,7 +6087,7 @@ function triggerUpdate(btn, actionText) {
                 window.location.reload();
             } else {
                 if (btn) {
-                    btn.innerText = "Up to Date";
+                    btn.innerText = "Up to Date ↻";
                     btn.classList.remove('refresh-pulse');
                     setTimeout(() => { btn.innerText = "Update ↻"; }, 5000);
                 }
