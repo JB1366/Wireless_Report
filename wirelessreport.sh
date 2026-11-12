@@ -195,6 +195,7 @@ version_compare() {
 menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     if [ "$RR" = "1" ]; then RR=""; run_report; fi
+
     menu_buffer=""; MB="61"; echo -e "$B_COLOR"
 
     MM="$B_COLOR$CM$NC"
@@ -1219,25 +1220,14 @@ set_theme() {
                 3) TM="ASUS_WEBUI" ;;
                 *) freeze 2; continue ;;
             esac
-            if grep -q "^THEME=" "$CONFIG"; then
-                sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
-            else
-                echo "THEME=\"$TM\"" >> "$CONFIG"
-            fi
+            do_change_theme
             break
         done
         run_report
     done
 }
 
-do_rotate_theme() {
-    if grep -q 'THEME="ORIGINAL"' "$CONFIG"; then
-        TM="DARKMODE"
-    elif grep -q 'THEME="DARKMODE"' "$CONFIG"; then
-        TM="ASUS_WEBUI"
-    else
-        TM="ORIGINAL"
-    fi
+do_change_theme() {
     if grep -q "^THEME=" "$CONFIG"; then
         sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
     else
@@ -1337,7 +1327,6 @@ set_runtime_tracking() {
 }
 
 do_runtime_tracking() {
-    RTIME=${RTIME:-1}
     case "$RTIME" in
         1)
             NEW_RTIME="0"
@@ -1361,7 +1350,6 @@ do_runtime_tracking() {
 }
 
 do_runtime_logging() {
-    RTIME_LOG=${RTIME_LOG:-0}
     case "$RTIME_LOG" in
         1)
             NEW_LOG="0"
@@ -1413,13 +1401,17 @@ set_ip_padding() {
             esac
             break
         done
-        if grep -q "IPPAD=" "$CONFIG"; then
-            sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
-        else
-            echo "IPPAD=\"$NEW_PAD\"" >> "$CONFIG"
-        fi
+        do_ippadding
         run_report
     done
+}
+
+do_ippadding() {
+    if grep -q "IPPAD=" "$CONFIG"; then
+        sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
+    else
+        echo "IPPAD=\"$NEW_PAD\"" >> "$CONFIG"
+    fi
 }
 
 do_host_color() {
@@ -1495,8 +1487,7 @@ set_rssi_tooltip() {
 }
 
 do_rssi_history() {
-    local current_state="${RS_HIST:-0}"
-    if [ "$current_state" = "1" ]; then
+    if [ "$RS_HIST" = "1" ]; then
         RS_HIST="0"
     else
         RS_HIST="1"
@@ -2352,6 +2343,20 @@ cat <<HTML >> "$WEB_PAGE"
         background: rgba(0, 150, 255, 0.15);
     }
 
+    #themeSelect option,
+    #webPadding option {
+        background-color: #000000;
+        color: #0096ff;
+        font-weight: bold;
+    }
+
+    #themeSelect:focus,
+    #webPadding:focus {
+        outline: none;
+        border-color: white; /* Added missing semicolon here */
+        box-shadow: none;
+    }
+
     #refresh-option {
         color: #ffffff;
         background: transparent;
@@ -3035,11 +3040,22 @@ cat <<HTML >> "$WEB_PAGE"
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
-                                <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime Tracking ☰</button>
-                                <button class="button-tables" onclick="rotateThemes(this)">Theme Change ⟳</button>
-                                <button class="button-tables" onclick="rssiHistory(this)">RSSI Tooltips ⇵</button>
+                                <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime ☰</button>
                                 <button class="button-tables" onclick="hostColor(this)">Hostname ▤</button>
-                                <button class="button-tables" onclick="openPopout()" style="">Popout View ◫</button>
+                                <select id="webPadding" onchange="ipPadding()" class="button-tables">
+                                    <option selected disabled>IP Padding ⇥</option>
+                                    <option value="1">Last 2 Octets</option>
+                                    <option value="2">Last Octet</option>
+                                    <option value="3">Disabled</option>
+                                </select>
+                                <select id="themeSelect" onchange="webThemes()" class="button-tables">
+                                    <option selected disabled>Themes ⟳</option>
+                                    <option value="1">Original</option>
+                                    <option value="2">Darkmode</option>
+                                    <option value="3">AsusUI</option>
+                                </select>
+                                <button class="button-tables" onclick="rssiHistory(this)">RSSI Tooltips ⇵</button>
+                                <button class="button-tables" onclick="openPopout()">Popout View ◫</button>
                             </div>
                         </div>
                     <div class="grid-container">
@@ -6120,25 +6136,82 @@ function toggleOptionsRow() {
     }
 }
 
-function rotateThemes(btn) {
-    if (btn) {
-        btn.innerText = "Switching...";
-        btn.classList.add('refresh-pulse');
+function ipPadding() {
+    let selectElem = document.getElementById('webPadding');
+    if (!selectElem) return;
+    let choice = selectElem.value;
+    if (choice !== "1" && choice !== "2" && choice !== "3") {
+        return;
+    }
+    selectElem.classList.add('refresh-pulse');
+
+    let fetchCall;
+    if (choice === "1") {
+        fetchCall = fetch('/apply.cgi', {
+            method: 'POST',
+            body: 'action_mode=apply&rc_service=start_wireless_ippadding1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        });
+    } else if (choice === "2") {
+        fetchCall = fetch('/apply.cgi', {
+            method: 'POST',
+            body: 'action_mode=apply&rc_service=start_wireless_ippadding2&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        });
+    } else if (choice === "3") {
+        fetchCall = fetch('/apply.cgi', {
+            method: 'POST',
+            body: 'action_mode=apply&rc_service=start_wireless_ippadding3&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        });
     }
 
-    fetch('/apply.cgi', {
-        method: 'POST',
-        body: 'action_mode=apply&rc_service=start_wireless_rotatetheme&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-    })
+    fetchCall
     .then(function() {
         setTimeout(function() {
             window.location.reload();
         }, 1000);
     })
     .catch(function(err) {
-        console.error("Theme rotation failed:", err);
+        console.error("IP Padding failed:", err);
+        selectElem.classList.remove('refresh-pulse');
+    });
+}
+
+function webThemes() {
+    let selectElem = document.getElementById('themeSelect');
+    if (!selectElem) return;
+    let choice = selectElem.value;
+    if (choice !== "1" && choice !== "2" && choice !== "3") {
+        return;
+    }
+    selectElem.classList.add('refresh-pulse');
+
+    let fetchCall;
+    if (choice === "1") {
+        fetchCall = fetch('/apply.cgi', {
+            method: 'POST',
+            body: 'action_mode=apply&rc_service=start_wireless_theme1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        });
+    } else if (choice === "2") {
+        fetchCall = fetch('/apply.cgi', {
+            method: 'POST',
+            body: 'action_mode=apply&rc_service=start_wireless_theme2&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        });
+    } else if (choice === "3") {
+        fetchCall = fetch('/apply.cgi', {
+            method: 'POST',
+            body: 'action_mode=apply&rc_service=start_wireless_theme3&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
+        });
+    }
+
+    fetchCall
+    then(function() {
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Web Themes failed:", err);
         if (btn) {
-            btn.innerText = "Theme Change ⟳";
+            btn.innerText = "Themes ⟳";
             btn.classList.remove('refresh-pulse');
         }
     });
@@ -6686,8 +6759,23 @@ case "$1" in
         do_host_color
         run_report
         ;;
+    *ippadding1)
+        NEW_PAD="2"
+        do_ippadding
+        run_report
+        ;;
+    *ippadding2)
+        NEW_PAD="1"
+        do_ippadding
+        run_report
+        ;;
+    *ippadding3)
+        NEW_PAD="0"
+        do_ippadding
+        run_report
+        ;;
     *rotatetheme)
-        do_rotate_theme
+        do_change_theme
         run_report
         ;;
     *rssihistory)
@@ -6697,6 +6785,21 @@ case "$1" in
     *runtimetracking)
         do_runtime_tracking
         do_runtime_logging
+        run_report
+        ;;
+    *theme1)
+        TM="ORIGINAL"
+        do_change_theme
+        run_report
+        ;;
+    *theme2)
+        TM="DARKMODE"
+        do_change_theme
+        run_report
+        ;;
+    *theme3)
+        TM="ASUS_WEBUI"
+        do_change_theme
         run_report
         ;;
     *update)
