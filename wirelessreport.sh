@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.4"
+SCRIPT_VERSION="3.6.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -6135,34 +6135,26 @@ function toggleOptionsRow() {
     }
 }
 
+function applyService(service) {
+    const body = 'action_mode=apply&rc_service=' + service +
+                 '&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE';
+
+    return fetch('/apply.cgi', {
+        method: 'POST',
+        body: body
+    });
+    // applyService('start_wireless_service')
+}
+
 function ipPadding() {
-    let selectElem = document.getElementById('webPadding');
+    const selectElem = document.getElementById('webPadding');
     if (!selectElem) return;
-    let choice = selectElem.value;
-    if (choice !== "1" && choice !== "2" && choice !== "3") {
-        return;
-    }
+    const choice = selectElem.value;
+    if (choice !== "1" && choice !== "2" && choice !== "3") return;
     selectElem.classList.add('refresh-pulse');
 
-    let fetchCall;
-    if (choice === "1") {
-        fetchCall = fetch('/apply.cgi', {
-            method: 'POST',
-            body: 'action_mode=apply&rc_service=start_wireless_ippadding1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-        });
-    } else if (choice === "2") {
-        fetchCall = fetch('/apply.cgi', {
-            method: 'POST',
-            body: 'action_mode=apply&rc_service=start_wireless_ippadding2&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-        });
-    } else if (choice === "3") {
-        fetchCall = fetch('/apply.cgi', {
-            method: 'POST',
-            body: 'action_mode=apply&rc_service=start_wireless_ippadding3&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-        });
-    }
+    applyService('start_wireless_ippadding' + choice)
 
-    fetchCall
     .then(function() {
         setTimeout(function() {
             window.location.reload();
@@ -6175,33 +6167,14 @@ function ipPadding() {
 }
 
 function webThemes() {
-    let selectElem = document.getElementById('themeSelect');
+    const selectElem = document.getElementById('themeSelect');
     if (!selectElem) return;
-    let choice = selectElem.value;
-    if (choice !== "1" && choice !== "2" && choice !== "3") {
-        return;
-    }
+    const choice = selectElem.value;
+    if (choice !== '1' && choice !== '2' && choice !== '3') return;
     selectElem.classList.add('refresh-pulse');
 
-    let fetchCall;
-    if (choice === "1") {
-        fetchCall = fetch('/apply.cgi', {
-            method: 'POST',
-            body: 'action_mode=apply&rc_service=start_wireless_theme1&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-        });
-    } else if (choice === "2") {
-        fetchCall = fetch('/apply.cgi', {
-            method: 'POST',
-            body: 'action_mode=apply&rc_service=start_wireless_theme2&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-        });
-    } else if (choice === "3") {
-        fetchCall = fetch('/apply.cgi', {
-            method: 'POST',
-            body: 'action_mode=apply&rc_service=start_wireless_theme3&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-        });
-    }
+    applyService('start_wireless_theme' + choice)
 
-    fetchCall
     then(function() {
         setTimeout(function() {
             window.location.reload();
@@ -6222,10 +6195,8 @@ function rssiHistory(btn) {
         btn.classList.add('refresh-pulse');
     }
 
-    fetch('/apply.cgi', {
-        method: 'POST',
-        body: 'action_mode=apply&rc_service=start_wireless_rssihistory&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-    })
+    applyService('start_wireless_rssihistory')
+
     .then(function() {
         for (var i = localStorage.length - 1; i >= 0; i--) {
             var key = localStorage.key(i);
@@ -6252,10 +6223,8 @@ function runtimeTrackingweb(btn) {
         btn.classList.add('refresh-pulse');
     }
 
-    fetch('/apply.cgi', {
-        method: 'POST',
-        body: 'action_mode=apply&rc_service=start_wireless_runtimetracking&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-    })
+    applyService('start_wireless_runtimetracking')
+
     .then(function() {
         localStorage.removeItem('wirelessReportRuntimeStats');
         var wrapper = document.querySelector('.button-refresh');
@@ -6289,10 +6258,8 @@ function hostColor(btn) {
         btn.classList.add('refresh-pulse');
     }
 
-    fetch('/apply.cgi', {
-        method: 'POST',
-        body: 'action_mode=apply&rc_service=start_wireless_hostcolor&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-    })
+    applyService('start_wireless_hostcolor')
+
     .then(function() {
         setTimeout(function() {
             window.location.reload();
