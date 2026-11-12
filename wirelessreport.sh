@@ -6089,28 +6089,15 @@ function wrLogRuntimeToSyslog(currentSec, avgSec, lowSec, highSec, count) {
     });
 }
 
-function triggerUpdate(btn, actionText) {
-    if (btn) {
-        btn.innerText = actionText || "Checking...";
-        btn.classList.add('refresh-pulse');
-    }
-    fetch('/apply.cgi', {
+function applyService(service) {
+    const body = 'action_mode=apply&rc_service=' + service +
+                 '&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE';
+
+    return fetch('/apply.cgi', {
         method: 'POST',
-        body: 'action_mode=apply&rc_service=start_wireless_update&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE'
-    })
-    .then(response => {
-        setTimeout(function() {
-            if (window._updateWasPerformed) {
-                window.location.reload();
-            } else {
-                if (btn) {
-                    btn.innerText = "Up to Date ↻";
-                    btn.classList.remove('refresh-pulse');
-                    setTimeout(() => { btn.innerText = "Update ↻"; }, 5000);
-                }
-            }
-        }, 2000);
+        body: body
     });
+    // applyService('start_wireless_service')
 }
 
 let optionsTimeout = null;
@@ -6135,15 +6122,27 @@ function toggleOptionsRow() {
     }
 }
 
-function applyService(service) {
-    const body = 'action_mode=apply&rc_service=' + service +
-                 '&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE';
+function triggerUpdate(btn, actionText) {
+    if (btn) {
+        btn.innerText = actionText || "Checking...";
+        btn.classList.add('refresh-pulse');
+    }
 
-    return fetch('/apply.cgi', {
-        method: 'POST',
-        body: body
+    applyService('start_wireless_update')
+
+    .then(response => {
+        setTimeout(function() {
+            if (window._updateWasPerformed) {
+                window.location.reload();
+            } else {
+                if (btn) {
+                    btn.innerText = "Up to Date ↻";
+                    btn.classList.remove('refresh-pulse');
+                    setTimeout(() => { btn.innerText = "Update ↻"; }, 5000);
+                }
+            }
+        }, 2000);
     });
-    // applyService('start_wireless_service')
 }
 
 function ipPadding() {
