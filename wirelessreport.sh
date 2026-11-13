@@ -6080,7 +6080,7 @@ function applyService(service) {
         method: 'POST',
         body: body
     });
-    // applyService('start_report_service')
+    // applyService('start_wireless_service')
 }
 
 let optionsTimeout = null;
