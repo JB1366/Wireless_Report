@@ -2341,14 +2341,13 @@ cat <<HTML >> "$WEB_PAGE"
     #themeSelect option,
     #webPadding option {
         background-color: #000000;
-        color: #0096ff;
+        color: white;
         font-weight: bold;
     }
 
     #themeSelect:focus,
     #webPadding:focus {
         outline: none;
-        border-color: white;
         box-shadow: none;
     }
 
@@ -3051,13 +3050,13 @@ cat <<HTML >> "$WEB_PAGE"
                                 <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime ☰</button>
                                 <button class="button-tables" onclick="hostColor(this)">Hostname ▤</button>
                                 <select id="webPadding" onchange="ipPadding()" class="button-tables">
-                                    <option selected disabled>IP Padding ⇥</option>
+                                    <option selected disabled hidden>IP Padding ⇥</option>
                                     <option value="1">Last 2 Octets</option>
                                     <option value="2">Last Octet</option>
                                     <option value="3">Disabled</option>
                                 </select>
                                 <select id="themeSelect" onchange="webThemes()" class="button-tables">
-                                    <option selected disabled>Themes ⟳</option>
+                                    <option selected disabled hidden>Themes ⟳</option>
                                     <option value="1">Original</option>
                                     <option value="2">Darkmode</option>
                                     <option value="3">AsusUI</option>
