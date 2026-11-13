@@ -2703,6 +2703,19 @@ cat <<HTML >> "$WEB_PAGE"
         content: "" !important;
     }
 
+    .footer-link {
+        color: #b0b0b0;
+        text-decoration: none;
+        transition: color 0.2s ease, text-shadow 0.2s ease;
+    }
+
+    .footer-link:hover,
+    .footer-link:focus,
+    .footer-link:active {
+        color: #3377ff;
+        text-shadow: 0 0 5px rgba(51, 119, 255, 0.4);
+    }
+
     body.wr-wide-mode {
         overflow: hidden !important;
     }
@@ -3104,6 +3117,11 @@ cat <<HTML >> "$WEB_PAGE"
                                     </tfoot>
                                 </table>
                             </div>
+                        </div>
+                        <div style="display: flex; font-size: 10px; gap: 200px; align-items: center; margin-top: -8px;">
+                            <a href="https://github.com/JB1366/Wireless_Report" target="_blank" rel="noopener noreferrer" class="footer-link">Github Repository</a>
+                            <a href="https://www.paypal.com/paypalme/JB1366" target="_blank" rel="noopener noreferrer" class="footer-link">Donate Paypal</a>
+                            <a href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" class="footer-link">Wireless Report Forum</a>
                         </div>
                         <div id="allCol" class="report-column">
                             <div class="section-header">
