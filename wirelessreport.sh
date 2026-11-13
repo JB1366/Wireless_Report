@@ -1220,7 +1220,11 @@ set_theme() {
                 3) TM="ASUS_WEBUI" ;;
                 *) freeze 2; continue ;;
             esac
-            do_change_theme
+            if grep -q "^THEME=" "$CONFIG"; then
+                sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
+            else
+                echo "THEME=\"$TM\"" >> "$CONFIG"
+            fi
             break
         done
         run_report
@@ -1409,7 +1413,11 @@ set_ip_padding() {
             esac
             break
         done
-        do_ippadding
+        if grep -q "IPPAD=" "$CONFIG"; then
+            sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
+        else
+            echo "IPPAD=\"$NEW_PAD\"" >> "$CONFIG"
+        fi
         run_report
     done
 }
