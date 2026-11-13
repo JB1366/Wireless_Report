@@ -6698,10 +6698,6 @@ case "$1" in
     *logruntime*)
         do_logruntime "$1"
         ;;
-    *rotatetheme)
-        do_change_theme
-        run_report
-        ;;
     *rssihistory)
         do_rssi_history
         run_report
