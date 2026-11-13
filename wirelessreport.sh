@@ -6037,14 +6037,17 @@ if (typeof WR_CONFIG !== 'undefined') {
 }
 
 function applyService(service) {
+    const currentPage = window.location.pathname.replace(/^\//, '');
+
     const body = 'action_mode=apply&rc_service=' + service +
-                 '&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE';
+                 '&current_page=' + encodeURIComponent(currentPage) +
+                 '&next_page=' + encodeURIComponent(currentPage);
 
     return fetch('/apply.cgi', {
         method: 'POST',
         body: body
     });
-    // applyService('start_wireless_service')
+    // applyService('start_report_service')
 }
 
 let optionsTimeout = null;
