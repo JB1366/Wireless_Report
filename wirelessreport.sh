@@ -597,6 +597,7 @@ do_install() {
 check_updateSE() {
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     sed -i "\|restart:update_report1\b|d" "$SE_FILE" 2>/dev/null
+    sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
     if ! grep -q "start:wireless" "$SE_FILE"; then
         echo 'case "$1:$2" in start:wireless*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
     fi
@@ -1327,12 +1328,8 @@ set_runtime_tracking() {
 
 do_runtime_tracking() {
     case "$RTIME" in
-        1)
-            NEW_RTIME="0"
-            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-            ;;
-        *)
-            NEW_RTIME="1" ;;
+        1) NEW_RTIME="0" ;;
+        *) NEW_RTIME="1" ;;
     esac
     if grep -q "RTIME=" "$CONFIG"; then
         sed -i "s/RTIME=.*/RTIME=\"$NEW_RTIME\"/" "$CONFIG"
@@ -1350,17 +1347,8 @@ do_runtime_tracking() {
 
 do_runtime_logging() {
     case "$RTIME_LOG" in
-        1)
-            NEW_LOG="0"
-            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-            ;;
-        *)
-            NEW_LOG="1"
-            [ ! -f "$SE_FILE" ] && printf '#!/bin/sh\n' > "$SE_FILE"
-            sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-            printf '%s\n' 'case "$1:$2" in start:WirelessReportRuntime_*) '"$REPORT_SCRIPT"' service_event "$@" & ;; esac # Wireless Report Syslog' >> "$SE_FILE"
-            chmod +x "$SE_FILE"
-            ;;
+        1) NEW_LOG="0" ;;
+        *) NEW_LOG="1" ;;
     esac
     if grep -q "RTIME_LOG=" "$CONFIG"; then
         sed -i "s/RTIME_LOG=.*/RTIME_LOG=\"$NEW_LOG\"/" "$CONFIG"
@@ -1375,6 +1363,20 @@ do_runtime_logging() {
             echo "RTIME=\"1\"" >> "$CONFIG"
         fi
     fi
+}
+
+do_logruntime() {
+    local rest scantime avg min max count
+    rest=${1#wireless_logruntime_}
+    scantime=${rest%%_*}
+    rest=${rest#*_}
+    avg=${rest%%_*}
+    rest=${rest#*_}
+    min=${rest%%_*}
+    rest=${rest#*_}
+    max=${rest%%_*}
+    count=${rest#*_}
+    sys_log "Report completed in ${scantime}s. AVG: ${avg}s (L: ${min}s/H: ${max}s) over ${count} scans."
 }
 
 set_ip_padding() {
@@ -1848,35 +1850,6 @@ selection() {
         e|E) if [ "$use_e" = false ]; then goodbye; elif [ "$use_c" = false ]; then break 3; else break 2; fi ;;
         q|Q) goodbye ;;
         z|Z) if [ "$use_z" = true ]; then install_menu; fi ;;
-    esac
-}
-
-runtime_syslog() {
-    [ "$2" = "start" ] || return 0
-    [ "${RTIME:-1}" = "1" ] || return 0
-    [ "${RTIME_LOG:-0}" = "1" ] || return 0
-
-    case "$3" in
-        WirelessReportRuntime_*)
-            local payload old_ifs current_cs avg_cs low_cs high_cs count value
-            payload=${3#WirelessReportRuntime_}
-            old_ifs=$IFS
-            IFS='_'; set -- $payload; IFS=$old_ifs
-            [ "$#" -eq 5 ] || return 0
-
-            current_cs=$1; avg_cs=$2; low_cs=$3; high_cs=$4; count=$5
-            for value in "$current_cs" "$avg_cs" "$low_cs" "$high_cs" "$count"; do
-                case "$value" in ""|*[!0-9]*) return 0 ;; esac
-                [ "${#value}" -le 9 ] || return 0
-            done
-            local current avg low high
-            current=$(printf '%d.%02d' "$((current_cs / 100))" "$((current_cs % 100))")
-            avg=$(printf '%d.%02d' "$((avg_cs / 100))" "$((avg_cs % 100))")
-            low=$(printf '%d.%02d' "$((low_cs / 100))" "$((low_cs % 100))")
-            high=$(printf '%d.%02d' "$((high_cs / 100))" "$((high_cs % 100))")
-
-            sys_log "Report completed in ${current}s. AVG: ${avg}s (L: ${low}s/H: ${high}s) over ${count} scans."
-            ;;
     esac
 }
 
@@ -6063,32 +6036,6 @@ if (typeof WR_CONFIG !== 'undefined') {
     }
 }
 
-function wrLogRuntimeToSyslog(currentSec, avgSec, lowSec, highSec, count) {
-    if (typeof WR_CONFIG === 'undefined' || !WR_CONFIG.runtimeLog) return;
-
-    var eventName = 'WirelessReportRuntime_' +
-        Math.round(currentSec * 100) + '_' +
-        Math.round(avgSec * 100) + '_' +
-        Math.round(lowSec * 100) + '_' +
-        Math.round(highSec * 100) + '_' +
-        count;
-    var currentPage = window.location.pathname.replace(/^\//, '');
-    var body = 'action_mode=apply' +
-        '&action_script=' + encodeURIComponent('start_' + eventName) +
-        '&action_wait=0' +
-        '&current_page=' + encodeURIComponent(currentPage) +
-        '&next_page=' + encodeURIComponent(currentPage);
-
-    fetch('/start_apply.htm', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body
-    }).catch(function(e) {
-        console.debug('Wireless Report syslog event failed', e);
-    });
-}
-
 function applyService(service) {
     const body = 'action_mode=apply&rc_service=' + service +
                  '&current_page=$INSTALLED_PAGE&next_page=$INSTALLED_PAGE';
@@ -6251,6 +6198,18 @@ function runtimeTrackingweb(btn) {
     });
 }
 
+function LogRuntimeToSyslog(scantime, avg, min, max, count) {
+    // produces: wireless_logruntime_3.21_2.78_2.34_3.21_2
+    const svc = 'start_wireless_logruntime_' +
+                scantime.toFixed(2) + '_' +
+                avg.toFixed(2) + '_' +
+                min.toFixed(2) + '_' +
+                max.toFixed(2) + '_' +
+                count;
+    return applyService(svc);
+    // → rc_service=start_wireless_logruntime_...
+}
+
 function hostColor(btn) {
     if (btn) {
         btn.innerText = "Colored⇄Numbered...";
@@ -6304,7 +6263,7 @@ async function triggerRefresh() {
             stats.max = Math.max(stats.max, currentSec);
             localStorage.setItem('wirelessReportRuntimeStats', JSON.stringify(stats));
             var avg = stats.total / stats.count;
-            wrLogRuntimeToSyslog(currentSec, avg, stats.min, stats.max, stats.count);
+            LogRuntimeToSyslog(currentSec, avg, stats.min, stats.max, stats.count);
             var wrapper = document.querySelector('.button-refresh');
             if (wrapper) {
                 wrapper.style.setProperty('--avg-text', '"Avg: ' + avg.toFixed(2) + 's over ' + stats.count + ' scans"');
@@ -6717,9 +6676,6 @@ case "$1" in
         menu_time_color
         install_menu
         ;;
-    service_event)
-        runtime_syslog "$@"
-        ;;
 	*hostcolor)
         do_host_color
         run_report
@@ -6738,6 +6694,9 @@ case "$1" in
         NEW_PAD="0"
         do_ippadding
         run_report
+        ;;
+    *logruntime*)
+        do_logruntime "$1"
         ;;
     *rotatetheme)
         do_change_theme
