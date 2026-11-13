@@ -1228,6 +1228,13 @@ set_theme() {
 }
 
 do_change_theme() {
+    local num=${1##*theme}
+    case $num in
+        1) TM="ORIGINAL" ;;
+        2) TM="DARKMODE" ;;
+        3) TM="ASUS_WEBUI" ;;
+        *) return 1 ;;
+    esac
     if grep -q "^THEME=" "$CONFIG"; then
         sed -i "s/^THEME=.*/THEME=\"$TM\"/" "$CONFIG"
     else
@@ -1408,6 +1415,13 @@ set_ip_padding() {
 }
 
 do_ippadding() {
+    local num=${1##*ippadding}
+    case $num in
+        1) NEW_PAD="2" ;;
+        2) NEW_PAD="1" ;;
+        3) NEW_PAD="0" ;;
+        *) return 1 ;;
+    esac
     if grep -q "IPPAD=" "$CONFIG"; then
         sed -i "s/IPPAD=.*/IPPAD=\"$NEW_PAD\"/" "$CONFIG"
     else
@@ -6702,19 +6716,8 @@ case "$1" in
         do_host_color
         run_report
         ;;
-    *ippadding1)
-        NEW_PAD="2"
-        do_ippadding
-        run_report
-        ;;
-    *ippadding2)
-        NEW_PAD="1"
-        do_ippadding
-        run_report
-        ;;
-    *ippadding3)
-        NEW_PAD="0"
-        do_ippadding
+    *ippadding*)
+        do_ippadding "$1"
         run_report
         ;;
     *logruntime*)
@@ -6729,19 +6732,8 @@ case "$1" in
         do_runtime_logging
         run_report
         ;;
-    *theme1)
-        TM="ORIGINAL"
-        do_change_theme
-        run_report
-        ;;
-    *theme2)
-        TM="DARKMODE"
-        do_change_theme
-        run_report
-        ;;
-    *theme3)
-        TM="ASUS_WEBUI"
-        do_change_theme
+    *theme*)
+        do_change_theme "$1"
         run_report
         ;;
     *update)
