@@ -133,14 +133,14 @@ check_version() {
     fi
     case "$mode" in
         update_box)
-            GH="<span style='color: #0096ff;'>"
+            GH="<span style='color: #0096ff;'>"; SP="</span>"
             case "$STATE" in
-                OFFLINE)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable</span> <br> Last Update: $UPDATE_TIME"
+                OFFLINE)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable$SP <br> Last Update: $UPDATE_TIME"
                               VERSION_HASH="$DEV [Offline]"; UPDATE_TITLE="update-title" ;;
-                OUTDATED)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version</span> v$REMOTE_VERSION ${GH}available</span>
+                OUTDATED)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version$SP v$REMOTE_VERSION ${GH}available$SP
                               <br> Last Update: $UPDATE_TIME"
                               VERSION_HASH="$DEV [$REMOTE_VERSION]"; UPDATE_TITLE="update-title2" ;;
-                HASH_DIFF)    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available</span> <br> Last Update: $UPDATE_TIME"
+                HASH_DIFF)    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available$SP <br> Last Update: $UPDATE_TIME"
                               VERSION_HASH="$DEV [Hash]"; UPDATE_TITLE="update-title2" ;;
                 UP_TO_DATE|*) HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $UPDATE_TIME"
                               VERSION_HASH="$DEV"; UPDATE_TITLE="update-title" ;;
