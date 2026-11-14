@@ -6180,7 +6180,7 @@ function webThemes() {
 
 function rssiHistory(btn) {
     if (btn) {
-        btn.innerText = "Toggling On/Off...";
+        btn.innerText = "Toggling On/Off";
         btn.classList.add('refresh-pulse');
     }
 
@@ -6208,7 +6208,7 @@ function rssiHistory(btn) {
 
 function runtimeTrackingweb(btn) {
     if (btn) {
-        btn.innerText = "Toggling On/Off...";
+        btn.innerText = "Toggling On/Off";
         btn.classList.add('refresh-pulse');
     }
 
@@ -6255,7 +6255,7 @@ function LogRuntimeToSyslog(scantime, avg, min, max, count) {
 
 function hostColor(btn) {
     if (btn) {
-        btn.innerText = "Colored⇄Numbered...";
+        btn.innerText = "Colored⇄Numbered";
         btn.classList.add('refresh-pulse');
     }
 
