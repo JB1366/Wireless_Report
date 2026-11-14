@@ -6396,7 +6396,7 @@ function timeDate() {
         }, 1000);
     })
     .catch(function(err) {
-        console.error("Set Time/Date/Temp failed:", err);
+        console.error("Set Time & Date failed:", err);
         selectElem.classList.remove('refresh-pulse');
     });
 }
