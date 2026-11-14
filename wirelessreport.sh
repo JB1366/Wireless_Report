@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.5"
+SCRIPT_VERSION="3.6.6"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -3112,7 +3112,7 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                              <div id="tertiaryButtonRow" class="top-buttons-tertiary" style="display: none;">
                                 <select id="timeSelect" onchange="timeDate()" class="button-tables" data-status="$TM_STATUS">
-                                    <option selected disabled hidden>Set Time/Date/Temp ☰</option>
+                                    <option selected disabled hidden>Set Time & Date ☰</option>
                                     <option disabled>──── Military ────</option>
                                     <option value="1">$DATE_USA</option>
                                     <option value="2">$DATE_INTL</option>
