@@ -822,6 +822,22 @@ set_date_time() {
     done
 }
 
+do_timedate() {
+	local num=${1##*timedate}
+	case $num in
+		1) NEW_UNIT="USA" ;;
+		2) NEW_UNIT="INTL" ;;
+		3) NEW_UNIT="ISO" ;;
+		4) NEW_UNIT="USA1" ;;
+		5) NEW_UNIT="INTL1" ;;
+		6) NEW_UNIT="ISO1" ;;
+		*) return 1 ;;
+	esac
+	sed -i '/REPORT_UNIT=/d' "$CONFIG"
+	echo "REPORT_UNIT=\"$NEW_UNIT\"" >> "$CONFIG"
+	REPORT_UNIT="$NEW_UNIT"
+}
+
 set_device_nicknames() {
     while true; do
         show_header
@@ -1265,19 +1281,8 @@ set_options() {
         while true; do
             selection
             case "$choice" in
-                1)
-                    set_runtime_tracking ;;
-                2)
-                    if grep -q "BACKHAUL=" "$CONFIG"; then
-                        if [ "$BACKHAUL" = "0" ]; then
-                            sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
-                        else
-                            sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"
-                        fi
-                    else
-                        echo 'BACKHAUL="1"' >> "$CONFIG"
-                    fi
-                    ;;
+                1) set_runtime_tracking ;;
+                2) do_backhaul ;;
                 3)
                     while true; do
                         echo -e "\n (${GR}0$NC) disable      (${GR}15$NC)def      (${GR}1440$NC) max "
@@ -1296,15 +1301,10 @@ set_options() {
                     done
                     pause
                     ;;
-                4)
-                    set_ip_padding ;;
-                5)
-                    do_host_color ;;
-                6)
-                    set_rssi_tooltip ;;
-                *)
-                    freeze 2
-                    continue ;;
+                4) set_ip_padding ;;
+                5) do_host_color ;;
+                6) set_rssi_tooltip ;;
+                *) freeze 2; continue ;;
             esac
             break
         done
@@ -1335,6 +1335,18 @@ set_runtime_tracking() {
         done
         run_report
     done
+}
+
+do_backhaul() {
+    if grep -q "BACKHAUL=" "$CONFIG"; then
+        if [ "$BACKHAUL" = "0" ]; then
+            sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
+        else
+            sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"
+        fi
+    else
+        echo 'BACKHAUL="1"' >> "$CONFIG"
+    fi
 }
 
 do_runtime_tracking() {
@@ -1829,6 +1841,25 @@ get_theme() {
     esac
 }
 
+web_update_time() {
+    DATE_USA="$(date +'%b-%-d %-H:%M:%S')"
+    DATE_INTL="$(date +'%d-%b %-H:%M:%S')"
+    DATE_ISO="$(date +'%Y-%m-%d %H:%M:%S')"
+    DATE_USA1="$(date +'%b-%-d %-I:%M:%S %p')"
+    DATE_INTL1="$(date +'%d-%b %-I:%M:%S %p')"
+    DATE_ISO1="$(date +'%Y-%m-%d %-I:%M:%S %p')"
+
+    case "$REPORT_UNIT" in
+        1|USA)   TM_STATUS="$DATE_USA" ;;
+        2|INTL)  TM_STATUS="$DATE_INTL" ;;
+        3|ISO)   TM_STATUS="$DATE_ISO" ;;
+        4|USA1)  TM_STATUS="$DATE_USA1" ;;
+        5|INTL1) TM_STATUS="$DATE_INTL1" ;;
+        6|ISO1)  TM_STATUS="$DATE_ISO1" ;;
+        *)       TM_STATUS="Set Time/Date/Temp" ;;
+    esac
+}
+
 hasta_la_vista() {
 echo -e "\n\n\n$B_COLOR" #═══════════════════════════════════════════════════════════════════════════════════════════════════════#
 echo -e "                                                                                                                        "
@@ -1874,6 +1905,15 @@ selection() {
         q|Q) goodbye ;;
         z|Z) if [ "$use_z" = true ]; then install_menu; fi ;;
     esac
+}
+
+do_button_labels() {
+    case "$BACKHAUL" in 1) BH_LABEL="Backhaul On" ;; *) BH_LABEL="Backhaul Off" ;; esac
+    case "$HOST_COLOR" in 1) HN_STATUS="Colored" ;; *) HN_STATUS="Numbered" ;; esac
+    case "$IPPAD" in 2) IP_STATUS="Last 2 Octets" ;; 1) IP_STATUS="Last Octet" ;; *) IP_STATUS="Disabled" ;; esac
+    case "$RTIME" in 1) RN_LABEL="Runtime On" ;; *) RN_LABEL="Runtime Off" ;; esac
+    case "$RS_HIST" in 1) RS_LABEL="RSSI Tooltips On" ;; *) RS_LABEL="RSSI Tooltips Off" ;; esac
+    case "$THEME" in ORIGINAL) TH_STATUS="Original" ;; DARKMODE) TH_STATUS="Darkmode" ;; ASUS_WEBUI) TH_STATUS="AsusUI" ;; esac
 }
 
 check_updateSE
@@ -1925,8 +1965,9 @@ for node in $MESH_NODES; do
     node_color_idx=$((node_color_idx + 1))
 done
 
+web_update_time
+do_button_labels
 get_theme
-
 check_version update_box
 case "$STATE" in
     OUTDATED|HASH_DIFF) TRIGGER="triggerUpdate(this, 'Updating...')" ;;
@@ -2338,19 +2379,6 @@ cat <<HTML >> "$WEB_PAGE"
         background: rgba(0, 150, 255, 0.15);
     }
 
-    #themeSelect option,
-    #webPadding option {
-        background-color: #000000;
-        color: white;
-        font-weight: bold;
-    }
-
-    #themeSelect:focus,
-    #webPadding:focus {
-        outline: none;
-        box-shadow: none;
-    }
-
     #refresh-option {
         color: #ffffff;
         background: transparent;
@@ -2378,6 +2406,21 @@ cat <<HTML >> "$WEB_PAGE"
         font-weight: bold;
     }
 
+    #themeSelect option,
+    #webPadding option,
+    #timeSelect option {
+        background-color: #000000;
+        color: white;
+        font-weight: bold;
+    }
+
+    #themeSelect:focus,
+    #webPadding:focus,
+    #timeSelect:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
     .top-buttons {
         display: flex;
         flex-wrap: wrap;
@@ -2388,7 +2431,8 @@ cat <<HTML >> "$WEB_PAGE"
         margin-bottom: 12px;
     }
 
-    .top-buttons-secondary {
+    .top-buttons-secondary,
+    .top-buttons-tertiary {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
@@ -2400,8 +2444,9 @@ cat <<HTML >> "$WEB_PAGE"
         padding-top: 0;
     }
 
-    /* Active toggle state for the Options button */
-    #btnOptionsToggle.active {
+    /* Active toggle state for both Options buttons */
+    #btnOptionsToggle.active,
+    #btnOptionsToggle2.active {
         background-color: #0055ff;
         border-color: #3377ff;
     }
@@ -3045,24 +3090,39 @@ cat <<HTML >> "$WEB_PAGE"
                                 <span class="update-box">$HOVER_TEXT</span>
                             </div>
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">⚙</button>
+                            <button id="btnOptionsToggle2" class="button-tables" onclick="toggleTertiaryRow()">⚙⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
-                                <button class="button-tables" onclick="runtimeTrackingweb(this)">Runtime ☰</button>
-                                <button class="button-tables" onclick="hostColor(this)">Hostname ▤</button>
-                                <select id="webPadding" onchange="ipPadding()" class="button-tables">
+                                <button class="button-tables" onclick="runtimeTrackingweb(this)">$RN_LABEL ☰</button>
+                                <select id="webPadding" onchange="ipPadding()" class="button-tables" data-status="$IP_STATUS">
                                     <option selected disabled hidden>IP Padding ⇥</option>
                                     <option value="1">Last 2 Octets</option>
                                     <option value="2">Last Octet</option>
                                     <option value="3">Disabled</option>
                                 </select>
-                                <select id="themeSelect" onchange="webThemes()" class="button-tables">
+                                <select id="themeSelect" onchange="webThemes()" class="button-tables" data-status="$TH_STATUS">
                                     <option selected disabled hidden>Themes ⟳</option>
                                     <option value="1">Original</option>
                                     <option value="2">Darkmode</option>
                                     <option value="3">AsusUI</option>
                                 </select>
-                                <button class="button-tables" onclick="rssiHistory(this)">RSSI Tooltips ⇵</button>
+                                <button class="button-tables" onclick="rssiHistory(this)">$RS_LABEL ⇵</button>
                                 <button class="button-tables" onclick="openPopout()">Popout View ◫</button>
+                            </div>
+                             <div id="tertiaryButtonRow" class="top-buttons-tertiary" style="display: none;">
+                                <select id="timeSelect" onchange="timeDate()" class="button-tables" data-status="$TM_STATUS">
+                                    <option selected disabled hidden>Set Time/Date/Temp ☰</option>
+                                    <option disabled>──── Military ────</option>
+                                    <option value="1">$DATE_USA</option>
+                                    <option value="2">$DATE_INTL</option>
+                                    <option value="3">$DATE_ISO</option>
+                                    <option disabled>── 12HR AM/PM ──</option>
+                                    <option value="4">$DATE_USA1</option>
+                                    <option value="5">$DATE_INTL1</option>
+                                    <option value="6">$DATE_ISO1</option>
+                                </select>
+                                <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
+                                <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
                             </div>
                         </div>
                     <div class="grid-container">
@@ -6112,6 +6172,73 @@ function toggleOptionsRow() {
     }
 }
 
+var tertiaryTimeout = null;
+function toggleTertiaryRow() {
+    var tertiaryRow = document.getElementById('tertiaryButtonRow');
+    var optionsBtn2 = document.getElementById('btnOptionsToggle2');
+    if (tertiaryTimeout) {
+        clearTimeout(tertiaryTimeout);
+        tertiaryTimeout = null;
+    }
+    if (tertiaryRow.style.display === "none" || tertiaryRow.style.display === "") {
+        tertiaryRow.style.display = "flex";
+        optionsBtn2.classList.add('active');
+        tertiaryTimeout = setTimeout(function() {
+            tertiaryRow.style.display = "none";
+            optionsBtn2.classList.remove('active');
+            tertiaryTimeout = null;
+        }, 30000);
+    } else {
+        tertiaryRow.style.display = "none";
+        optionsBtn2.classList.remove('active');
+    }
+}
+
+// Only needed for button hover
+document.addEventListener('mouseover', function(e) {
+    // Handle <select>
+    const sel = e.target.closest('select[data-status]');
+    if (sel && !sel.dataset.hovering) {
+        const placeholder = sel.options[0];
+        if (placeholder) {
+            sel.dataset.originalText = placeholder.text;
+            placeholder.text = sel.dataset.status;
+            sel.dataset.hovering = "1";
+        }
+        return;
+    }
+
+    // Handle <button>
+    const btn = e.target.closest('button[data-status]');
+    if (btn && !btn.dataset.hovering) {
+        btn.dataset.originalText = btn.innerText;
+        btn.innerText = btn.dataset.status;
+        btn.dataset.hovering = "1";
+    }
+});
+
+document.addEventListener('mouseout', function(e) {
+    // Handle <select>
+    const sel = e.target.closest('select[data-status]');
+    if (sel && sel.dataset.hovering && !sel.contains(e.relatedTarget)) {
+        const placeholder = sel.options[0];
+        if (placeholder && sel.dataset.originalText) {
+            placeholder.text = sel.dataset.originalText;
+        }
+        delete sel.dataset.hovering;
+        return;
+    }
+
+    // Handle <button>
+    const btn = e.target.closest('button[data-status]');
+    if (btn && btn.dataset.hovering && !btn.contains(e.relatedTarget)) {
+        if (btn.dataset.originalText) {
+            btn.innerText = btn.dataset.originalText;
+        }
+        delete btn.dataset.hovering;
+    }
+});
+
 function triggerUpdate(btn, actionText) {
     if (btn) {
         btn.innerText = actionText || "Checking...";
@@ -6164,7 +6291,7 @@ function webThemes() {
 
     applyService('start_wireless_theme' + choice)
 
-    then(function() {
+    .then(function() {
         setTimeout(function() {
             window.location.reload();
         }, 1000);
@@ -6251,6 +6378,52 @@ function LogRuntimeToSyslog(scantime, avg, min, max, count) {
                 count;
     return applyService(svc);
     // → rc_service=start_wireless_logruntime_...
+}
+
+function timeDate() {
+    const selectElem = document.getElementById('timeSelect');
+    if (!selectElem) return;
+    const choice = selectElem.value;
+    if (choice < "1" || choice > "6") return;
+    selectElem.classList.add('refresh-pulse');
+
+    applyService('start_wireless_timedate' + choice)
+
+    .then(function() {
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Set Time/Date/Temp failed:", err);
+        selectElem.classList.remove('refresh-pulse');
+    });
+}
+
+function wirelessBackhaul(btn) {
+    if (btn) {
+        btn.innerText = "Toggling On/Off";
+        btn.classList.add('refresh-pulse');
+    }
+
+    applyService('start_wireless_wirelessbackhaul')
+
+    .then(function() {
+        setTimeout(function() {
+            window.location.reload();
+            if (btn) {
+                btn.innerText = "Backhaul ⟳";
+                btn.classList.remove('refresh-pulse');
+            }
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Backhaul failed:", err);
+        if (btn) {
+            btn.innerText = "Backhaul ⟳";
+            btn.classList.remove('refresh-pulse');
+        }
+    });
 }
 
 function hostColor(btn) {
@@ -6743,8 +6916,16 @@ case "$1" in
         do_change_theme "$1"
         run_report
         ;;
+    *timedate*)
+        do_timedate "$1"
+        run_report
+        ;;
     *update)
         do_webcheck
+        ;;
+    *wirelessbackhaul)
+        do_backhaul
+        run_report
         ;;
     *)
 		run_report
