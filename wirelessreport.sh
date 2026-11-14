@@ -3111,6 +3111,8 @@ cat <<HTML >> "$WEB_PAGE"
                                 <button class="button-tables" onclick="openPopout()">Popout View ◫</button>
                             </div>
                              <div id="tertiaryButtonRow" class="top-buttons-tertiary" style="display: none;">
+                                <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
+                                <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
                                 <select id="timeSelect" onchange="timeDate()" class="button-tables" data-status="$TM_STATUS">
                                     <option selected disabled hidden>Set Time & Date ☰</option>
                                     <option disabled>──── Military ────</option>
@@ -3122,8 +3124,6 @@ cat <<HTML >> "$WEB_PAGE"
                                     <option value="5">$DATE_INTL1</option>
                                     <option value="6">$DATE_ISO1</option>
                                 </select>
-                                <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
-                                <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
                             </div>
                         </div>
                     <div class="grid-container">
@@ -6349,11 +6349,7 @@ function runtimeTrackingweb(btn) {
         if (wrapper) wrapper.style.removeProperty('--avg-text');
         if (trgBtn) trgBtn.style.removeProperty('--highlow-text');
         setTimeout(function() {
-            if (typeof triggerRefresh === 'function') {
-                triggerRefresh();
-            } else {
-                window.location.reload();
-            }
+            window.location.reload();
             if (btn) {
                 btn.innerText = "Runtime Tracking ☰";
                 btn.classList.remove('refresh-pulse');
