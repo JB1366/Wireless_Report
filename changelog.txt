@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.6.7-quick fix to date/time button.
 v3.6.6-quick fix to 2nd row of option buttons.
 v3.6.5-add 2nd row of options to webUI option buttons.
 v3.6.4-add shell options to webUI option buttons.
