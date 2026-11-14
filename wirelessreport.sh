@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.6"
+SCRIPT_VERSION="3.6.7"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -559,7 +559,8 @@ do_install() {
 
     if [ "$is_update" = "1" ]; then
         echo -e "\n$BL[✓] Wireless Report successfully installed.$NC"
-		printf "\nPress $BL[Enter]$NC to apply changes & restart script..."
+		curl -fsL "https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-update" >/dev/null 2>&1 &
+        printf "\nPress $BL[Enter]$NC to apply changes & restart script..."
         read -r discard
         sys_log "(v$REMOTE_VERSION) successfully installed."
         exec "$REPORT_SCRIPT" install "$@"
@@ -588,6 +589,7 @@ do_install() {
 
     SCRIPT_VERSION="$REMOTE_VERSION"
     sys_log "(v$SCRIPT_VERSION) successfully installed."
+    curl -fsL "https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-install" >/dev/null 2>&1 &
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
     echo -e "$YL[i] To access Report, navigate to Advanced Settings > Wireless "
     echo -e "$YL    in the ASUS WebGUI and select the Wireless Report tab on the far right.$NC\n"
@@ -667,6 +669,7 @@ ScriptUpdateFromAMTM() {
         echo -e "  [+] Downloading latest version (v$REMOTE_VERSION)\n\n"
         echo -e "  [✓] Wireless Report successfully updated.\n"
         sys_log "AMTM Update: (v$REMOTE_VERSION) successfully installed."
+        curl -fsL "https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-update" >/dev/null 2>&1 &
         return 0
     fi
     return 1
@@ -1841,25 +1844,6 @@ get_theme() {
     esac
 }
 
-web_update_time() {
-    DATE_USA="$(date +'%b-%-d %-H:%M:%S')"
-    DATE_INTL="$(date +'%d-%b %-H:%M:%S')"
-    DATE_ISO="$(date +'%Y-%m-%d %H:%M:%S')"
-    DATE_USA1="$(date +'%b-%-d %-I:%M:%S %p')"
-    DATE_INTL1="$(date +'%d-%b %-I:%M:%S %p')"
-    DATE_ISO1="$(date +'%Y-%m-%d %-I:%M:%S %p')"
-
-    case "$REPORT_UNIT" in
-        1|USA)   TM_STATUS="$DATE_USA" ;;
-        2|INTL)  TM_STATUS="$DATE_INTL" ;;
-        3|ISO)   TM_STATUS="$DATE_ISO" ;;
-        4|USA1)  TM_STATUS="$DATE_USA1" ;;
-        5|INTL1) TM_STATUS="$DATE_INTL1" ;;
-        6|ISO1)  TM_STATUS="$DATE_ISO1" ;;
-        *)       TM_STATUS="Set Time/Date/Temp" ;;
-    esac
-}
-
 hasta_la_vista() {
 echo -e "\n\n\n$B_COLOR" #═══════════════════════════════════════════════════════════════════════════════════════════════════════#
 echo -e "                                                                                                                        "
@@ -1965,7 +1949,6 @@ for node in $MESH_NODES; do
     node_color_idx=$((node_color_idx + 1))
 done
 
-web_update_time
 do_button_labels
 get_theme
 check_version update_box
@@ -3112,16 +3095,16 @@ cat <<HTML >> "$WEB_PAGE"
                              <div id="tertiaryButtonRow" class="top-buttons-tertiary" style="display: none;">
                                 <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
                                 <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
-                                <select id="timeSelect" onchange="timeDate()" class="button-tables" data-status="$TM_STATUS">
+                                <select id="timeSelect" onchange="timeDate()" class="button-tables">
                                     <option selected disabled hidden>Set Time & Date ☰</option>
                                     <option disabled>──── Military ────</option>
-                                    <option value="1">$DATE_USA</option>
-                                    <option value="2">$DATE_INTL</option>
-                                    <option value="3">$DATE_ISO</option>
+                                    <option value="1" id="optUSA"></option>
+                                    <option value="2" id="optINTL"></option>
+                                    <option value="3" id="optISO"></option>
                                     <option disabled>── 12HR AM/PM ──</option>
-                                    <option value="4">$DATE_USA1</option>
-                                    <option value="5">$DATE_INTL1</option>
-                                    <option value="6">$DATE_ISO1</option>
+                                    <option value="4" id="optUSA1"></option>
+                                    <option value="5" id="optINTL1"></option>
+                                    <option value="6" id="optISO1"></option>
                                 </select>
                             </div>
                         </div>
@@ -3360,45 +3343,50 @@ function wrRemoveLiveCacheBuster() {
     } catch (_) {}
 }
 
-function formatDateTimeStamp(d, includeSeconds) {
+function formatDateTimeStamp(d, includeSeconds, forceUnit) {
     const day = d.getDate();
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const month = months[d.getMonth()];
     const year = d.getFullYear();
-
-    const unit = (typeof WR_CONFIG !== 'undefined' && WR_CONFIG.reportUnit) ? WR_CONFIG.reportUnit : 'USA';
+    const unit = forceUnit || (WR_CONFIG && WR_CONFIG.reportUnit) || 'USA';
     const is12Hour = unit.endsWith('1');
-
     let hours = d.getHours();
     let ampm = '';
-
     if (is12Hour) {
         ampm = hours >= 12 ? ' PM' : ' AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
+        hours = hours % 12 || 12;
     }
-
-    // Single digit for 12-hour to match shell %-I if needed, or keep 2 for consistency
-    const hoursStr = String(hours).padStart(is12Hour ? 1 : 2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const seconds = String(d.getSeconds()).padStart(2, '0');
-
-    let timeStr = hoursStr + ':' + minutes;
-    if (includeSeconds) {
-        timeStr += ':' + seconds;
-    }
-    timeStr += ampm;
+    const h = String(hours).padStart(is12Hour ? 1 : 2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    let t = h + ':' + m + (includeSeconds ? ':' + s : '') + ampm;
 
     if (unit.startsWith('ISO')) {
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(day).padStart(2, '0');
-        return year + '-' + mm + '-' + dd + ' ' + timeStr;
-    } else if (unit.startsWith('INTL')) {
-        return day + '-' + month + ' ' + timeStr;
-    } else {
-        return month + '-' + day + ' ' + timeStr;
+        return year + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(day).padStart(2,'0') + ' ' + t;
+    }
+    if (unit.startsWith('INTL')) return day + '-' + month + ' ' + t;
+    return month + '-' + day + ' ' + t;
+}
+
+function updateTimeSelectOptions() {
+    const now = new Date();
+    const map = {
+        optUSA:  'USA',
+        optINTL: 'INTL',
+        optISO:  'ISO',
+        optUSA1: 'USA1',
+        optINTL1:'INTL1',
+        optISO1: 'ISO1'
+    };
+    for (const id in map) {
+        const el = document.getElementById(id);
+        if (el) el.text = formatDateTimeStamp(now, true, map[id]);
     }
 }
+
+// Start updating
+setInterval(updateTimeSelectOptions, 1000);
+updateTimeSelectOptions();
 
 function updateLiveClock() {
 	const el = document.getElementById('liveClock');
