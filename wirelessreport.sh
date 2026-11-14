@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.7"
+SCRIPT_VERSION="3.6.8"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -2415,8 +2415,7 @@ cat <<HTML >> "$WEB_PAGE"
         margin-bottom: 12px;
     }
 
-    .top-buttons-secondary,
-    .top-buttons-tertiary {
+    .top-buttons-secondary {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
@@ -2429,8 +2428,7 @@ cat <<HTML >> "$WEB_PAGE"
     }
 
     /* Active toggle state for both Options buttons */
-    #btnOptionsToggle.active,
-    #btnOptionsToggle2.active {
+    #btnOptionsToggle.active {
         background-color: #0055ff;
         border-color: #3377ff;
     }
@@ -3074,7 +3072,6 @@ cat <<HTML >> "$WEB_PAGE"
                                 <span class="update-box">$HOVER_TEXT</span>
                             </div>
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">⚙</button>
-                            <button id="btnOptionsToggle2" class="button-tables" onclick="toggleTertiaryRow()">⚙⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
                                 <button class="button-tables" onclick="runtimeTrackingweb(this)">$RN_LABEL ☰</button>
@@ -3091,9 +3088,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     <option value="3">AsusUI</option>
                                 </select>
                                 <button class="button-tables" onclick="rssiHistory(this)">$RS_LABEL ⇵</button>
-                                <button class="button-tables" onclick="openPopout()">Popout View ◫</button>
-                            </div>
-                             <div id="tertiaryButtonRow" class="top-buttons-tertiary" style="display: none;">
+                                <button class="button-tables" onclick="openPopout()">Popout View ◫</button> <br>
                                 <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
                                 <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
                                 <select id="timeSelect" onchange="timeDate()" class="button-tables">
@@ -6158,28 +6153,6 @@ function toggleOptionsRow() {
     } else {
         secondaryRow.style.display = "none";
         optionsBtn.classList.remove('active');
-    }
-}
-
-var tertiaryTimeout = null;
-function toggleTertiaryRow() {
-    var tertiaryRow = document.getElementById('tertiaryButtonRow');
-    var optionsBtn2 = document.getElementById('btnOptionsToggle2');
-    if (tertiaryTimeout) {
-        clearTimeout(tertiaryTimeout);
-        tertiaryTimeout = null;
-    }
-    if (tertiaryRow.style.display === "none" || tertiaryRow.style.display === "") {
-        tertiaryRow.style.display = "flex";
-        optionsBtn2.classList.add('active');
-        tertiaryTimeout = setTimeout(function() {
-            tertiaryRow.style.display = "none";
-            optionsBtn2.classList.remove('active');
-            tertiaryTimeout = null;
-        }, 30000);
-    } else {
-        tertiaryRow.style.display = "none";
-        optionsBtn2.classList.remove('active');
     }
 }
 
