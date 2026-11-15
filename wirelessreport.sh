@@ -2405,6 +2405,11 @@ cat <<HTML >> "$WEB_PAGE"
         box-shadow: none;
     }
 
+    #timeSelect option:disabled {
+        color: #0096ff !important;
+        font-weight: bold;
+    }
+
     .top-buttons {
         display: flex;
         flex-wrap: wrap;
