@@ -3389,11 +3389,20 @@ function updateTimeSelectOptions() {
 setInterval(updateTimeSelectOptions, 1000);
 updateTimeSelectOptions();
 
+const ROUTER_EPOCH = $(date +%s);
+let routerOffset = 0;
+function initRouterClock() {
+	if (typeof ROUTER_EPOCH === 'number' && ROUTER_EPOCH > 0) {
+		// ROUTER_EPOCH is in seconds, Date.now() is in ms
+		routerOffset = (ROUTER_EPOCH * 1000) - Date.now();
+	}
+}
+
 function updateLiveClock() {
 	const el = document.getElementById('liveClock');
 	if (!el) return;
 
-	const now = new Date();
+	const now = new Date(Date.now() + routerOffset);
 	let timeStr = formatDateTimeStamp(now, true);
 
 	if (WR_CONFIG.liveClockshowDay === 1) {
@@ -3404,6 +3413,7 @@ function updateLiveClock() {
 	el.textContent = timeStr;
 }
 
+initRouterClock();
 updateLiveClock();
 setInterval(updateLiveClock, 1000);
 
