@@ -3097,7 +3097,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
                                 <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
                                 <select id="timeSelect" onchange="timeDate()" class="button-tables">
-                                    <option selected disabled hidden>Set Time & Date ☰</option>
+                                    <option selected disabled hidden>Set Date & Time ☰</option>
                                     <option disabled>──── Military ────</option>
                                     <option value="1" id="optUSA"></option>
                                     <option value="2" id="optINTL"></option>
