@@ -3342,6 +3342,8 @@ function wrHandleVisibilityChange() {
     // requests if a previous check is still completing.
     wrCheckLiveGeneration();
     wrStartLiveReloadWatcher();
+    // Correct drift and pick up a timezone/DST change after a suspended tab.
+    wrRefreshRouterClock();
 }
 
 document.addEventListener('visibilitychange', wrHandleVisibilityChange);
@@ -3355,40 +3357,103 @@ function wrRemoveLiveCacheBuster() {
     } catch (_) {}
 }
 
-function formatDateTimeStamp(d, includeSeconds, forceUnit) {
-    const day = d.getDate();
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const month = months[d.getMonth()];
-    const year = d.getFullYear();
+// All displayed clock times are sourced from the ASUS controller, never from
+// the visitor's browser clock or timezone. uptime() includes the current router
+// wall time, UTC offset and seconds since boot. performance.now() is only used
+// to advance that trusted sample between refreshes.
+var WR_ROUTER_CLOCK = null;
+var WR_ROUTER_CLOCK_FETCHING = false;
+var WR_LAST_REFRESH_MARK = null;
+
+function wrMonotonicTime() {
+    return (window.performance && performance.now) ? performance.now() : Date.now();
+}
+
+function wrParseRouterClock(value) {
+    // ASUS example: "Sun, 15 Nov 2026 21:24:05 -0500(12345 secs since boot)".
+    // Parse the numeric offset rather than Date.parse() or client time settings;
+    // this is compatible with browsers in different timezones and iOS Safari.
+    var match = String(value || '').match(/(?:^|\s)(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s+([+-])(\d{2})(\d{2})(?=\s|\(|$)/i);
+    if (!match) return null;
+    var month = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(match[2].toLowerCase());
+    var day = Number(match[1]), year = Number(match[3]);
+    var hour = Number(match[4]), minute = Number(match[5]), second = Number(match[6]);
+    var zoneHour = Number(match[8]), zoneMinute = Number(match[9]);
+    if (month < 0 || year < 1970 || hour > 23 || minute > 59 || second > 59 ||
+        zoneHour > 14 || zoneMinute > 59 || (zoneHour === 14 && zoneMinute !== 0)) return null;
+    var calendar = new Date(Date.UTC(year, month, day, hour, minute, second));
+    if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() !== month ||
+        calendar.getUTCDate() !== day) return null;
+    var offsetMinutes = (zoneHour * 60 + zoneMinute) * (match[7] === '-' ? -1 : 1);
+    return { epochMs: calendar.getTime() - offsetMinutes * 60000, offsetMinutes: offsetMinutes };
+}
+
+function wrSetRouterClock(value, receivedMark) {
+    var parsed = wrParseRouterClock(value);
+    if (!parsed) return false;
+    var uptimeSeconds = wrParseUptime(value);
+    // Anchoring to monotonic elapsed time avoids browser clock changes.
+    WR_ROUTER_CLOCK = {
+        epochMs: parsed.epochMs,
+        offsetMinutes: parsed.offsetMinutes,
+        receivedMark: receivedMark === undefined ? wrMonotonicTime() : receivedMark,
+        bootEpochMs: Number.isFinite(uptimeSeconds) && uptimeSeconds >= 0
+            ? parsed.epochMs - uptimeSeconds * 1000 : null
+    };
+    wrUpdateDisplayedTimes();
+    return true;
+}
+
+function wrRouterTimeAt(mark) {
+    if (!WR_ROUTER_CLOCK || !Number.isFinite(mark)) return null;
+    return new Date(WR_ROUTER_CLOCK.epochMs + mark - WR_ROUTER_CLOCK.receivedMark);
+}
+
+function wrCurrentRouterTime() { return wrRouterTimeAt(wrMonotonicTime()); }
+
+function wrDateParts(date, offsetOverride) {
+    if (!date || !Number.isFinite(date.getTime()) || !WR_ROUTER_CLOCK) return null;
+    var offsetMinutes = Number.isFinite(offsetOverride) ? offsetOverride : WR_ROUTER_CLOCK.offsetMinutes;
+    // UTC accessors prevent the viewing browser's timezone from changing any
+    // of the displayed calendar fields (including weekdays and 12h formats).
+    var d = new Date(date.getTime() + offsetMinutes * 60000);
+    return {
+        year: d.getUTCFullYear(), month: d.getUTCMonth(), day: d.getUTCDate(),
+        weekDay: d.getUTCDay(), hours: d.getUTCHours(),
+        minutes: d.getUTCMinutes(), seconds: d.getUTCSeconds()
+    };
+}
+
+function formatDateTimeStamp(d, includeSeconds, forceUnit, offsetOverride) {
+    const p = wrDateParts(d, offsetOverride);
+    if (!p) return '--';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const month = months[p.month];
     const unit = forceUnit || (WR_CONFIG && WR_CONFIG.reportUnit) || 'USA';
     const is12Hour = unit.endsWith('1');
-    let hours = d.getHours();
+    let hours = p.hours;
     let ampm = '';
     if (is12Hour) {
         ampm = hours >= 12 ? ' PM' : ' AM';
         hours = hours % 12 || 12;
     }
     const h = String(hours).padStart(is12Hour ? 1 : 2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    const s = String(d.getSeconds()).padStart(2, '0');
-    let t = h + ':' + m + (includeSeconds ? ':' + s : '') + ampm;
+    const m = String(p.minutes).padStart(2, '0');
+    const sec = String(p.seconds).padStart(2, '0');
+    const t = h + ':' + m + (includeSeconds ? ':' + sec : '') + ampm;
 
     if (unit.startsWith('ISO')) {
-        return year + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(day).padStart(2,'0') + ' ' + t;
+        return p.year + '-' + String(p.month + 1).padStart(2,'0') + '-' + String(p.day).padStart(2,'0') + ' ' + t;
     }
-    if (unit.startsWith('INTL')) return day + '-' + month + ' ' + t;
-    return month + '-' + day + ' ' + t;
+    if (unit.startsWith('INTL')) return p.day + '-' + month + ' ' + t;
+    return month + '-' + p.day + ' ' + t;
 }
 
 function updateTimeSelectOptions() {
-    const now = new Date();
+    const now = wrCurrentRouterTime();
     const map = {
-        optUSA:  'USA',
-        optINTL: 'INTL',
-        optISO:  'ISO',
-        optUSA1: 'USA1',
-        optINTL1:'INTL1',
-        optISO1: 'ISO1'
+        optUSA: 'USA', optINTL: 'INTL', optISO: 'ISO',
+        optUSA1: 'USA1', optINTL1: 'INTL1', optISO1: 'ISO1'
     };
     for (const id in map) {
         const el = document.getElementById(id);
@@ -3396,55 +3461,72 @@ function updateTimeSelectOptions() {
     }
 }
 
-// Start updating
-setInterval(updateTimeSelectOptions, 1000);
-updateTimeSelectOptions();
-
 function updateLiveClock() {
-	const el = document.getElementById('liveClock');
-	if (!el) return;
-
-	const now = new Date();
-	let timeStr = formatDateTimeStamp(now, true);
-
-	if (WR_CONFIG.liveClockshowDay === 1) {
-		const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-		timeStr = days[now.getDay()] + ', ' + timeStr;
-	}
-
-	el.textContent = timeStr;
+    const el = document.getElementById('liveClock');
+    if (!el) return;
+    const now = wrCurrentRouterTime();
+    if (!now) {
+        el.textContent = 'Router time unavailable';
+        return;
+    }
+    let timeStr = formatDateTimeStamp(now, true);
+    if (WR_CONFIG.liveClockshowDay === 1) {
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        timeStr = days[wrDateParts(now).weekDay] + ', ' + timeStr;
+    }
+    el.textContent = timeStr;
 }
 
-updateLiveClock();
-setInterval(updateLiveClock, 1000);
-
-function update_time() {
-    const now = new Date();
-    let formattedTime = formatDateTimeStamp(now, true);
-
+function wrRenderRefreshTimes() {
+    if (WR_LAST_REFRESH_MARK === null) return;
+    const formattedTime = formatDateTimeStamp(wrRouterTimeAt(WR_LAST_REFRESH_MARK), true);
     document.querySelectorAll('.wr-updated-time').forEach(function(el) {
         el.textContent = formattedTime;
     });
     window._lastFormattedTime = formattedTime;
 
-    // Handle boot time calculation dynamically using the uptime span value
-    const uptimeEl = document.getElementById('wr-main-uptime');
+    // Use the actual seconds-since-boot field of the same controller uptime()
+    // response, rather than subtracting a rounded uptime display from a browser
+    // timestamp. The epoch is supplied by the router clock sample.
     const bootEl = document.getElementById('wr-main-reboot');
-    if (bootEl && uptimeEl) {
-        const uptimeText = uptimeEl.textContent.trim();
-        let totalSeconds = 0;
-        const dMatch = uptimeText.match(/(\d+)d/);
-        const hMatch = uptimeText.match(/(\d+)h/);
-        const mMatch = uptimeText.match(/(\d+)m/);
-        if (dMatch) totalSeconds += parseInt(dMatch[1], 10) * 86400;
-        if (hMatch) totalSeconds += parseInt(hMatch[1], 10) * 3600;
-        if (mMatch) totalSeconds += parseInt(mMatch[1], 10) * 60;
-
-        if (totalSeconds > 0) {
-            const bootDate = new Date(now.getTime() - (totalSeconds * 1000));
-            bootEl.textContent = formatDateTimeStamp(bootDate, false);
-        }
+    if (bootEl) {
+        const bootMs = WR_ROUTER_CLOCK && WR_ROUTER_CLOCK.bootEpochMs;
+        bootEl.textContent = Number.isFinite(bootMs)
+            ? formatDateTimeStamp(new Date(bootMs), false) : '--';
     }
+}
+
+function wrUpdateDisplayedTimes() {
+    updateTimeSelectOptions();
+    updateLiveClock();
+    wrRenderRefreshTimes();
+}
+
+async function wrRefreshRouterClock() {
+    if (WR_ROUTER_CLOCK_FETCHING || isRefreshing || document.hidden) return;
+    WR_ROUTER_CLOCK_FETCHING = true;
+    try {
+        var response = await wrAppGet('uptime();');
+        if (!wrSetRouterClock(response && response.uptime, wrMonotonicTime())) {
+            console.warn('Wireless Report: uptime() did not contain a supported router time and UTC offset.');
+        }
+    } catch (err) {
+        console.warn('Wireless Report: router clock synchronization failed', err);
+    } finally {
+        WR_ROUTER_CLOCK_FETCHING = false;
+    }
+}
+
+// Even when Auto Refresh is Off, periodically resynchronize for router NTP
+// corrections and daylight-saving changes. Revalidate after tab visibility.
+setInterval(updateTimeSelectOptions, 1000);
+setInterval(updateLiveClock, 1000);
+setInterval(wrRefreshRouterClock, 60000);
+wrUpdateDisplayedTimes();
+
+function update_time() {
+    WR_LAST_REFRESH_MARK = wrMonotonicTime();
+    wrRenderRefreshTimes();
 }
 
 var WR_STA_COLUMNS = [
@@ -3747,7 +3829,10 @@ function wrRssiHistoryEntries(raw) {
                 rssi: wrNumber(entry.rssi),
                 name: String(entry.name || ''),
                 band: String(entry.band || ''),
-                time: Number.isFinite(wrNumber(entry.time)) ? wrNumber(entry.time) : null
+                time: Number.isFinite(wrNumber(entry.time)) ? wrNumber(entry.time) : null,
+                // Preserve each sample's offset so history spanning a DST shift
+                // can still display the router-local time when it was recorded.
+                offsetMinutes: Number.isFinite(wrNumber(entry.offsetMinutes)) ? wrNumber(entry.offsetMinutes) : null
             };
         });
     }
@@ -3807,7 +3892,8 @@ function wrRssiHistoryEntry(item, rssi, nowMs) {
         rssi: wrNumber(rssi),
         name: wrRssiHistoryLocation(item),
         band: wrRssiHistoryBand(item),
-        time: Number(nowMs) || Date.now()
+        time: Number.isFinite(wrNumber(nowMs)) && wrNumber(nowMs) > 0 ? Number(nowMs) : null,
+        offsetMinutes: Number.isFinite(wrNumber(item.historyOffset)) ? Number(item.historyOffset) : null
     };
 }
 
@@ -3827,7 +3913,7 @@ function wrGetTrend(item, rssi, history) {
         else if (now < old) icon = "<span class='trend-box trend-down rssi-poor'>↓</span>";
     }
     if (!WR_CONFIG.rssiHistory || !Number.isFinite(now)) return icon;
-    var current = wrRssiHistoryEntry(item, now, item.historyTime || Date.now());
+    var current = wrRssiHistoryEntry(item, now, item.historyTime);
     var display = entries.concat([current]);
     var depth = Math.max(5, Math.min(20, Number(WR_CONFIG.rssiHistoryEntries) || 5));
     if (display.length > depth) display = display.slice(display.length - depth);
@@ -3839,7 +3925,7 @@ function wrGetTrend(item, rssi, history) {
     // use new function formatDateTimeStamp
     if (WR_CONFIG.rssiHistoryDate && Number.isFinite(wrNumber(entry.time))) {
         var d = new Date(Number(entry.time));
-        text += ' ' + wrEscape(formatDateTimeStamp(d, true));
+        text += ' ' + wrEscape(formatDateTimeStamp(d, true, null, entry.offsetMinutes));
     }
     return "<span style='" + wrRssiHistoryStyle(entry.rssi) + "'>" + text + "</span>";
 }).join('<br>');
@@ -3849,7 +3935,7 @@ return icon + "<span class='rssi-tooltip'>" + tooltip + "</span>";
 function wrStoreRssiHistory(item, rssi, history) {
     var now = wrNumber(rssi);
     if (!Number.isFinite(now)) return;
-    var entry = wrRssiHistoryEntry(item, now, item.historyTime || Date.now());
+    var entry = wrRssiHistoryEntry(item, now, item.historyTime);
     if (!WR_CONFIG.rssiHistory) {
         history[item.mac] = [entry];
         return;
@@ -4996,10 +5082,14 @@ function wrDiagLegacyDuration(db) {
 }
 
 async function wrDiag388(db, content, filter) {
+    // Legacy diagnostic queries use router-relative Unix time when available,
+    // even if the remote browser's clock is inaccurate. The fallback is for
+    // API compatibility only; displayed times never use browser time.
+    var routerNow = wrCurrentRouterTime();
     var params = new URLSearchParams({
         db: db,
         content: content,
-        ts: Math.floor(Date.now() / 1000),
+        ts: Math.floor((routerNow ? routerNow.getTime() : Date.now()) / 1000),
         duration: wrDiagLegacyDuration(db),
         filter: filter || ''
     });
@@ -5689,6 +5779,11 @@ async function loadWirelessReport() {
         'nvram_get(extendno);' +
         'uptime();'
     );
+    // The controller's response is authoritative for calendar time. Keep the
+    // existing single request; no extra CGI endpoint or NVRAM setting needed.
+    if (!wrSetRouterClock(base && base.uptime, wrMonotonicTime())) {
+        console.warn('Wireless Report: controller uptime() clock/offset unavailable.');
+    }
 
     if (WR_YAZFI_ELIGIBLE === null)
         WR_YAZFI_ELIGIBLE = wrControllerSupportsYazFi(base);
@@ -5883,8 +5978,13 @@ async function loadWirelessReport() {
 
     // Match v2.1.0's report-wide sample time so the Main, Node and All views show
     // the same timestamp for a given refresh and the persisted sample matches it.
-    var historySampleTime = Date.now();
-    items.forEach(function(item) { item.historyTime = historySampleTime; });
+    var historySampleDate = wrCurrentRouterTime();
+    var historySampleTime = historySampleDate ? historySampleDate.getTime() : null;
+    var historySampleOffset = WR_ROUTER_CLOCK ? WR_ROUTER_CLOCK.offsetMinutes : null;
+    items.forEach(function(item) {
+        item.historyTime = historySampleTime;
+        item.historyOffset = historySampleOffset;
+    });
     var mainItems = items.filter(function(item) { return !item.node; });
     var nodeItems = items.filter(function(item) { return !!item.node; });
 
@@ -6439,6 +6539,7 @@ async function triggerRefresh() {
         await loadWirelessReport();
         update_time();
     } catch (e) {
+        WR_LAST_REFRESH_MARK = null;
         console.error('Wireless Report refresh failed', e);
         document.querySelectorAll('.wr-updated-time').forEach(function(el) { el.textContent = 'Unable to read controller APIs. Verify the primary WebUI session and reload.'; });
     } finally {
