@@ -135,27 +135,42 @@ check_version() {
         update_box)
             GH="<span style='color: #0096ff;'>"; SP="</span>"
             case "$STATE" in
-                OFFLINE)      HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable$SP <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV [Offline]"; UPDATE_TITLE="update-title" ;;
-                OUTDATED)     HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version$SP v$REMOTE_VERSION ${GH}available$SP
-                              <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV [$REMOTE_VERSION]"; UPDATE_TITLE="update-title2" ;;
-                HASH_DIFF)    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available$SP <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV [Hash]"; UPDATE_TITLE="update-title2" ;;
-                UP_TO_DATE|*) HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $UPDATE_TIME"
-                              VERSION_HASH="$DEV"; UPDATE_TITLE="update-title" ;;
+                OFFLINE)
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable$SP <br> Last Update: $UPDATE_TIME"
+                    VERSION_HASH="$DEV [Offline]"
+                    UPDATE_TITLE="update-title"
+                    TRIGGER="triggerUpdate(this, 'Checking...')"
+                    ;;
+                OUTDATED)
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version$SP v$REMOTE_VERSION ${GH}available$SP <br> Last Update: $UPDATE_TIME"
+                    VERSION_HASH="$DEV [$REMOTE_VERSION]"
+                    UPDATE_TITLE="update-title2"
+                    TRIGGER="triggerUpdate(this, 'Updating...')"
+                    ;;
+                HASH_DIFF)
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available$SP <br> Last Update: $UPDATE_TIME"
+                    VERSION_HASH="$DEV [Hash]"
+                    UPDATE_TITLE="update-title2"
+                    TRIGGER="triggerUpdate(this, 'Updating...')"
+                    ;;
+                UP_TO_DATE|*)
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $UPDATE_TIME"
+                    VERSION_HASH="$DEV"
+                    UPDATE_TITLE="update-title"
+                    TRIGGER="triggerUpdate(this, 'Checking...')"
+                    ;;
             esac
             ;;
         do_install)
             case "$STATE" in
-                OFFLINE)       echo -e "\n$RD[!] Github Offline.$NC\n"
-                               UP="try again later?" ;;
-                OUTDATED)      echo -e "\n$GR[i] A new version (${WH}v$REMOTE_VERSION$GR) is available!$NC\n"
-                               UP="update version?" ;;
-                HASH_DIFF)     echo -e "\n$GR[i] There is a Hash Update for (${WH}v$SCRIPT_VERSION$DEV$GR).$NC\n"
-                               UP="update Hash?" ;;
-                UP_TO_DATE|*)  echo -e "\n$GR[i] You are already on the latest version (${WH}v$SCRIPT_VERSION$DEV$GR).$NC\n"
-                               UP="reinstall/overwrite anyway?" ;;
+                OFFLINE)     echo -e "\n$RD[!] Github Offline.$NC\n"
+                            UP="try again later?" ;;
+                OUTDATED)    echo -e "\n$GR[i] A new version (${WH}v$REMOTE_VERSION$GR) is available!$NC\n"
+                            UP="update version?" ;;
+                HASH_DIFF)   echo -e "\n$GR[i] There is a Hash Update for (${WH}v$SCRIPT_VERSION$DEV$GR).$NC\n"
+                            UP="update Hash?" ;;
+                UP_TO_DATE|*) echo -e "\n$GR[i] You are already on the latest version (${WH}v$SCRIPT_VERSION$DEV$GR).$NC\n"
+                            UP="reinstall/overwrite anyway?" ;;
             esac
             ;;
         web_check)
@@ -166,11 +181,11 @@ check_version() {
             ;;
         *)
             case "$STATE" in
-                OFFLINE)       printm " $STATUS $RD[Offline]                     [GitHub Unreachable]" ;;
-                NOT_INSTALLED) printm " $STATUS $GR[Not Installed]$NC          Latest Available:$GR v$REMOTE_VERSION$NC" ;;
+                OFFLINE)       printm " $STATUS $RD[Offline]                         [GitHub Unreachable]" ;;
+                NOT_INSTALLED) printm " $STATUS $GR[Not Installed]$NC             Latest Available:$GR v$REMOTE_VERSION$NC" ;;
                 OUTDATED)      printm " $STATUS $GR[New Version ${WH}v$REMOTE_VERSION$GR Available]   $CURRENT" ;;
                 HASH_DIFF)     printm " $STATUS $GR[Hash Update Available]         $CURRENT" ;;
-                UP_TO_DATE|*)  printm " $STATUS $GR[Up to date]                    $CURRENT" ;;
+                UP_TO_DATE|*)  printm " $STATUS $GR[Up to date]                     $CURRENT" ;;
             esac
             ;;
     esac
@@ -1341,18 +1356,6 @@ set_runtime_tracking() {
     done
 }
 
-do_backhaul() {
-    if grep -q "BACKHAUL=" "$CONFIG"; then
-        if [ "$BACKHAUL" = "0" ]; then
-            sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
-        else
-            sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"
-        fi
-    else
-        echo 'BACKHAUL="1"' >> "$CONFIG"
-    fi
-}
-
 do_runtime_tracking() {
     case "$RTIME" in
         1) NEW_RTIME="0" ;;
@@ -1392,18 +1395,16 @@ do_runtime_logging() {
     fi
 }
 
-do_logruntime() {
-    local rest scantime avg min max count
-    rest=${1#wireless_logruntime_}
-    scantime=${rest%%_*}
-    rest=${rest#*_}
-    avg=${rest%%_*}
-    rest=${rest#*_}
-    min=${rest%%_*}
-    rest=${rest#*_}
-    max=${rest%%_*}
-    count=${rest#*_}
-    sys_log "Report completed in ${scantime}s. AVG: ${avg}s (L: ${min}s/H: ${max}s) over ${count} scans."
+do_backhaul() {
+    if grep -q "BACKHAUL=" "$CONFIG"; then
+        if [ "$BACKHAUL" = "0" ]; then
+            sed -i 's/BACKHAUL=.*/BACKHAUL="1"/' "$CONFIG"
+        else
+            sed -i 's/BACKHAUL=.*/BACKHAUL="0"/' "$CONFIG"
+        fi
+    else
+        echo 'BACKHAUL="1"' >> "$CONFIG"
+    fi
 }
 
 set_ip_padding() {
@@ -1789,6 +1790,29 @@ file_viewer() {
     echo -e "\n$B_COLOR$btm_line$NC"
 }
 
+do_logruntime() {
+    local rest scantime avg min max count
+    rest=${1#wireless_logruntime_}
+    scantime=${rest%%_*}
+    rest=${rest#*_}
+    avg=${rest%%_*}
+    rest=${rest#*_}
+    min=${rest%%_*}
+    rest=${rest#*_}
+    max=${rest%%_*}
+    count=${rest#*_}
+    sys_log "Report completed in ${scantime}s. AVG: ${avg}s (L: ${min}s/H: ${max}s) over ${count} scans."
+}
+
+do_button_labels() {
+    case "$BACKHAUL" in 1) BH_LABEL="Backhaul On" ;; *) BH_LABEL="Backhaul Off" ;; esac
+    case "$HOST_COLOR" in 1) HN_STATUS="Colored" ;; *) HN_STATUS="Numbered" ;; esac
+    case "$IPPAD" in 2) IP_STATUS="Last 2 Octets" ;; 1) IP_STATUS="Last Octet" ;; *) IP_STATUS="Disabled" ;; esac
+    case "$RTIME" in 1) RN_LABEL="Runtime On" ;; *) RN_LABEL="Runtime Off" ;; esac
+    case "$RS_HIST" in 1) RS_LABEL="RSSI Tooltips On" ;; *) RS_LABEL="RSSI Tooltips Off" ;; esac
+    case "$THEME" in ORIGINAL) TH_STATUS="Original" ;; DARKMODE) TH_STATUS="Darkmode" ;; ASUS_WEBUI) TH_STATUS="AsusUI" ;; esac
+}
+
 get_theme() {
     THEME="${THEME:-ORIGINAL}"
     case "$THEME" in
@@ -1892,15 +1916,6 @@ selection() {
     esac
 }
 
-do_button_labels() {
-    case "$BACKHAUL" in 1) BH_LABEL="Backhaul On" ;; *) BH_LABEL="Backhaul Off" ;; esac
-    case "$HOST_COLOR" in 1) HN_STATUS="Colored" ;; *) HN_STATUS="Numbered" ;; esac
-    case "$IPPAD" in 2) IP_STATUS="Last 2 Octets" ;; 1) IP_STATUS="Last Octet" ;; *) IP_STATUS="Disabled" ;; esac
-    case "$RTIME" in 1) RN_LABEL="Runtime On" ;; *) RN_LABEL="Runtime Off" ;; esac
-    case "$RS_HIST" in 1) RS_LABEL="RSSI Tooltips On" ;; *) RS_LABEL="RSSI Tooltips Off" ;; esac
-    case "$THEME" in ORIGINAL) TH_STATUS="Original" ;; DARKMODE) TH_STATUS="Darkmode" ;; ASUS_WEBUI) TH_STATUS="AsusUI" ;; esac
-}
-
 check_updateSE
 get_mesh_nodes
 check_github
@@ -1953,10 +1968,6 @@ done
 do_button_labels
 get_theme
 check_version update_box
-case "$STATE" in
-    OUTDATED|HASH_DIFF) TRIGGER="triggerUpdate(this, 'Updating...')" ;;
-    *)                  TRIGGER="triggerUpdate(this, 'Checking...')" ;;
-esac
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
