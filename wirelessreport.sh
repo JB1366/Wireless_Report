@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.8"
+SCRIPT_VERSION="3.6.9"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -379,6 +379,9 @@ menu_time_color() {
 
     JB_1366="$NC Copyright (c) 2026 JB_1366 - All Rights Reserved"
     JB1366="$B_COLOR${UL}https://github.com/JB1366/Wireless_Report$NC"
+
+    COUNT1="https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-update"
+    COUNT2="https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-install"
 }
 
 device_default_colors() {
@@ -574,7 +577,7 @@ do_install() {
 
     if [ "$is_update" = "1" ]; then
         echo -e "\n$BL[✓] Wireless Report successfully installed.$NC"
-		curl -fsL "https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-update" >/dev/null 2>&1 &
+		curl -fsL "$COUNT1" >/dev/null 2>&1 &
         printf "\nPress $BL[Enter]$NC to apply changes & restart script..."
         read -r discard
         sys_log "(v$REMOTE_VERSION) successfully installed."
@@ -604,22 +607,11 @@ do_install() {
 
     SCRIPT_VERSION="$REMOTE_VERSION"
     sys_log "(v$SCRIPT_VERSION) successfully installed."
-    curl -fsL "https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-install" >/dev/null 2>&1 &
+    curl -fsL "$COUNT2" >/dev/null 2>&1 &
     echo -e "$GR[✓] SUCCESS: Installation complete!$NC\n"
     echo -e "$YL[i] To access Report, navigate to Advanced Settings > Wireless "
     echo -e "$YL    in the ASUS WebGUI and select the Wireless Report tab on the far right.$NC\n"
     pause
-}
-
-check_updateSE() {
-    if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
-    sed -i "\|restart:update_report1\b|d" "$SE_FILE" 2>/dev/null
-    sed -i "\|WirelessReportRuntime|d" "$SE_FILE" 2>/dev/null
-    if ! grep -q "start:wireless" "$SE_FILE"; then
-        echo 'case "$1:$2" in start:wireless*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
-    fi
-    chmod +x "$SE_FILE"
-    return 0
 }
 
 do_update() {
@@ -684,7 +676,7 @@ ScriptUpdateFromAMTM() {
         echo -e "  [+] Downloading latest version (v$REMOTE_VERSION)\n\n"
         echo -e "  [✓] Wireless Report successfully updated.\n"
         sys_log "AMTM Update: (v$REMOTE_VERSION) successfully installed."
-        curl -fsL "https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-update" >/dev/null 2>&1 &
+        curl -fsL "$COUNT1" >/dev/null 2>&1 &
         return 0
     fi
     return 1
@@ -1915,7 +1907,6 @@ selection() {
     esac
 }
 
-check_updateSE
 get_mesh_nodes
 check_github
 device_default_colors
