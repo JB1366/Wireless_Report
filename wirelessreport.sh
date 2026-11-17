@@ -614,16 +614,46 @@ do_install() {
     pause
 }
 
+get_pubkey() {
+    cat << 'EOF'
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA+hxiLZ4OP2Lc7Pg2b7NJmcBrAFjqzo8HZ4x6d7paYNc=
+-----END PUBLIC KEY-----
+EOF
+}
+
 do_update() {
-    TEMP_SCRIPT="/tmp/wirelessreport.sh"
-    if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" 2>/dev/null && [ -s "$TEMP_SCRIPT" ]; then
-        mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
-        chmod +x "$REPORT_SCRIPT" 2>/dev/null
-        last_update
-        inject_menu
-        return 0
+    local TEMP_SCRIPT="/tmp/wirelessreport.sh"
+    local TEMP_SIG="/tmp/wirelessreport.sh.sig"
+    local TEMP_PUB="/tmp/wirelessreport.pub.$$"
+
+    if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" 2>/dev/null && [ -s "$TEMP_SCRIPT" ] && \
+       curl -sfL --retry 3 "${GITHUB}.sig" -o "$TEMP_SIG" 2>/dev/null && [ -s "$TEMP_SIG" ]; then
+
+        get_pubkey > "$TEMP_PUB"
+
+        if openssl pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TEMP_SCRIPT" -sigfile "$TEMP_SIG" >/dev/null 2>&1; then
+            echo -e "\n$GR[+] Signature verified successfully.$NC"
+            rm -f "$TEMP_PUB"
+            mv "$TEMP_SIG" "${REPORT_SCRIPT}.sig"
+            mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
+
+            if [ ! -f "${REPORT_SCRIPT}.pub" ]; then
+                get_pubkey > "${REPORT_SCRIPT}.pub"
+            fi
+
+            chmod +x "$REPORT_SCRIPT" 2>/dev/null
+            last_update
+            inject_menu
+            return 0
+        else
+            echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
+            rm -f "$TEMP_SCRIPT" "$TEMP_SIG" "$TEMP_PUB"
+            pause
+            return 1
+        fi
     else
-        rm -f "$TEMP_SCRIPT"
+        rm -f "$TEMP_SCRIPT" "$TEMP_SIG"
         if [ ! -f "$0" ]; then
             echo -e "$RD[!] Download failed. Aborting installation.$NC"
             return 1
@@ -634,12 +664,22 @@ do_update() {
         TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null)
         [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
         if [ "$CURRENT_PATH" != "$TARGET_PATH" ]; then
-            echo -e "\n$YL[!] GitHub unreachable. Installing current local copy...$NC"
+            echo -e "\n$GR[+] GitHub unreachable. Installing current local copy...$NC"
             cp "$0" "$REPORT_SCRIPT"
+
+            if [ ! -f "${REPORT_SCRIPT}.pub" ]; then
+                get_pubkey > "${REPORT_SCRIPT}.pub"
+            fi
+
             chmod +x "$REPORT_SCRIPT" 2>/dev/null
             pause; return 0
         else
             echo -e "\n$YL[!] GitHub unreachable and script is already in place.$NC"
+
+            if [ ! -f "${REPORT_SCRIPT}.pub" ]; then
+                get_pubkey > "${REPORT_SCRIPT}.pub"
+            fi
+
             pause; return 1
         fi
     fi
