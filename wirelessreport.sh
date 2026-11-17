@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.6.9"
+SCRIPT_VERSION="3.7.0"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -625,13 +625,15 @@ do_update() {
     local TEMP_SCRIPT="/tmp/wirelessreport.sh"
     local TEMP_SIG="/tmp/wirelessreport.sh.sig"
     local TEMP_PUB="/tmp/wirelessreport.pub.$$"
+    local OPENSSL="/opt/bin/openssl"
+    [ -x "$OPENSSL" ] || OPENSSL="openssl"
 
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" 2>/dev/null && [ -s "$TEMP_SCRIPT" ] && \
        curl -sfL --retry 3 "${GITHUB}.sig" -o "$TEMP_SIG" 2>/dev/null && [ -s "$TEMP_SIG" ]; then
 
         get_pubkey > "$TEMP_PUB"
 
-        if openssl pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TEMP_SCRIPT" -sigfile "$TEMP_SIG" >/dev/null 2>&1; then
+        if "$OPENSSL" pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TEMP_SCRIPT" -sigfile "$TEMP_SIG" >/dev/null 2>&1; then
             echo -e "\n$GR[+] Signature verified successfully.$NC"
             rm -f "$TEMP_PUB"
             mv "$TEMP_SIG" "${REPORT_SCRIPT}.sig"
@@ -646,7 +648,11 @@ do_update() {
             inject_menu
             return 0
         else
-            echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
+            if ! "$OPENSSL" list -public-key-algorithms 2>/dev/null | grep -qi "ED25519"; then
+                echo -e "\n$RD[!] OpenSSL on this router lacks Ed25519 support. Install Entware openssl-util (opkg install openssl-util) and retry.$NC"
+            else
+                echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
+            fi
             rm -f "$TEMP_SCRIPT" "$TEMP_SIG" "$TEMP_PUB"
             pause
             return 1
