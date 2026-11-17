@@ -193,8 +193,21 @@ $\color{green}{\text{Method B:}}$ Via SSH<br>
 sh /jffs/addons/wireless_report/wirelessreport.sh install
 ```
    * Select Option (2) to uninstall the WR files.<br>
-   * Once the cleanup is complete, press (e) to exit the terminal.<br>
+   * Once the cleanup is complete, press (e) to exit the terminal.<br><br>
 
+
+$\color{blue}{\Large\text{Release public key:}}$<br>
+```
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA+hxiLZ4OP2Lc7Pg2b7NJmcBrAFjqzo8HZ4x6d7paYNc=
+-----END PUBLIC KEY-----
+```
+\
+\
+$\color{blue}{\Large\text{SHA-256 Fingerprint:}}$<br>
+```
+c63c486e001675f4ee3afbf45b9c5f33d9053682a49eff1b8c418078160c73fd
+```
 \
 \
 Wireless Report is free to use under the [GNU General Public License version GPL 3.0](LICENSE)<br>
