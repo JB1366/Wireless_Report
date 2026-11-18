@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.7.0-add support for legacy openssl.
 v3.6.9-added Ed25519 cryptographic signature verification for script updates.
 v3.6.8-add router time as authoritative source.
 v3.6.7-quick fix to date/time button.
