@@ -634,7 +634,7 @@ do_update() {
         get_pubkey > "$TEMP_PUB"
 
         if "$OPENSSL" pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TEMP_SCRIPT" -sigfile "$TEMP_SIG" >/dev/null 2>&1; then
-            echo -e "\n$GR[+] Signature verified successfully.$NC"
+            echo -e "\n$GR[✓] Signature verified successfully.$NC"
             rm -f "$TEMP_PUB"
             mv "$TEMP_SIG" "${REPORT_SCRIPT}.sig"
             mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
@@ -648,7 +648,7 @@ do_update() {
             inject_menu
             return 0
         else
-            if ! "$OPENSSL" list -public-key-algorithms 2>/dev/null | grep -qi "ED25519"; then
+            if ! "$OPENSSL" pkeyutl -help 2>&1 | grep -q "rawin"; then
                 echo -e "\n$RD[!] OpenSSL on this router lacks Ed25519 support. Install Entware openssl-util (opkg install openssl-util) and retry.$NC"
             else
                 echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
