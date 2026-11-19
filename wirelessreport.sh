@@ -597,12 +597,12 @@ do_install() {
     if [ ! -f "$SS_FILE" ]; then echo "#!/bin/sh" > "$SS_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SS_FILE" 2>/dev/null
     echo "$REPORT_SCRIPT inject & # Mount Wireless Report" >> "$SS_FILE"
-    chmod +x "$SS_FILE"
+    chmod 755 "$SS_FILE"
 
     if [ ! -f "$SE_FILE" ]; then echo "#!/bin/sh" > "$SE_FILE"; fi
     sed -i "\|$REPORT_SCRIPT|d" "$SE_FILE" 2>/dev/null
     echo 'case "$1:$2" in start:wireless*) '"$REPORT_SCRIPT"' "$2" & ;; esac # Wireless Report' >> "$SE_FILE"
-    chmod +x "$SE_FILE"
+    chmod 755 "$SE_FILE"
 
     SCRIPT_VERSION="$REMOTE_VERSION"
     sys_log "(v$SCRIPT_VERSION) successfully installed."
@@ -643,7 +643,7 @@ do_update() {
                 get_pubkey > "${REPORT_SCRIPT}.pub"
             fi
 
-            chmod +x "$REPORT_SCRIPT" 2>/dev/null
+            chmod 755 "$REPORT_SCRIPT" 2>/dev/null
             last_update
             inject_menu
             return 0
@@ -676,7 +676,7 @@ do_update() {
                 get_pubkey > "${REPORT_SCRIPT}.pub"
             fi
 
-            chmod +x "$REPORT_SCRIPT" 2>/dev/null
+            chmod 755 "$REPORT_SCRIPT" 2>/dev/null
             pause; return 0
         else
             echo -e "\n$YL[!] GitHub unreachable and script is already in place.$NC"
