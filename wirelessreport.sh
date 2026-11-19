@@ -690,6 +690,35 @@ do_update() {
     fi
 }
 
+do_verify_signature() {
+    local TARGET_SCRIPT="${1:-$REPORT_SCRIPT}"
+    local TARGET_SIG="${2:-${TARGET_SCRIPT}.sig}"
+    local TEMP_PUB="/tmp/wirelessreport.pub.$$"
+    local OPENSSL="/opt/bin/openssl"
+    local RC=1
+
+    [ -x "$OPENSSL" ] || OPENSSL="openssl"
+
+    if [ -f "$TARGET_SCRIPT" ] && [ -s "$TARGET_SIG" ]; then
+        if [ -s "${TARGET_SCRIPT}.pub" ]; then
+            cp "${TARGET_SCRIPT}.pub" "$TEMP_PUB" 2>/dev/null || get_pubkey > "$TEMP_PUB"
+        else
+            get_pubkey > "$TEMP_PUB"
+        fi
+
+        if "$OPENSSL" pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TARGET_SCRIPT" -sigfile "$TARGET_SIG" >/dev/null 2>&1; then
+            RC=0
+        fi
+    fi
+    rm -f "$TEMP_PUB"
+    if [ "$RC" -eq 0 ]; then
+        HEADER_TEXT="✓ Signature Verified<br><span style=\"color:#0096ff;font-weight:normal;\">Ed25519 Integrity OK</span>"
+    else
+        HEADER_TEXT="✕ Signature Check Failed<br><span style=\"color:#ff5555;font-weight:normal;\">Untrusted or Missing Signature</span>"
+    fi
+    return "$RC"
+}
+
 last_update() {
     menu_time_color
     UPDATE_TIME="$CUR_TIME"
@@ -1855,7 +1884,7 @@ get_theme() {
         "ASUS_WEBUI")
             RT_TOOLTIP="#3A4042"
             THEME_CSS=".top-header { background-color: #4D595D; }
-            .update-box { background: #3A4042; }
+            .update-box, .header-box { background: #3A4042; }
             .section-header { background: #4D595D; }
             .report-column { background: #3A4042; }
             table.report_table td { background: #1c232b; } /* Table Background */
@@ -1873,7 +1902,7 @@ get_theme() {
         "DARKMODE")
             RT_TOOLTIP="#000000"
             THEME_CSS=".top-header { background: transparent !important; }
-            .update-box { background: #000000; }
+            .update-box, .header-box { background: #000000; }
             .section-header { background: transparent !important; }
             .report-column { background: transparent !important; }
             table.report_table td { background: transparent !important; }
@@ -1889,7 +1918,7 @@ get_theme() {
         "ORIGINAL"|*)
             RT_TOOLTIP="#000000"
             THEME_CSS=".top-header { background: transparent !important; }
-            .update-box { background: #000000; }
+            .update-box, .header-box { background: #000000; }
             .section-header { background: linear-gradient(to bottom, #171b1f, #354961); }
             .report-column { background: #1c232b; }
             table.report_table td { background: #1c232b; }
@@ -1955,6 +1984,7 @@ selection() {
 get_mesh_nodes
 check_github
 device_default_colors
+do_verify_signature
 
 run_report() {
 #══════════════════════════════════════════════════════════════════════════#
@@ -2060,8 +2090,47 @@ cat <<HTML >> "$WEB_PAGE"
         font-size: 24px;
         font-weight: bold;
         position: static;
+    }
+
+    .header-wrap {
+        text-align: center;
         width: 100%;
         margin: 10px 0;
+    }
+
+    .header-box {
+        visibility: hidden;
+        width: max-content;
+        min-width: 120px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        text-align: center;
+        border: 1px solid #0096ff;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 999;
+        bottom: 135%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 0.85rem;
+        font-weight: bold;
+        box-shadow: 0 4px 12px #000;
+        pointer-events: none;
+        line-height: 1.4;
+    }
+
+    .header-tooltip {
+        position: relative;
+        display: inline-block;
+    }
+
+    .header-tooltip:hover .header-box {
+        visibility: visible;
+        opacity: 1;
+        bottom: 145%;
     }
 
     .update-title {
@@ -3094,7 +3163,12 @@ cat <<HTML >> "$WEB_PAGE"
                 <div id="tabMenu" class="submenuBlock"></div>
                 <div id="wifiReportContainer">
                     <div class="top-header">
-                        <h1 class="header-title">WIRELESS REPORT</h1>
+                        <div class="header-wrap">
+                            <div class="header-tooltip">
+                                <h1 class="header-title">WIRELESS REPORT</h1>
+                                <span class="header-box">$HEADER_TEXT</span>
+                            </div>
+                        </div>
                         <span id="liveClock" class="live-time"></span>
                         <div class="total-count">Total Wireless Devices: <span id="wr-grand-total" class="count-highlight">0</span></div>
                         <div class="top-buttons">
