@@ -73,7 +73,7 @@ install_menu() {
         printb "╔═════════════════════════════════════════════════════════════╗"
         check_version
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "$MM" "center"
+        printm "$MM          $SHELL_TEXT" "center"
         printm ""
         printm "  $N1  Install/Update"
         printm "  $N2  Uninstall"
@@ -713,8 +713,10 @@ do_verify_signature() {
     rm -f "$TEMP_PUB"
     if [ "$RC" -eq 0 ]; then
         HEADER_TEXT="✓ Signature Verified<br><span style=\"color:#0096ff;font-weight:normal;\">Ed25519 Integrity OK</span>"
+        SHELL_TEXT="$GR✓ Signature Verified"
     else
         HEADER_TEXT="✕ Signature Check Failed<br><span style=\"color:#ff5555;font-weight:normal;\">Untrusted or Missing Signature</span>"
+        SHELL_TEXT="$RD✕ Signature Failed"
     fi
     return "$RC"
 }
@@ -1981,10 +1983,16 @@ selection() {
     esac
 }
 
+main_init() {
+    get_modelid_fw
+    menu_time_color
+    do_verify_signature
+    install_menu
+}
+
 get_mesh_nodes
 check_github
 device_default_colors
-do_verify_signature
 
 run_report() {
 #══════════════════════════════════════════════════════════════════════════#
@@ -2033,6 +2041,7 @@ done
 do_button_labels
 get_theme
 check_version update_box
+do_verify_signature
 
 /usr/bin/printf '\xEF\xBB\xBF' > "$WEB_PAGE"
 cat <<HTML >> "$WEB_PAGE"
@@ -7072,9 +7081,7 @@ case "$1" in
         inject_menu
         ;;
     install)
-        get_modelid_fw
-        menu_time_color
-        install_menu
+        main_init
         ;;
 	*hostcolor)
         do_host_color
