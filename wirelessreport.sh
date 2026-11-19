@@ -73,7 +73,7 @@ install_menu() {
         printb "╔═════════════════════════════════════════════════════════════╗"
         check_version
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "$MM          $SHELL_TEXT" "center"
+        printm "$MM                $SHELL_TEXT" "center"
         printm ""
         printm "  $N1  Install/Update"
         printm "  $N2  Uninstall"
