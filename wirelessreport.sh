@@ -1896,7 +1896,7 @@ get_theme() {
             table.report_table th:hover { background: #77A5C6; }
             .separator-line { border: 0; border-top: 1px solid black; }
             #refresh-option:focus { background: #3A4042; }
-            #themeSelect option, #webPadding option { background-color: #3A4042; }
+            #themeSelect option, #webPadding option, #timeSelect option { background-color: #3A4042; }
             .rssi-tooltip { background: #1c232b; }
             .button-auto-refresh { background: #3A4042; }
             .button-tables { background: #3A4042; }
