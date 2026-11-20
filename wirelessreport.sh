@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.7.1"
+SCRIPT_VERSION="3.7.2"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -2076,6 +2076,22 @@ cat <<HTML >> "$WEB_PAGE"
         -webkit-tap-highlight-color: transparent !important;
     }
 
+    #wifiReportContainer:fullscreen {
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    #wifiReportContainer:-webkit-full-screen {
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
     .grid-container {
         display: flex;
         flex-direction: column;
@@ -3201,7 +3217,8 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                             <button id="btnSplit" class="button-tables active" onclick="switchTab('split')">Split View ★</button>
                             <button id="btnAll" class="button-tables" onclick="switchTab('all')">All View ❖</button>
-                            <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide View ⛶</button>
+                            <button id="btnWide" class="button-tables" onclick="toggleWideView()">Wide ⤢</button>
+                            <button id="btnFull" class="button-tables" onclick="toggleFullView()">Full ⛶</button>
                             <div class="update-tooltip">
                                 <button class="button-tables $UPDATE_TITLE" onclick="triggerUpdate(this)">Update ↻</button>
                                 <span class="update-box">$HOVER_TEXT</span>
@@ -3312,7 +3329,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     </tfoot>
                                 </table>
                             </div>
-                            <div style="display: flex; font-size: 12px; gap: 200px; align-items: center; margin-top: -8px; padding-left: 25px;">
+                             <div style="display: flex; justify-content: center; gap: clamp(24px, 12vw, 200px); flex-wrap: wrap; font-size: 12px; align-items: center; margin-top: -8px;">
                                 <a href="https://github.com/JB1366/Wireless_Report" target="_blank" rel="noopener noreferrer" class="footer-link">Github Repository</a>
                                 <a href="https://www.paypal.com/paypalme/JB1366" target="_blank" rel="noopener noreferrer" class="footer-link">Donate Paypal</a>
                                 <a href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" class="footer-link">Wireless Report Forum</a>
@@ -6950,6 +6967,42 @@ function sortTable(n, tId, keepDir, forceDesc) {
     });
 }
 
+function toggleFullView(forceState) {
+    var container = document.getElementById('wifiReportContainer');
+    if (!container) return;
+
+    var active = document.fullscreenElement === container;
+    var next = (typeof forceState === 'boolean') ? forceState : !active;
+
+    if (next) {
+        // Make the report container go true fullscreen
+        if (container.requestFullscreen) {
+            container.requestFullscreen().catch(function(err) {
+                console.warn('Fullscreen failed:', err);
+            });
+        } else if (container.webkitRequestFullscreen) { // Safari
+            container.webkitRequestFullscreen();
+        }
+    } else if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
+
+    setFullButtonState(next);
+}
+
+function setFullButtonState(isFull) {
+    var btn = document.getElementById('btnFull');
+    if (!btn) return;
+    btn.textContent = isFull ? 'Exit ⛶' : 'Full ⛶';
+    btn.classList.toggle('active', isFull);
+}
+
+// Keep button state in sync when user presses Esc
+document.addEventListener('fullscreenchange', function() {
+    var container = document.getElementById('wifiReportContainer');
+    setFullButtonState(document.fullscreenElement === container);
+});
+
 function setWideButtonState(active) {
     var button = document.getElementById('btnWide');
     if (!button) return;
@@ -6964,6 +7017,13 @@ function toggleWideView(forceState) {
     setWideButtonState(next);
     var container = document.getElementById('wifiReportContainer');
     if (next && container) container.scrollTop = 0;
+}
+
+function setWideButtonState(isWide) {
+    var btn = document.getElementById('btnWide');
+    if (!btn) return;
+    btn.textContent = isWide ? 'Exit ⤡' : 'Wide ⤢';
+    btn.classList.toggle('active', isWide);
 }
 
 function openPopout() {
