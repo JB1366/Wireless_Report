@@ -756,7 +756,7 @@ last_update() {
 do_webcheck() {
     if check_version web_check; then
         sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATE"
-        exit 0
+        return 0
     fi
     sleep 1
     sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: Updated To: v$REMOTE_VERSION"
@@ -7195,6 +7195,7 @@ case "$1" in
         ;;
     *update)
         do_webcheck
+        check_version update_box
         ;;
     *wirelessbackhaul)
         do_backhaul
