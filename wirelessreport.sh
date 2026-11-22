@@ -1924,6 +1924,7 @@ do_button_labels() {
     case "$RTIME" in 1) RN_LABEL="Runtime On" ;; *) RN_LABEL="Runtime Off" ;; esac
     case "$RS_HIST" in 1) RS_LABEL="RSSI Tooltips On" ;; *) RS_LABEL="RSSI Tooltips Off" ;; esac
     case "$THEME" in ORIGINAL) TH_STATUS="Original" ;; DARKMODE) TH_STATUS="Darkmode" ;; ASUS_WEBUI) TH_STATUS="AsusUI" ;; esac
+    LAST_CHECK="${LAST_CHECK:-INITIALIZING}"; LAST_UPDATE="${LAST_UPDATE:-INITIALIZING}"
 }
 
 get_theme() {
