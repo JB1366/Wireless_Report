@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.7.3-fixed update integrity.
 v3.7.2-minor updates, add Fullscreen button.
 v3.7.1-Header Verification Badge: Hovering over the WIRELESS REPORT header now displays the
        live signature verification status (Signature Verified / Signature Check Failed).
