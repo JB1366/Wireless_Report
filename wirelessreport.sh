@@ -136,25 +136,25 @@ check_version() {
             GH="<span style='color: #0096ff;'>"; SP="</span>"
             case "$STATE" in
                 OFFLINE)
-                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable$SP <br> Last Update: $UPDATE_TIME"
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Github Offline or Unreachable$SP <br> Last Update: $LAST_UPDATE <br> Last Check: $LAST_CHECK"
                     VERSION_HASH="$DEV [Offline]"
                     UPDATE_TITLE="update-title"
                     TRIGGER="triggerUpdate(this, 'Checking...')"
                     ;;
                 OUTDATED)
-                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version$SP v$REMOTE_VERSION ${GH}available$SP <br> Last Update: $UPDATE_TIME"
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}New Version$SP v$REMOTE_VERSION ${GH}available$SP <br> Last Update: $LAST_UPDATE <br> Last Check: $LAST_CHECK"
                     VERSION_HASH="$DEV [$REMOTE_VERSION]"
                     UPDATE_TITLE="update-title2"
                     TRIGGER="triggerUpdate(this, 'Updating...')"
                     ;;
                 HASH_DIFF)
-                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available$SP <br> Last Update: $UPDATE_TIME"
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> ${GH}Hash Update available$SP <br> Last Update: $LAST_UPDATE <br> Last Check: $LAST_CHECK"
                     VERSION_HASH="$DEV [Hash]"
                     UPDATE_TITLE="update-title2"
                     TRIGGER="triggerUpdate(this, 'Updating...')"
                     ;;
                 UP_TO_DATE|*)
-                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $UPDATE_TIME"
+                    HOVER_TEXT="Current: v$SCRIPT_VERSION$DEV <br> Last Update: $LAST_UPDATE <br> Last Check: $LAST_CHECK"
                     VERSION_HASH="$DEV"
                     UPDATE_TITLE="update-title"
                     TRIGGER="triggerUpdate(this, 'Checking...')"
@@ -211,6 +211,7 @@ menu_vars() {
     if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
     if [ "$RR" = "1" ]; then RR=""; run_report; fi
     menu_buffer=""; MB="61"; echo -e "$B_COLOR"
+
     MM="$B_COLOR$CM$NC"
     ON="${GR}ON$NC"; OFF="${RD}OFF$NC"
 
@@ -676,7 +677,7 @@ do_update() {
                 echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
             fi
             rm -f "$TEMP_SCRIPT" "$TEMP_SIG" "$TEMP_PUB"
-            pause
+            [ -t 0 ] && pause
             return 1
         fi
     else
@@ -699,7 +700,7 @@ do_update() {
             fi
 
             chmod 755 "$REPORT_SCRIPT" 2>/dev/null
-            pause; return 0
+            [ -t 0 ] && pause; return 0
         else
             echo -e "\n$YL[!] GitHub unreachable and script is already in place.$NC"
 
@@ -707,7 +708,7 @@ do_update() {
                 get_pubkey > "${REPORT_SCRIPT}.pub"
             fi
 
-            pause; return 1
+            [ -t 0 ] && pause; return 1
         fi
     fi
 }
@@ -745,22 +746,45 @@ do_verify_signature() {
 
 last_update() {
     menu_time_color
-    UPDATE_TIME="$CUR_TIME"
-    if grep -q "UPDATE_TIME=" "$CONFIG"; then
-        sed -i "s|^UPDATE_TIME=.*|UPDATE_TIME=\"$UPDATE_TIME\"|" "$CONFIG"
+    LAST_UPDATE="$CUR_TIME"
+    if grep -q "LAST_UPDATE=" "$CONFIG"; then
+        sed -i "s|^LAST_UPDATE=.*|LAST_UPDATE=\"$LAST_UPDATE\"|" "$CONFIG"
     else
-        echo "UPDATE_TIME=\"$UPDATE_TIME\"" >> "$CONFIG"
+        echo "LAST_UPDATE=\"$LAST_UPDATE\"" >> "$CONFIG"
+    fi
+}
+
+last_check() {
+    menu_time_color
+    LAST_CHECK="$CUR_TIME"
+    if grep -q "LAST_CHECK=" "$CONFIG"; then
+        sed -i "s|^LAST_CHECK=.*|LAST_CHECK=\"$LAST_CHECK\"|" "$CONFIG"
+    else
+        echo "LAST_CHECK=\"$LAST_CHECK\"" >> "$CONFIG"
     fi
 }
 
 do_webcheck() {
+    SHOW_UP_FILE="/tmp/wr_show_up"
+    last_check
     if check_version web_check; then
         sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: $STATE"
+        SKIP_RUN_REPORT=0
+        return 0
+    fi
+    cur_show_up=0
+    [ -f "$SHOW_UP_FILE" ] && cur_show_up=$(cat "$SHOW_UP_FILE" 2>/dev/null)
+    [ "$cur_show_up" = "1" ] || cur_show_up=0
+    if [ "$cur_show_up" -eq 0 ]; then
+        echo "1" > "$SHOW_UP_FILE"
+        SKIP_RUN_REPORT=0
         return 0
     fi
     sleep 1
     sys_log "Current: v$SCRIPT_VERSION$DEV Remote: v$REMOTE_VERSION Status: Updated To: v$REMOTE_VERSION"
+    rm -f "$SHOW_UP_FILE"
     do_update
+    SKIP_RUN_REPORT=1
 }
 
 ScriptUpdateFromAMTM() {
@@ -2009,11 +2033,11 @@ main_init() {
     get_modelid_fw
     menu_time_color
     do_verify_signature
+    check_github
     install_menu
 }
 
 get_mesh_nodes
-check_github
 device_default_colors
 
 run_report() {
@@ -2062,6 +2086,7 @@ done
 
 do_button_labels
 get_theme
+check_github
 check_version update_box
 do_verify_signature
 
@@ -6489,7 +6514,6 @@ function triggerUpdate(btn, actionText) {
             } else {
                 if (btn) {
                     btn.innerText = "Up to Date ↻";
-                    btn.classList.remove('refresh-pulse');
                     setTimeout(() => { btn.innerText = "Update ↻"; }, 5000);
                 }
             }
@@ -7194,8 +7218,9 @@ case "$1" in
         run_report
         ;;
     *update)
+        check_github
         do_webcheck
-        check_version update_box
+        if [ "${SKIP_RUN_REPORT:-0}" -ne 1 ]; then run_report; fi
         ;;
     *wirelessbackhaul)
         do_backhaul
