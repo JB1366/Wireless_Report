@@ -140,13 +140,16 @@ $\color{blue}{\Large\text{Advanced Viewing + Interactive Features}}$<br>
 Wireless Report is designed to be more than just a static table. Use these interactive elements to manage your network:
   * $\color{green}{\text{Version, Hash + Update Alerts:}}$ Hover your mouse over the "Wireless Report" header to instantly check your current script version and view file hash updates—when an update or hash change is available, the header text softly pulses twice to catch your eye. Additionally, the browser tab title displays the active Wireless Report version, dynamically appending an alert whenever a new version or hash update is detected.
   * $\color{green}{\text{Dynamic UI Modes:}}$ Choose how you view your data using the built-in button toggles:<br>
-    * $\color{blue}{\text{Main View:}}$ A clean, vertical list of router and nodes.<br>
-    * $\color{blue}{\text{All Devices:}}$ A consolidated view of every wireless client on the network.<br>
+    * $\color{blue}{\text{Split View:}}$ A clean, vertical list of router and nodes.<br>
+    * $\color{blue}{\text{All View:}}$ A consolidated view of every wireless client on the network.<br>
     * $\color{blue}{\text{Popout View:}}$ Launches a separate window for easier comparison between the Router and Nodes.
-    * $\color{blue}{\text{Wide View:}}$ Expands the existing views to full-page width for a more expansive layout.
+    * $\color{blue}{\text{Wide View:}}$ Expands existing views to full-page width for a wider horizontal layout.
+    * $\color{blue}{\text{Full View:}}$ Expands the active view to fill the full screen or viewport for distraction-free
   * $\color{green}{\text{Visual Notifications:}}$<br>
     * $\color{blue}{\text{New Device Pulse:}}$ The entire row will pulse when a new device is first detected on the network.<br>
-    * $\color{blue}{\text{Uptime Alert:}}$ Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).
+    * $\color{blue}{\text{Uptime Alert:}}$ Spot recent roaming or reconnections instantly with a pulsing indicator for new connections. The sensitivity threshold is now user-definable (default: 15 minutes).<br>
+    * $\color{blue}{\text{Update Notification:}}$ Click update button to see if a newer version is available, allowing one-click updates.<br>
+    * $\color{blue}{\text{Signature Verification:}}$ Hovering over the header displays a verification tooltip confirming the script's integrity and authenticity.
   * $\color{green}{\text{Custom Refresh Control:}}$ Use the built-in dropdown menu to adjust the Auto-Refresh Interval to suit your monitoring needs.
   * $\color{green}{\text{Node/All Devices Hostname Sorting:}}$ Right-click the Node/All Devices hostnames header to toggle numerical sorting - Nodes 1-3 vs. 3-1, All-Devices (router)1-3 vs. 3-1(router).
   * $\color{green}{\text{Column Sorting:}}$ Remembers column sort-state of all tables, between all refreshes.
@@ -170,10 +173,8 @@ sh /jffs/addons/wireless_report/wirelessreport.sh install
 \
 \
 $\color{blue}{\Large\text{Alias}}$ <br>
-Command Shortcut (Alias)
-
-alias 'wr' is automatically created on new installs/updates.
-
+Command Shortcut (Alias)<br>
+alias 'wr' is automatically created on new installs/updates.<br>
 Typing wr from any location in the SSH terminal will launch the installer.
 
 \
