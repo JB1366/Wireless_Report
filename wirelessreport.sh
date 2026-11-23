@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.7.3"
+SCRIPT_VERSION="3.7.4"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -643,12 +643,33 @@ MCowBQYDK2VwAyEA+hxiLZ4OP2Lc7Pg2b7NJmcBrAFjqzo8HZ4x6d7paYNc=
 EOF
 }
 
+get_openssl() {
+    local bin
+    for bin in "/opt/bin/openssl" "/usr/sbin/openssl" "/usr/bin/openssl" "openssl"; do
+        if "$bin" pkeyutl -help 2>&1 | grep -q "rawin"; then
+            echo "$bin"
+            return 0
+        fi
+    done
+    return 1
+}
+
 do_update() {
+    local OPENSSL
+    OPENSSL=$(get_openssl)
+
+    if [ -z "$OPENSSL" ]; then
+        echo -e "\n$RD[!] OpenSSL on this router lacks Ed25519 support.$NC"
+        echo -e "$YL Install Entware openssl-util ('opkg install openssl-util') and retry.$NC"
+        [ -t 0 ] && pause
+        return 1
+    fi
+
     local TEMP_SCRIPT="/tmp/wirelessreport.sh"
     local TEMP_SIG="/tmp/wirelessreport.sh.sig"
     local TEMP_PUB="/tmp/wirelessreport.pub.$$"
-    local OPENSSL="/opt/bin/openssl"
-    [ -x "$OPENSSL" ] || OPENSSL="openssl"
+
+    rm -f "${REPORT_SCRIPT}.pub" # remove later
 
     if curl -sfL --retry 3 "$GITHUB" -o "$TEMP_SCRIPT" 2>/dev/null && [ -s "$TEMP_SCRIPT" ] && \
        curl -sfL --retry 3 "${GITHUB}.sig" -o "$TEMP_SIG" 2>/dev/null && [ -s "$TEMP_SIG" ]; then
@@ -658,23 +679,17 @@ do_update() {
         if "$OPENSSL" pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TEMP_SCRIPT" -sigfile "$TEMP_SIG" >/dev/null 2>&1; then
             echo -e "\n$YL  [✓] Signature verified successfully.$NC"
             rm -f "$TEMP_PUB"
-            mv "$TEMP_SIG" "${REPORT_SCRIPT}.sig"
-            mv "$TEMP_SCRIPT" "$REPORT_SCRIPT"
 
-            if [ ! -f "${REPORT_SCRIPT}.pub" ]; then
-                get_pubkey > "${REPORT_SCRIPT}.pub"
-            fi
+            cp "$TEMP_SIG" "${REPORT_SCRIPT}.sig.tmp" && mv -f "${REPORT_SCRIPT}.sig.tmp" "${REPORT_SCRIPT}.sig"
+            cp "$TEMP_SCRIPT" "${REPORT_SCRIPT}.tmp" && mv -f "${REPORT_SCRIPT}.tmp" "$REPORT_SCRIPT"
+            rm -f "$TEMP_SCRIPT" "$TEMP_SIG"
 
             chmod 755 "$REPORT_SCRIPT" 2>/dev/null
             last_update
             inject_menu
             return 0
         else
-            if ! "$OPENSSL" pkeyutl -help 2>&1 | grep -q "rawin"; then
-                echo -e "\n$RD[!] OpenSSL on this router lacks Ed25519 support. Install Entware openssl-util (opkg install openssl-util) and retry.$NC"
-            else
-                echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
-            fi
+            echo -e "\n$RD[!] Signature verification failed! Aborting update.$NC"
             rm -f "$TEMP_SCRIPT" "$TEMP_SIG" "$TEMP_PUB"
             [ -t 0 ] && pause
             return 1
@@ -685,29 +700,21 @@ do_update() {
             echo -e "$RD[!] Download failed. Aborting installation.$NC"
             return 1
         fi
+
         local CURRENT_PATH TARGET_PATH
-        CURRENT_PATH=$(readlink -f "$0" 2>/dev/null)
-        [ -z "$CURRENT_PATH" ] && CURRENT_PATH="$0"
-        TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null)
-        [ -z "$TARGET_PATH" ] && TARGET_PATH="$REPORT_SCRIPT"
+        CURRENT_PATH=$(readlink -f "$0" 2>/dev/null || echo "$0")
+        TARGET_PATH=$(readlink -f "$REPORT_SCRIPT" 2>/dev/null || echo "$REPORT_SCRIPT")
+
         if [ "$CURRENT_PATH" != "$TARGET_PATH" ]; then
             echo -e "\n$GR[+] GitHub unreachable. Installing current local copy...$NC"
-            cp "$0" "$REPORT_SCRIPT"
-
-            if [ ! -f "${REPORT_SCRIPT}.pub" ]; then
-                get_pubkey > "${REPORT_SCRIPT}.pub"
-            fi
-
+            cp "$0" "${REPORT_SCRIPT}.tmp" && mv -f "${REPORT_SCRIPT}.tmp" "$REPORT_SCRIPT"
             chmod 755 "$REPORT_SCRIPT" 2>/dev/null
-            [ -t 0 ] && pause; return 0
+            [ -t 0 ] && pause
+            return 0
         else
             echo -e "\n$YL[!] GitHub unreachable and script is already in place.$NC"
-
-            if [ ! -f "${REPORT_SCRIPT}.pub" ]; then
-                get_pubkey > "${REPORT_SCRIPT}.pub"
-            fi
-
-            [ -t 0 ] && pause; return 1
+            [ -t 0 ] && pause
+            return 1
         fi
     fi
 }
@@ -716,29 +723,34 @@ do_verify_signature() {
     local TARGET_SCRIPT="${1:-$REPORT_SCRIPT}"
     local TARGET_SIG="${2:-${TARGET_SCRIPT}.sig}"
     local TEMP_PUB="/tmp/wirelessreport.pub.$$"
-    local OPENSSL="/opt/bin/openssl"
     local RC=1
 
-    [ -x "$OPENSSL" ] || OPENSSL="openssl"
+    local OPENSSL
+    OPENSSL=$(get_openssl)
+
+    if [ -z "$OPENSSL" ]; then
+        HEADER_TEXT="⚠ Verification Unavailable<br><span style=\"color:#ffaa00;font-weight:normal;\">Requires Entware openssl-util</span>"
+        SHELL_TEXT="$YL⚠ Verification Unavailable (opkg install openssl-util)$NC"
+        return 1
+    fi
+
+    rm -f "${REPORT_SCRIPT}.pub" # remove later
 
     if [ -f "$TARGET_SCRIPT" ] && [ -s "$TARGET_SIG" ]; then
-        if [ -s "${TARGET_SCRIPT}.pub" ]; then
-            cp "${TARGET_SCRIPT}.pub" "$TEMP_PUB" 2>/dev/null || get_pubkey > "$TEMP_PUB"
-        else
-            get_pubkey > "$TEMP_PUB"
-        fi
+        get_pubkey > "$TEMP_PUB"
 
         if "$OPENSSL" pkeyutl -verify -pubin -inkey "$TEMP_PUB" -rawin -in "$TARGET_SCRIPT" -sigfile "$TARGET_SIG" >/dev/null 2>&1; then
             RC=0
         fi
+        rm -f "$TEMP_PUB"
     fi
-    rm -f "$TEMP_PUB"
+
     if [ "$RC" -eq 0 ]; then
         HEADER_TEXT="✓ Signature Verified<br><span style=\"color:#0096ff;font-weight:normal;\">Ed25519 Integrity OK</span>"
-        SHELL_TEXT="$GR✓ Signature Verified"
+        SHELL_TEXT="$GR✓ Signature Verified$NC"
     else
         HEADER_TEXT="✕ Signature Check Failed<br><span style=\"color:#ff5555;font-weight:normal;\">Untrusted or Missing Signature</span>"
-        SHELL_TEXT="$RD✕ Signature Failed"
+        SHELL_TEXT="$RD✕ Signature Failed$NC"
     fi
     return "$RC"
 }
