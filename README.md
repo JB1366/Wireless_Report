@@ -174,7 +174,7 @@ sh /jffs/addons/wireless_report/wirelessreport.sh install
 \
 $\color{blue}{\Large\text{Alias}}$ <br>
 Command Shortcut (Alias)<br>
-alias 'wr' is automatically created on new installs/updates.<br>
+alias 'wr' is automatically created on new installs.<br>
 Typing wr from any location in the SSH terminal will launch the installer.
 
 \
