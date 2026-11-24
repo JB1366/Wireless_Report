@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.7.4"
+SCRIPT_VERSION="3.7.5"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -369,7 +369,7 @@ get_modelid_fw() {
 }
 
 menu_time_color() {
-    WH='\033[1;37m'; YL='\033[0;33m'; RD='\033[0;31m'
+    UL='\033[4m'; WH='\033[1;37m'; YL='\033[0;33m'; RD='\033[0;31m'
     BL='\033[38;5;39m'; GR='\033[0;32m'; NC='\033[0m'
     trap 'printf "\033[0m"' 0; trap 'exit 130' INT TERM HUP
 
@@ -1427,24 +1427,7 @@ set_options() {
             case "$choice" in
                 1) set_runtime_tracking ;;
                 2) do_backhaul ;;
-                3)
-                    while true; do
-                        echo -e "\n (${GR}0$NC) disable      (${GR}15$NC)def      (${GR}1440$NC) max "
-                        printf " Enter alert interval in mins [${B_COLOR}E=exit$NC]: "
-                        read -r user_mins
-                        case "$user_mins" in e|E) break 2 ;; ""|*[!0-9]*) freeze 3; continue ;; esac
-                        if [ "$user_mins" -le 1440 ]; then
-                            if grep -q "PULSE_MINS=" "$CONFIG"; then
-                                sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$user_mins\"/" "$CONFIG"
-                            else
-                                echo "PULSE_MINS=\"$user_mins\"" >> "$CONFIG"
-                            fi
-                            break 2
-                        fi
-                        freeze 3
-                    done
-                    pause
-                    ;;
+                3) set_uptime_pulse ;;
                 4) set_ip_padding ;;
                 5) do_host_color ;;
                 6) set_rssi_tooltip ;;
@@ -1529,6 +1512,40 @@ do_backhaul() {
         fi
     else
         echo 'BACKHAUL="1"' >> "$CONFIG"
+    fi
+}
+
+set_uptime_pulse() {
+    while true; do
+        echo -e "\n (${GR}0$NC) disable      (${GR}15$NC)def      (${GR}1440$NC) max "
+        printf " Enter alert interval in mins [${B_COLOR}E=exit$NC]: "
+        read -r user_mins
+        case "$user_mins" in e|E) break 2 ;; ""|*[!0-9]*) freeze 3; continue ;; esac
+        if [ "$user_mins" -le 1440 ]; then NEW_MINS="$user_mins"
+            if grep -q "PULSE_MINS=" "$CONFIG"; then
+                sed -i "s/PULSE_MINS=.*/PULSE_MINS=\"$NEW_MINS\"/" "$CONFIG"
+            else
+                echo "PULSE_MINS=\"$NEW_MINS\"" >> "$CONFIG"
+            fi
+            break 2
+        else
+            freeze 3
+            continue
+        fi
+    done
+    pause
+}
+
+do_uptime_pulse() {
+    local mins=${1##*utpulse}
+    case "$mins" in
+        ""|*[!0-9]*) return 1 ;;
+    esac
+    [ "$mins" -le 1440 ] || return 1
+    if [ -f "$CONFIG" ] && grep -q "^PULSE_MINS=" "$CONFIG"; then
+        sed -i "s/^PULSE_MINS=.*/PULSE_MINS=\"$mins\"/" "$CONFIG"
+    else
+        echo "PULSE_MINS=\"$mins\"" >> "$CONFIG"
     fi
 }
 
@@ -1936,6 +1953,7 @@ do_button_labels() {
     case "$RTIME" in 1) RN_LABEL="Runtime On" ;; *) RN_LABEL="Runtime Off" ;; esac
     case "$RS_HIST" in 1) RS_LABEL="RSSI Tooltips On" ;; *) RS_LABEL="RSSI Tooltips Off" ;; esac
     case "$THEME" in ORIGINAL) TH_STATUS="Original" ;; DARKMODE) TH_STATUS="Darkmode" ;; ASUS_WEBUI) TH_STATUS="AsusUI" ;; esac
+    UT_LABEL="Uptime Pulse ${PULSE_MINS:-0}m"
     LAST_CHECK="${LAST_CHECK:-INITIALIZING}"; LAST_UPDATE="${LAST_UPDATE:-INITIALIZING}"
 }
 
@@ -3313,6 +3331,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     <option value="5" id="optINTL1"></option>
                                     <option value="6" id="optISO1"></option>
                                 </select>
+                                <button class="button-tables" onclick="uptimePulse(this)">$UT_LABEL</button>
                             </div>
                         </div>
                     <div class="grid-container">
@@ -6720,6 +6739,34 @@ function hostColor(btn) {
     });
 }
 
+function uptimePulse(btn) {
+    const rawInput = window.prompt("Enter uptime pulse interval in minutes (0 - 1440):");
+    if (rawInput === null) return;
+    const trimmed = rawInput.trim();
+    if (!/^\d+$/.test(trimmed)) {
+        window.alert("Please enter a whole number between 0 and 1440.");
+        return;
+    }
+    const minutes = Number(trimmed);
+    if (minutes < 0 || minutes > 1440) {
+        window.alert("Value must be between 0 and 1440 minutes.");
+        return;
+    }
+    if (btn) btn.classList.add('refresh-pulse');
+
+    applyService('start_wireless_utpulse' + minutes)
+
+    .then(function() {
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    })
+    .catch(function(err) {
+        console.error("Uptime Pulse failed:", err);
+        if (btn) btn.classList.remove('refresh-pulse');
+    });
+}
+
 async function triggerRefresh() {
     if (isRefreshing) return;
     isRefreshing = true;
@@ -7234,6 +7281,10 @@ case "$1" in
         check_github
         do_webcheck
         if [ "${SKIP_RUN_REPORT:-0}" -ne 1 ]; then run_report; fi
+        ;;
+    *utpulse*)
+        do_uptime_pulse "$1"
+        run_report
         ;;
     *wirelessbackhaul)
         do_backhaul
