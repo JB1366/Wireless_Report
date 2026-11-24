@@ -1699,7 +1699,7 @@ set_github_branch() {
         printb "╔═════════════════════════════════════════════════════════════╗"
         printm "                      Set Github Branch"
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "  Branch: [$BN]                  $CURRENT"
+        printm "  Branch: [$BN]                $CURRENT"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
         printm "  $N1 main (JB1366)"
