@@ -2640,14 +2640,21 @@ cat <<HTML >> "$WEB_PAGE"
 
     .top-buttons-secondary {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
+        flex-direction: column;
         align-items: center;
         gap: 10px;
         margin-top: 10px;
         margin-bottom: 10px;
         border-top: none;
         padding-top: 0;
+    }
+
+    .top-buttons-secondary .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
     }
 
     /* Active toggle state for both Options buttons */
@@ -3303,35 +3310,40 @@ cat <<HTML >> "$WEB_PAGE"
                             <button id="btnOptionsToggle" class="button-tables" onclick="toggleOptionsRow()">⚙</button>
                             </div>
                             <div id="secondaryButtonRow" class="top-buttons-secondary" style="display: none;">
-                                <button class="button-tables" onclick="runtimeTrackingweb(this)">$RN_LABEL ☰</button>
-                                <select id="webPadding" onchange="ipPadding()" class="button-tables" data-status="$IP_STATUS">
-                                    <option selected disabled hidden>IP Padding ⇥</option>
-                                    <option value="1">Last 2 Octets</option>
-                                    <option value="2">Last Octet</option>
-                                    <option value="3">Disabled</option>
-                                </select>
-                                <select id="themeSelect" onchange="webThemes()" class="button-tables" data-status="$TH_STATUS">
-                                    <option selected disabled hidden>Themes ⟳</option>
-                                    <option value="1">Original</option>
-                                    <option value="2">Darkmode</option>
-                                    <option value="3">AsusUI</option>
-                                </select>
-                                <button class="button-tables" onclick="rssiHistory(this)">$RS_LABEL ⇵</button>
-                                <button class="button-tables" onclick="openPopout()">Popout View ◫</button> <br>
-                                <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
-                                <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
-                                <select id="timeSelect" onchange="timeDate()" class="button-tables">
-                                    <option selected disabled hidden>Set Date & Time ☰</option>
-                                    <option disabled>──── Military ────</option>
-                                    <option value="1" id="optUSA"></option>
-                                    <option value="2" id="optINTL"></option>
-                                    <option value="3" id="optISO"></option>
-                                    <option disabled>── 12HR AM/PM ──</option>
-                                    <option value="4" id="optUSA1"></option>
-                                    <option value="5" id="optINTL1"></option>
-                                    <option value="6" id="optISO1"></option>
-                                </select>
-                                <button class="button-tables" onclick="uptimePulse(this)">$UT_LABEL</button>
+                                <div class="button-row">
+                                    <button class="button-tables" onclick="runtimeTrackingweb(this)">$RN_LABEL ☰</button>
+                                    <select id="webPadding" onchange="ipPadding()" class="button-tables" data-status="$IP_STATUS">
+                                        <option selected disabled hidden>IP Padding ⇥</option>
+                                        <option value="1">Last 2 Octets</option>
+                                        <option value="2">Last Octet</option>
+                                        <option value="3">Disabled</option>
+                                    </select>
+                                    <select id="themeSelect" onchange="webThemes()" class="button-tables" data-status="$TH_STATUS">
+                                        <option selected disabled hidden>Themes ⟳</option>
+                                        <option value="1">Original</option>
+                                        <option value="2">Darkmode</option>
+                                        <option value="3">AsusUI</option>
+                                    </select>
+                                    <button class="button-tables" onclick="rssiHistory(this)">$RS_LABEL ⇵</button>
+                                    <button class="button-tables" onclick="openPopout()">Popout View ◫</button> <br>
+                                </div>
+
+                                <div class="button-row">
+                                    <button class="button-tables" onclick="wirelessBackhaul(this)">$BH_LABEL ⟳</button>
+                                    <button class="button-tables" data-status="$HN_STATUS" onclick="hostColor(this)">Hostname ▤</button>
+                                    <select id="timeSelect" onchange="timeDate()" class="button-tables">
+                                        <option selected disabled hidden>Set Date & Time ☰</option>
+                                        <option disabled>──── Military ────</option>
+                                        <option value="1" id="optUSA"></option>
+                                        <option value="2" id="optINTL"></option>
+                                        <option value="3" id="optISO"></option>
+                                        <option disabled>── 12HR AM/PM ──</option>
+                                        <option value="4" id="optUSA1"></option>
+                                        <option value="5" id="optINTL1"></option>
+                                        <option value="6" id="optISO1"></option>
+                                    </select>
+                                    <button class="button-tables" onclick="uptimePulse(this)">$UT_LABEL</button>
+                                </div>
                             </div>
                         </div>
                     <div class="grid-container">
