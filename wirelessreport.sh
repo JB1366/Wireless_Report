@@ -2822,6 +2822,18 @@ cat <<HTML >> "$WEB_PAGE"
         font-weight: bold;
     }
 
+    /* Unadjusted or firmware-dependent RAM telemetry is not a severity signal. */
+    .stat-memory-neutral {
+        color: inherit !important;
+        font-weight: bold;
+    }
+
+    .wr-memory-unadjusted {
+        cursor: help;
+        text-decoration: underline dotted;
+        text-underline-offset: 2px;
+    }
+
     .main-color {
         color: $MAIN_COLOR !important;
         font-weight: bold;
@@ -3355,7 +3367,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     <hr class="separator-line">
                                     <div class="cpu-mem-row">
                                         CPU: <span id='wr-main-cpu' class='stat-cool'>--</span>
-                                        Memory: <span id='wr-main-memory' class='stat-cool'>--</span>
+                                        Memory: <span id='wr-main-memory' class='stat-memory-neutral'>--</span>
                                         Devices: <span id='wr-main-count' class='main-color'>--</span>
                                     </div>
                                 </div>
@@ -3395,7 +3407,7 @@ cat <<HTML >> "$WEB_PAGE"
                                     <hr class="separator-line">
                                     <div class="cpu-mem-row">
                                         CPU: <span id='wr-node-cpu' class='stat-cool'>--</span>
-                                        Memory: <span id='wr-node-memory' class='stat-cool'>--</span>
+                                        Memory: <span id='wr-node-memory' class='stat-memory-neutral'>--</span>
                                         Devices: <span id='wr-node-count' class='stat-cool'>--</span>
                                     </div>
                                 </div>
@@ -3432,7 +3444,7 @@ cat <<HTML >> "$WEB_PAGE"
                                 <hr class="separator-line">
                                 <div class="cpu-mem-row">
                                     CPU: <span id='wr-all-cpu' class='stat-cool'>--</span>
-                                    Memory: <span id='wr-all-memory' class='stat-cool'>--</span>
+                                    Memory: <span id='wr-all-memory' class='stat-memory-neutral'>--</span>
                                     Devices: <span id='wr-all-count' class='stat-cool'>--</span>
                                 </div>
                             </div>
@@ -5481,7 +5493,7 @@ function wrNodeDiagFromRow(row) {
         ip: row[2],
         mac: wrNormMac(row[3]),
         cpuUsage: wrNumber(row[4]),
-        memoryUsage: wrNumber(row[5]),
+        memory: wrDiagnosticMemory(row[5]),
         cpuTemp: wrNumber(row[6])
     };
 }
@@ -5531,15 +5543,70 @@ function wrCpuUsageBetween(first, second) {
     return totalDelta > 0 ? Math.round((usageDelta / totalDelta) * 100) : null;
 }
 
+// Memory counters and percentages are untrusted firmware data. Do not coerce
+// booleans, arrays, blanks or non-decimal strings into valid memory readings.
+function wrMemoryNumber(value) {
+    if (typeof value !== 'number' && typeof value !== 'string') return null;
+    if (typeof value === 'string' && !/^[0-9]+(?:\.[0-9]+)?$/.test(value.trim())) return null;
+    var n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function wrMemoryPercent(value) {
+    var n = wrMemoryNumber(value);
+    return n !== null && n <= 100 ? n : null;
+}
+
+function wrDiagnosticMemory(value) {
+    var percent = wrMemoryPercent(value);
+    return percent === null ? null : { value: percent, source: 'diagnostic' };
+}
+
 function wrMemoryUsage(memory) {
     memory = memory || {};
-    var total = wrNumber(memory.total);
-    // ASUS exposes raw used (includes reclaimable cache) and simple_used.
-    // simple_used is the useful human-facing utilization value.
-    var used = wrNumber(memory.simple_used);
-    if (!Number.isFinite(used)) used = wrNumber(memory.used);
-    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(used)) return null;
-    return Math.round((used / total) * 100);
+    var total = wrMemoryNumber(memory.total);
+    if (total === null || total <= 0) return null;
+
+    // Preserve the native adjusted metric when valid. Raw used is a distinct
+    // fallback, not an equivalent measure of utilization or memory pressure.
+    var adjusted = wrMemoryNumber(memory.simple_used);
+    if (adjusted !== null && adjusted <= total) {
+        return { value: Math.round((adjusted / total) * 100), source: 'adjusted' };
+    }
+    var raw = wrMemoryNumber(memory.used);
+    if (raw !== null && raw <= total) {
+        return { value: Math.round((raw / total) * 100), source: 'raw' };
+    }
+    return null;
+}
+
+function wrSelectMainMemory(direct, diagnostic) {
+    return direct || diagnostic || null;
+}
+
+function wrMemoryHtml(memory) {
+    var percent = memory ? wrMemoryPercent(memory.value) : null;
+    if (percent === null) {
+        return "<span class='stat-memory-neutral' title='Memory telemetry unavailable'>--</span>";
+    }
+
+    var source = memory.source;
+    var adjusted = source === 'adjusted';
+    var className = adjusted ? wrMetricClass(percent) : 'stat-memory-neutral wr-memory-unadjusted';
+    var tooltip;
+    if (adjusted) {
+        tooltip = 'ASUS cache-adjusted memory utilization (simple_used). This is not a direct measurement of memory pressure.';
+    } else if (source === 'raw') {
+        tooltip = 'ASUS raw memory utilization. May include reclaimable memory and reserved RAM. Not a reliable indicator of memory pressure; warning colours are disabled.';
+    } else {
+        // sys_detect provides only a firmware-computed percentage. Tested
+        // firmware generations differ, so do not infer a formula by model or
+        // firmware label, or fabricate cache-adjusted remote counters.
+        tooltip = 'ASUS diagnostic memory utilization. The calculation varies by firmware and may include reclaimable cache, buffers and reserved RAM. Not a reliable indicator of memory pressure; warning colours are disabled.';
+    }
+    var display = percent + '%' + (adjusted ? '' : '*');
+    return "<span class='" + className + "' title='" + wrEscape(tooltip) +
+        "' aria-label='" + wrEscape(percent + ' percent. ' + tooltip) + "'>" + display + "</span>";
 }
 
 async function wrGetMainMemoryUsage() {
@@ -6275,14 +6342,9 @@ async function loadWirelessReport() {
             console.warn('Primary CPU fallback query failed', e);
         }
     }
-    var mainMemory = await mainMemoryPromise;
-
-    // Preserve a useful value if memory_usage() is unavailable on an unusual
-    // firmware build; sys_detect already carries the same percentage for nodes.
-    if (mainMemory === null && mainDiag && Number.isFinite(mainDiag.memoryUsage)) {
-        mainMemory = Math.round(mainDiag.memoryUsage);
-    }
-    var mainHealth = { cpuUsage: mainCpu, memoryUsage: mainMemory };
+    // Keep the provenance when falling back to the diagnostic percentage.
+    var mainMemory = wrSelectMainMemory(await mainMemoryPromise, mainDiag && mainDiag.memory);
+    var mainHealth = { cpuUsage: mainCpu, memory: mainMemory };
 
     // Added MAIN_NICK to WR_CONFIG if present, use it as the main router display name instead of productid.
     var mainNameEl = document.getElementById('wr-main-name');
@@ -6294,7 +6356,7 @@ async function loadWirelessReport() {
 
     // Set Main Router specific metrics only here
     wrSetMetric('wr-main-cpu', mainHealth.cpuUsage, '%');
-    wrSetMetric('wr-main-memory', mainHealth.memoryUsage, '%');
+    wrSetHtml('wr-main-memory', wrMemoryHtml(mainHealth.memory));
     var uptimeSecs = wrParseUptime(base.uptime);
     wrSetText('wr-main-uptime', wrFormatRouterUptime(uptimeSecs));
     var nodeNamesHtml = [];
@@ -6342,11 +6404,7 @@ async function loadWirelessReport() {
         } else {
             cpuHtml.push("<span style='color:" + color + ";'>--" + "</span>");
         }
-        if (diag && diag.memoryUsage !== null) {
-            memHtml.push("<span class='" + wrMetricClass(diag.memoryUsage) + "'>" + diag.memoryUsage + "%" + "</span>");
-        } else {
-            memHtml.push("<span style='color:" + color + ";'>--" + "</span>");
-        }
+        memHtml.push(wrMemoryHtml(diag && diag.memory));
 
         var firmware = wrFirst(node, ['firmware', 'fwver', 'fw_version', 'version']);
         if (firmware) {
@@ -6371,7 +6429,7 @@ async function loadWirelessReport() {
 
     wrSetHtml('wr-node-names', nodeNamesHtml.length ? nodeNamesHtml.join(bullet) : 'No AiMesh nodes detected');
     wrSetHtml('wr-node-cpu', cpuHtml.length ? cpuHtml.join(bullet) : '--');
-    wrSetHtml('wr-node-memory', memHtml.length ? memHtml.join(bullet) : '--');
+    wrSetHtml('wr-node-memory', memHtml.length ? memHtml.join(bullet) : wrMemoryHtml(null));
     wrSetHtml('wr-node-count', nodes.length > 1 && nodeCountParts.length ? nodeItems.length + " <span class='right-arrow'>—›</span> " + nodeCountParts.join(bullet) : nodeItems.length);
     wrSetHtml('wr-node-footer', nodeDiagParts.length ? nodeDiagParts.join('<br>') : 'No node diagnostic telemetry available.');
 
@@ -6387,7 +6445,7 @@ async function loadWirelessReport() {
     wrSetHtml('wr-all-cpu', allCpuCombined.join(bullet));
 
     var allMemCombined = [
-        "<span class='" + wrMetricClass(mainHealth.memoryUsage) + "'>" + (mainHealth.memoryUsage !== null ? mainHealth.memoryUsage + "%" : "--") + "</span>"
+        wrMemoryHtml(mainHealth.memory)
     ].concat(memHtml);
     wrSetHtml('wr-all-memory', allMemCombined.join(bullet));
 

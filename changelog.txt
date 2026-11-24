@@ -2,6 +2,7 @@
 # Wireless Report - Changelog #
 #=============================#
 
+v3.7.5-Improve the AiMesh Node Memory Reporting Experience 
 v3.7.4-updated signature verification.
 v3.7.3-fixed update integrity.
 v3.7.2-minor updates, add Fullscreen button.
