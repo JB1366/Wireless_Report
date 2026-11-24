@@ -1704,7 +1704,7 @@ set_github_branch() {
         printm ""
         printm "  $N1 main (JB1366)"
         printm "  $N2 Development (JB1366)"
-        printm "  $N3 Development (ExtremeFiretop)"
+        #printm "  $N3 Development (ExtremeFiretop)"
         printm ""
         printb "╚═════════════════════════════════════════════════════════════╝"
         printf "%b" "$menu_buffer"
@@ -1713,7 +1713,7 @@ set_github_branch() {
             case "$choice" in
                 1) BRANCH="0" ;;
                 2) BRANCH="1" ;;
-                3) BRANCH="2" ;;
+                #3) BRANCH="2" ;;
                 *) freeze 2; continue ;;
             esac
             break
