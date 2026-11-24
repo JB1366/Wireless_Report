@@ -1699,7 +1699,7 @@ set_github_branch() {
         printb "╔═════════════════════════════════════════════════════════════╗"
         printm "                      Set Github Branch"
         printb "╠═════════════════════════════════════════════════════════════╣"
-        printm "  Branch: [$BN]                  $CURRENT"
+        printm "  Branch: [$BN]                $CURRENT"
         printb "╠═════════════════════════════════════════════════════════════╣"
         printm ""
         printm "  $N1 main (JB1366)"
@@ -1731,7 +1731,7 @@ set_github_branch() {
         if do_update; then
             exec "$REPORT_SCRIPT" install "$@"
         else
-            echo -e "$RD[!]Error: Branch update failed!$NC" >&2
+            echo -e "\n$RD[!]Error: Branch update failed!$NC" >&2
             pause
         fi
     done
