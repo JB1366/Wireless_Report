@@ -546,7 +546,7 @@ do_hash_check() {
 check_github() {
     case "$BRANCH" in
         1) GIT="JB1366"; BRANCH_NAME="Development"; DEV="D" ;;
-        2) GIT="ExtremeFiretop"; BRANCH_NAME="Development"; DEV="E" ;;
+        #2) GIT="ExtremeFiretop"; BRANCH_NAME="Development"; DEV="E" ;;
         *) GIT="JB1366"; BRANCH_NAME="main"; DEV="" ;;
     esac
     GITHUB="https://raw.githubusercontent.com/$GIT/Wireless_Report/$BRANCH_NAME/wirelessreport.sh"
