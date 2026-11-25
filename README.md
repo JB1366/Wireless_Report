@@ -115,25 +115,9 @@ $\color{blue}{\Large\text{Pro-Tip: Alternate Views}}$<br>
 Remember that your UI is interactive! You can toggle between IP vs. MAC and SSID vs. Interface by clicking the respective column headers to customize your view on the fly.<br>
 \
 \
-$\color{blue}{\Large\text{Main View - Colored Hostnames - Dark Mode Theme}}$<br>
+$\color{blue}{\Large\text{Split View - Colored Hostnames - Dark Mode Theme}}$<br>
 
 ![Instructions6](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions6.png)<br>
-\
-\
-$\color{blue}{\Large\text{Main View - Numbered Hostnames - Original Theme}}$<br>
-
-![Instructions11](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions11.png)<br>
-\
-\
-$\color{blue}{\Large\text{Main View - Colored Hostnames - Asus WEBUI Theme}}$<br>
-
-![Instructions7](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions7.png)<br>
-\
-\
-$\color{blue}{\Large\text{Popout View - Colored Hostnames - Dark Mode Theme}}$<br>
-
-![Instructions8](https://raw.githubusercontent.com/JB1366/Wireless_Report/main/images/Instructions8.png)
-
 \
 \
 $\color{blue}{\Large\text{Advanced Viewing + Interactive Features}}$<br>
