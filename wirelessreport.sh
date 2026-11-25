@@ -28,7 +28,7 @@
 #        shellcheck shell=sh disable=SC2086,SC2155,SC3043         #
 #═════════════════════════════════════════════════════════════════#
 
-SCRIPT_VERSION="3.7.5"
+SCRIPT_VERSION="3.7.6"
 INSTALL_DIR="/jffs/addons/wireless_report"
 REPORT_SCRIPT="$INSTALL_DIR/wirelessreport.sh"
 CONFIG="$INSTALL_DIR/webui.conf"
@@ -885,6 +885,19 @@ inject_menu() {
 	mount -o bind "$WEB_PAGE" "/www/user/$am_webui_page"
 
     flock -u "$FD"
+
+    # Ensure the Addons menu icon CSS rule exists
+    if [ -f /tmp/index_style.css ] && grep -qF '.menu_Addons { background:' /tmp/index_style.css; then
+        # Rule already present — nothing to do
+        :
+    else
+        umount /www/index_style.css 2>/dev/null
+        cp -fp /www/index_style.css /tmp/index_style.css
+        if ! grep -qF '.menu_Addons { background:' /tmp/index_style.css; then
+            echo ".menu_Addons { background: url(ext/shared-jy/addons.png); }" >> /tmp/index_style.css
+        fi
+        mount -o bind /tmp/index_style.css /www/index_style.css
+    fi
 
     "$REPORT_SCRIPT" >/dev/null 2>&1 &
 }
