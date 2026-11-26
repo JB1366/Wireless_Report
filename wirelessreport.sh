@@ -3449,7 +3449,7 @@ cat <<HTML >> "$WEB_PAGE"
                             </div>
                              <div style="display: flex; justify-content: center; gap: clamp(24px, 12vw, 200px); flex-wrap: wrap; font-size: 12px; align-items: center; margin-top: -8px;">
                                 <a href="https://github.com/JB1366/Wireless_Report" target="_blank" rel="noopener noreferrer" class="footer-link">Github Repository</a>
-                                <a href="https://www.paypal.com/paypalme/JB1366" target="_blank" rel="noopener noreferrer" class="footer-link">Donate Paypal</a>
+                                <a href="https://www.paypal.com/paypalme/JB1366" target="_blank" rel="noopener noreferrer" class="footer-link">Support Wireless Report</a>
                                 <a href="https://www.snbforums.com/threads/97849/latest" target="_blank" rel="noopener noreferrer" class="footer-link">Wireless Report Forum</a>
                             </div>
                         </div>
