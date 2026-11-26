@@ -392,7 +392,7 @@ menu_time_color() {
 
     get_hex_to_ansi
     B_COLOR=${B_COLOR:-$BL}
-    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
+    for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do eval "N${i}=\"\$B_COLOR(${i})\$NC\""; done
 	for i in E Q R S Z; do eval "L${i}=\"\$B_COLOR(${i})\$NC\""; done
 
     MODELID="${MODEL_PAD}${B_COLOR}Router: ${NC}${CACHED_PRODID}${B_COLOR}   FW:${NC} ${CACHED_FW}"
@@ -1774,6 +1774,7 @@ go_developer() {
         printm "  $N13 View syslog - /jffs/syslog.log"
         printm "  $N14 View iocmon - $ROOT_PATH/iocmon.d/iocmon.log"
         printm "  $N15 View Cron Jobs - cru l(ist)"
+        printm "  $N16 View WAN IP Change Log (Wicens)"
         printm ""
         printm "  $LQ  Power Exit from any Selection Prompt"
         printm "  $LZ  Return to 'Main Menu' from anywhere"
@@ -1901,6 +1902,19 @@ go_developer() {
                     rm -f /tmp/wireless_cron.txt 2>/dev/null
                     pause
                     break
+                    ;;
+                16)
+                    TMP_LOG="/jffs/addons/wicens/wicens.log"
+                    WAN_LOG="/tmp/wan_ip_changes.log"
+                    if [ -f "$TMP_LOG" ]; then
+                        grep -F "WAN IP has changed to" "$TMP_LOG" \
+                            | sed -E 's/wicens\[[0-9]+\]:[[:space:]]*//; s/[[:alnum:]_-]+[[:space:]]*:[[:space:]]*(WAN IP has changed to )/\1/g' \
+                            > "$WAN_LOG"
+                        file_viewer "WAN IP Log" "$WAN_LOG"
+                        rm -f "$WAN_LOG" 2>/dev/null
+                    else
+                        file_viewer "WAN IP Log" "$WAN_LOG"
+                    fi
                     ;;
                 *)
                     freeze 2
