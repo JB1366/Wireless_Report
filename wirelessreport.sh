@@ -888,14 +888,10 @@ inject_menu() {
 
     flock -u "$FD"
 
-    if [ -f /tmp/index_style.css ] && grep -qF '.menu_Addons { background:' /tmp/index_style.css; then
-        :
-    else
+    if ! [ -f /tmp/index_style.css ] || ! grep -qF '.menu_Addons { background:' /tmp/index_style.css; then
         umount /www/index_style.css 2>/dev/null
         cp -fp /www/index_style.css /tmp/index_style.css
-        if ! grep -qF '.menu_Addons { background:' /tmp/index_style.css; then
-            echo ".menu_Addons { background: url(ext/shared-jy/addons.png); }" >> /tmp/index_style.css
-        fi
+        echo ".menu_Addons { background: url(ext/shared-jy/addons.png); }" >> /tmp/index_style.css
         mount -o bind /tmp/index_style.css /www/index_style.css
     fi
 
