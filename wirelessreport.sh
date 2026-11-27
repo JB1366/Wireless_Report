@@ -888,9 +888,7 @@ inject_menu() {
 
     flock -u "$FD"
 
-    # Ensure the Addons menu icon CSS rule exists
     if [ -f /tmp/index_style.css ] && grep -qF '.menu_Addons { background:' /tmp/index_style.css; then
-        # Rule already present — nothing to do
         :
     else
         umount /www/index_style.css 2>/dev/null
