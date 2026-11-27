@@ -1846,6 +1846,7 @@ go_developer() {
                     if [ -n "$INSTALLED_PAGE" ]; then
                         umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
                         rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
+                        rm -f "/www/user/${INSTALLED_PAGE}.title" >/dev/null 2>&1
                         rm -f "$WEB_PAGE" /dev/null 2>&1
                     fi
                     sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
