@@ -405,6 +405,7 @@ menu_time_color() {
     COUNT1="https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-update&version=${SCRIPT_VERSION}"
     COUNT2="https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-install&version=${SCRIPT_VERSION}"
     COUNT3="https://script.google.com/macros/s/AKfycbzg5z1ihLgkxqsvDWoPwYhltX_1YSl8uWsnlcbG-444jJDIesssrC61PMWn6siCunMt/exec?event=wr-uninst&version=${SCRIPT_VERSION}"
+}
 
 device_default_colors() {
     MAIN_COLOR="${MAIN_COLOR:-#0096ff}"
