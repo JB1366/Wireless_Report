@@ -918,6 +918,7 @@ do_uninstall() {
     if [ -n "$INSTALLED_PAGE" ]; then
 		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
 		rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
+        rm -f "/www/user/${INSTALLED_PAGE}.title" >/dev/null 2>&1
 	fi
 
     sed -i "\|$REPORT_SCRIPT|d" "$PROFILE_ADD" "$SS_FILE" "$SE_FILE" 2>/dev/null
