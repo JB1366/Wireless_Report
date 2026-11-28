@@ -819,12 +819,18 @@ inject_menu() {
 	source /usr/sbin/helper.sh
     TAB_LABEL="Wireless Report"
 
+    if [ -n "$INSTALLED_PAGE" ]; then
+		umount -l "/www/user/$INSTALLED_PAGE" >/dev/null 2>&1
+		rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
+        rm -f "/www/user/${INSTALLED_PAGE%.asp}.title" >/dev/null 2>&1
+	fi
+
     if [ -f "$CONFIG" ]; then
         sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
-        rm -f "/www/user/${INSTALLED_PAGE%.asp}.title" >/dev/null 2>&1
     else
         touch "$CONFIG"
     fi
+
     if ! nvram get rc_support | grep -q am_addons; then
         echo -e "\n$RD[!] ERROR: This firmware does not support addons!$NC"
         exit 5
@@ -1843,8 +1849,8 @@ go_developer() {
                         rm -f /www/user/"${INSTALLED_PAGE}" >/dev/null 2>&1
                         rm -f "/www/user/${INSTALLED_PAGE%.asp}.title" >/dev/null 2>&1
                         rm -f "$WEB_PAGE" /dev/null 2>&1
+                        sed -i '/^INSTALLED_PAGE=/d' "$CONFIG" >/dev/null 2>&1
                     fi
-                    sed -i '/^INSTALLED_PAGE=/d' "$CONFIG"
                     INSTALLED_PAGE=""
                     restart_httpd
                     echo -e "\n\n$B_COLOR[!] Wireless Report successfully removed."
